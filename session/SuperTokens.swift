@@ -45,7 +45,7 @@ public class SuperTokens {
     }
     
     public static func sessionPossiblyExists() -> Bool {
-        // TODO: check for IdRefreshToken here, return true if found else false
-        return false;
+        let token = IdRefreshToken.getToken()
+        return token != nil
     }
 }

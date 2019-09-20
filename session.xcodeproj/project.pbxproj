@@ -12,6 +12,8 @@
 		AECF964223349EC600474C4C /* session.h in Headers */ = {isa = PBXBuildFile; fileRef = AECF963423349EC600474C4C /* session.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		AECF964C2334A0F400474C4C /* SuperTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF964B2334A0F400474C4C /* SuperTokens.swift */; };
 		AECF964F2334A6ED00474C4C /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF964E2334A6ED00474C4C /* Error.swift */; };
+		AECF96512334B3AF00474C4C /* IdRefreshToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF96502334B3AF00474C4C /* IdRefreshToken.swift */; };
+		AECF96532334B7CB00474C4C /* AntiCSRF.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF96522334B7CB00474C4C /* AntiCSRF.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +35,8 @@
 		AECF964123349EC600474C4C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AECF964B2334A0F400474C4C /* SuperTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperTokens.swift; sourceTree = "<group>"; };
 		AECF964E2334A6ED00474C4C /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
+		AECF96502334B3AF00474C4C /* IdRefreshToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdRefreshToken.swift; sourceTree = "<group>"; };
+		AECF96522334B7CB00474C4C /* AntiCSRF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntiCSRF.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +100,8 @@
 			isa = PBXGroup;
 			children = (
 				AECF964E2334A6ED00474C4C /* Error.swift */,
+				AECF96502334B3AF00474C4C /* IdRefreshToken.swift */,
+				AECF96522334B7CB00474C4C /* AntiCSRF.swift */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -211,6 +217,8 @@
 			files = (
 				AECF964F2334A6ED00474C4C /* Error.swift in Sources */,
 				AECF964C2334A0F400474C4C /* SuperTokens.swift in Sources */,
+				AECF96512334B3AF00474C4C /* IdRefreshToken.swift in Sources */,
+				AECF96532334B7CB00474C4C /* AntiCSRF.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
