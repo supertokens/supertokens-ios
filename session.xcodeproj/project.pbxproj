@@ -10,6 +10,8 @@
 		AECF963B23349EC600474C4C /* session.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AECF963123349EC600474C4C /* session.framework */; };
 		AECF964023349EC600474C4C /* sessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF963F23349EC600474C4C /* sessionTests.swift */; };
 		AECF964223349EC600474C4C /* session.h in Headers */ = {isa = PBXBuildFile; fileRef = AECF963423349EC600474C4C /* session.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		AECF964C2334A0F400474C4C /* SuperTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF964B2334A0F400474C4C /* SuperTokens.swift */; };
+		AECF964F2334A6ED00474C4C /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF964E2334A6ED00474C4C /* Error.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +31,8 @@
 		AECF963A23349EC600474C4C /* sessionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = sessionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AECF963F23349EC600474C4C /* sessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sessionTests.swift; sourceTree = "<group>"; };
 		AECF964123349EC600474C4C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AECF964B2334A0F400474C4C /* SuperTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperTokens.swift; sourceTree = "<group>"; };
+		AECF964E2334A6ED00474C4C /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,8 +75,10 @@
 		AECF963323349EC600474C4C /* session */ = {
 			isa = PBXGroup;
 			children = (
+				AECF964D2334A6D100474C4C /* utils */,
 				AECF963423349EC600474C4C /* session.h */,
 				AECF963523349EC600474C4C /* Info.plist */,
+				AECF964B2334A0F400474C4C /* SuperTokens.swift */,
 			);
 			path = session;
 			sourceTree = "<group>";
@@ -84,6 +90,14 @@
 				AECF964123349EC600474C4C /* Info.plist */,
 			);
 			path = sessionTests;
+			sourceTree = "<group>";
+		};
+		AECF964D2334A6D100474C4C /* utils */ = {
+			isa = PBXGroup;
+			children = (
+				AECF964E2334A6ED00474C4C /* Error.swift */,
+			);
+			path = utils;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -148,6 +162,7 @@
 				TargetAttributes = {
 					AECF963023349EC600474C4C = {
 						CreatedOnToolsVersion = 10.3;
+						LastSwiftMigration = 1030;
 					};
 					AECF963923349EC600474C4C = {
 						CreatedOnToolsVersion = 10.3;
@@ -194,6 +209,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AECF964F2334A6ED00474C4C /* Error.swift in Sources */,
+				AECF964C2334A0F400474C4C /* SuperTokens.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -341,6 +358,7 @@
 		AECF964623349EC600474C4C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
@@ -358,6 +376,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = io.supertokens.session;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -366,6 +385,7 @@
 		AECF964723349EC600474C4C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
@@ -391,6 +411,7 @@
 		AECF964923349EC600474C4C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = YWQCXGJRJL;
 				INFOPLIST_FILE = sessionTests/Info.plist;
@@ -409,6 +430,7 @@
 		AECF964A23349EC600474C4C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = YWQCXGJRJL;
 				INFOPLIST_FILE = sessionTests/Info.plist;
