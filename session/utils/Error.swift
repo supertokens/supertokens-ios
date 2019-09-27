@@ -9,5 +9,7 @@
 import Foundation
 
 public enum SuperTokensError: Error {
-    case invalidURL
+    case invalidURL(String)
+    case illegalAccess(String)
+    case apiError(String)
 }

@@ -30,9 +30,9 @@ public class SuperTokens {
     
     private static func getApiDomain(refreshTokenEndpoint: String) throws -> String {
         if refreshTokenEndpoint.starts(with: "http://") || refreshTokenEndpoint.starts(with: "https://") {
-            var splitArray = refreshTokenEndpoint.split(separator: "/").map(String.init)
+            let splitArray = refreshTokenEndpoint.split(separator: "/").map(String.init)
             if splitArray.count < 3 {
-                throw SuperTokensError.invalidURL
+                throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
             }
             var apiDomainArray: [String] = []
             for index in (0...2) {
@@ -40,7 +40,7 @@ public class SuperTokens {
             }
             return apiDomainArray.joined(separator: "/")
         } else {
-            throw SuperTokensError.invalidURL
+            throw SuperTokensError.invalidURL("Refresh token endpoint must start with http or https")
         }
     }
     

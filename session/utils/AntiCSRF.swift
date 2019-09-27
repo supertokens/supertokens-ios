@@ -37,7 +37,7 @@ internal class AntiCSRF {
             }
             
             AntiCSRF.antiCSRFInfo = AntiCSRFInfo(antiCSRFToken: antiCSRFToken!, associatedIdRefreshToken: associatedIdRefreshToken!)
-        } else if AntiCSRF.antiCSRFInfo?.idRefreshToken != nil && AntiCSRF.antiCSRFInfo?.idRefreshToken == associatedIdRefreshToken! {
+        } else if AntiCSRF.antiCSRFInfo?.idRefreshToken != nil && AntiCSRF.antiCSRFInfo?.idRefreshToken != associatedIdRefreshToken! {
             AntiCSRF.antiCSRFInfo = nil
             return AntiCSRF.getToken(associatedIdRefreshToken: associatedIdRefreshToken)
         }
