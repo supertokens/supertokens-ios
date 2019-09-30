@@ -99,15 +99,6 @@ class sessionTests: XCTestCase {
         waitForExpectations(timeout: 5, handler: nil)
     }
     
-    func testResetAPI() {
-        getRefreshTokenCounter(successCallback: {
-            counter in
-            print("SUCCESS: \(counter)")
-        }, failureCallback: {
-            print("failed")
-        })
-    }
-    
     func testThatRequestsFailIfInitIsNotCalled() {
         var failed = true
         let semaphore = DispatchSemaphore(value: 0)
@@ -399,7 +390,6 @@ class sessionTests: XCTestCase {
                                     userInfoData, userInfoResponse, userInfoError in
                                     
                                     defer {
-                                        print(results.count)
                                         if results.count == runnableCount {
                                             requestSemaphore.signal()
                                         }
