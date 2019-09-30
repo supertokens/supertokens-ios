@@ -23,3 +23,6 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+## Backend for testing
+node_modules
