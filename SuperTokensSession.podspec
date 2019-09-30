@@ -1,7 +1,7 @@
 Pod::Spec.new do |spec|
 
-  spec.name         = "SuperTokensSessions"
-  spec.version      = "0.0.4"
+  spec.name         = "SuperTokensSession"
+  spec.version      = "0.0.5"
   spec.summary      = "SuperTokens session management implementation for iOS apps"
   spec.description  = "SuperTokens session management implementation for iOS apps."
 
