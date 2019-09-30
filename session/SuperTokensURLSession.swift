@@ -13,7 +13,7 @@ public class SuperTokensURLSession {
     
     public static func newTask(request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) {
         if !SuperTokens.isInitCalled {
-            completionHandler(nil, nil, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLConnection.newRequest"))
+            completionHandler(nil, nil, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.newTask"))
             return
         }
         
@@ -43,7 +43,6 @@ public class SuperTokensURLSession {
             if response as? HTTPURLResponse != nil {
                 let httpResponse = response as! HTTPURLResponse
                 SuperTokensCookieHandler.saveIdRefreshFromCookies()
-                
                 if httpResponse.statusCode == SuperTokens.sessionExpiryStatusCode {
                     handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: { shouldRetry, error in
                         
@@ -154,5 +153,33 @@ public class SuperTokensURLSession {
         })
         refreshTask.resume()
         semaphore.wait()
+    }
+    
+    public static func attemptRefreshingSession(completionHandler: @escaping (Bool, Error?) -> Void) {
+        if !SuperTokens.isInitCalled {
+            completionHandler(false, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.attemptRefreshingSession"))
+            return
+        }
+        
+        readWriteDispatchQueue.async {
+            let preRequestIdRefresh = IdRefreshToken.getToken()
+            handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: {
+                result, error in
+                
+                defer {
+                    let idRefreshToken = IdRefreshToken.getToken()
+                    if idRefreshToken == nil {
+                        AntiCSRF.removeToken()
+                    }
+                }
+                
+                if error != nil {
+                    completionHandler(false, error!)
+                    return
+                }
+                
+                completionHandler(result, nil)
+            })
+        }
     }
 }

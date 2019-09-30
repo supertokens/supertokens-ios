@@ -20,14 +20,16 @@ class sessionTests: XCTestCase {
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
+        SuperTokens.isInitCalled = false
+        AntiCSRF.removeToken()
+        IdRefreshToken.removeToken()
     }
 
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
-        SuperTokens.isInitCalled = false
     }
 
-    func resetAccessTokenValidity(validity: Int, failureCallback: @escaping () -> Void) {
+    func resetAccessTokenValidity(validity: Int, failureCallback: @escaping () -> Void, successCallback: @escaping () -> Void) {
         let resetExpectation = expectation(description: "Reset API")
         let url = URL(string: resetAPIURL)
         var request = URLRequest(url: url!)
@@ -46,6 +48,8 @@ class sessionTests: XCTestCase {
                     failureCallback()
                     return
                 }
+                
+                successCallback()
             } else {
                 failureCallback()
             }
@@ -103,12 +107,360 @@ class sessionTests: XCTestCase {
             print("failed")
         })
     }
-
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+    
+    func testThatRequestsFailIfInitIsNotCalled() {
+        var failed = true
+        let semaphore = DispatchSemaphore(value: 0)
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        resetSemaphore.wait()
+        
+        let url = URL(string: loginAPIURL)
+        let request = URLRequest(url: url!)
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            defer {
+                semaphore.signal()
+            }
+            if error != nil {
+                switch error! {
+                    case SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.newTask"):
+                        failed = false
+                        break
+                    default:
+                        break
+                }
+            }
+        })
+        semaphore.wait()
+        XCTAssertTrue(!failed)
+    }
+    
+    func testThatManualRefreshFailsIfInitIsNotCalled() {
+        var failed = true
+        let semaphore = DispatchSemaphore(value: 0)
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        resetSemaphore.wait()
+        
+        SuperTokensURLSession.attemptRefreshingSession(completionHandler: { result, error in
+            defer {
+                semaphore.signal()
+            }
+            
+            if error != nil {
+                switch error! {
+                    case SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.attemptRefreshingSession"):
+                        failed = false
+                        break
+                    default:
+                        break
+                }
+            }
+        })
+        semaphore.wait()
+        XCTAssertTrue(!failed)
+    }
+    
+    func testIfRefreshIsCalledAfterAccessTokenExpires() {
+        var failed = false
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 3, failureCallback: {
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        resetSemaphore.wait()
+        do {
+            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            failed = true
         }
+        
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            if error != nil {
+                failed = true
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failed = true
+                    requestSemaphore.signal()
+                } else {
+                    let userInfoURL = URL(string: self.userInfoAPIURL)
+                    let userInfoRequest = URLRequest(url: userInfoURL!)
+                    
+                    sleep(5)
+                    
+                    SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                        userInfoData, userInfoResponse, userInfoError in
+                        
+                        if userInfoError != nil {
+                            failed = true
+                            requestSemaphore.signal()
+                            return
+                        }
+                        
+                        if userInfoResponse as? HTTPURLResponse != nil {
+                            let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                            if userInfoHttpResponse.statusCode != 200 {
+                                failed = true
+                            }
+                            requestSemaphore.signal()
+                        } else {
+                            failed = true
+                            requestSemaphore.signal()
+                        }
+                    })
+                }
+            } else {
+                failed = true
+                requestSemaphore.signal()
+            }
+        })
+        
+        requestSemaphore.wait()
+        
+        let refreshCounterSemaphore = DispatchSemaphore(value: 0)
+        getRefreshTokenCounter(successCallback: {
+            counter in
+            
+            if counter != 1 {
+                failed = true
+            }
+            
+            refreshCounterSemaphore.signal()
+        }, failureCallback: {
+            failed = true
+            refreshCounterSemaphore.signal()
+        })
+        refreshCounterSemaphore.wait()
+        
+        XCTAssertTrue(!failed)
+    }
+    
+    func testIfRefreshIsCalledIfAntiCSRFIsCleared() {
+        var failed = false
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        resetSemaphore.wait()
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        do {
+            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            SuperTokensURLSession.newTask(request: request, completionHandler: {
+                data, response, error in
+                
+                if error != nil {
+                    failed = true
+                    requestSemaphore.signal()
+                    return
+                }
+                
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        failed = true
+                        requestSemaphore.signal()
+                    } else {
+                        let userInfoURL = URL(string: self.userInfoAPIURL)
+                        let userInfoRequest = URLRequest(url: userInfoURL!)
+                        
+                        AntiCSRF.removeToken()
+                        
+                        SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                            userInfoData, userInfoResponse, userInfoError in
+                            
+                            if userInfoError != nil {
+                                failed = true
+                                requestSemaphore.signal()
+                                return
+                            }
+                            
+                            if userInfoResponse as? HTTPURLResponse != nil {
+                                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                                if userInfoHttpResponse.statusCode != 200 {
+                                    failed = true
+                                }
+                                requestSemaphore.signal()
+                            } else {
+                                failed = true
+                                requestSemaphore.signal()
+                            }
+                        })
+                    }
+                } else {
+                    failed = true
+                    requestSemaphore.signal()
+                }
+            })
+        } catch {
+            failed = true
+        }
+        
+        requestSemaphore.wait()
+        
+        let refreshCounterSemaphore = DispatchSemaphore(value: 0)
+        getRefreshTokenCounter(successCallback: {
+            counter in
+
+            if counter != 1 {
+                failed = true
+            }
+            
+            refreshCounterSemaphore.signal()
+        }, failureCallback: {
+            failed = true
+            refreshCounterSemaphore.signal()
+        })
+        refreshCounterSemaphore.wait()
+        
+        XCTAssertTrue(!failed)
+    }
+    
+    func testThatRefreshIsCalledOnlyOnceForMultipleThreads() {
+        var failed = false
+        
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        resetSemaphore.wait()
+        
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        let countSemaphore = DispatchSemaphore(value: 0)
+        var results: [Bool] = []
+        
+        do {
+            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            SuperTokensURLSession.newTask(request: request, completionHandler: {
+                data, response, error in
+                
+                if error != nil {
+                    failed = true
+                    requestSemaphore.signal()
+                    return
+                }
+                
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        failed = true
+                        requestSemaphore.signal()
+                    } else {
+                        let userInfoURL = URL(string: self.userInfoAPIURL)
+                        let userInfoRequest = URLRequest(url: userInfoURL!)
+                        var runnables: [() -> ()] = []
+                        let runnableCount = 100
+                        let resultsLock = NSObject()
+                        
+                        for _ in 1...runnableCount {
+                            runnables.append {
+                                SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                                    userInfoData, userInfoResponse, userInfoError in
+                                    
+                                    defer {
+                                        print(results.count)
+                                        if results.count == runnableCount {
+                                            requestSemaphore.signal()
+                                        }
+                                    }
+
+                                    if userInfoResponse as? HTTPURLResponse != nil {
+                                        let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                                        var success = false
+                                        if userInfoHttpResponse.statusCode == 200 {
+                                            success = true
+                                        }
+                                        objc_sync_enter(resultsLock)
+                                        results.append(success)
+                                        objc_sync_exit(resultsLock)
+                                    } else {
+                                        objc_sync_enter(resultsLock)
+                                        results.append(false)
+                                        objc_sync_exit(resultsLock)
+                                    }
+                                })
+                            }
+                        }
+                        
+                        sleep(10)
+                        
+                        runnables.forEach({
+                            runnable in
+                            runnable()
+                        })
+                    }
+                } else {
+                    failed = true
+                    requestSemaphore.signal()
+                }
+            })
+        } catch {
+            failed = true
+        }
+        
+        requestSemaphore.wait()
+        
+        if results.contains(false) {
+            failed = true
+        } else {
+            let refreshCounterSemaphore = DispatchSemaphore(value: 0)
+            getRefreshTokenCounter(successCallback: {
+                counter in
+
+                if counter != 1 {
+                    failed = true
+                }
+                
+                refreshCounterSemaphore.signal()
+            }, failureCallback: {
+                failed = true
+                refreshCounterSemaphore.signal()
+            })
+            refreshCounterSemaphore.wait()
+        }
+        
+        XCTAssertTrue(!failed)
     }
 
 }

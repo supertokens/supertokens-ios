@@ -29,8 +29,9 @@ internal class IdRefreshToken {
     
     internal static func removeToken() {
         let userDefaults = IdRefreshToken.getUserDefaults()
-        userDefaults.removePersistentDomain(forName: IdRefreshToken.idRefreshUserDefaultsKey)
+        userDefaults.removeObject(forKey: IdRefreshToken.idRefreshUserDefaultsKey)
         userDefaults.synchronize()
+        IdRefreshToken.idRefreshInMemory = nil
     }
     
     private static func getUserDefaults() -> UserDefaults {

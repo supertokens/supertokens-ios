@@ -60,8 +60,9 @@ internal class AntiCSRF {
     
     internal static func removeToken() {
         let userDefaults = AntiCSRF.getUserDefaults()
-        userDefaults.removePersistentDomain(forName: AntiCSRF.antiCSRFUserDefaultsKey)
+        userDefaults.removeObject(forKey: AntiCSRF.antiCSRFUserDefaultsKey)
         userDefaults.synchronize()
+        AntiCSRF.antiCSRFInfo = nil
     }
     
     private static func getUserDefaults() -> UserDefaults {
