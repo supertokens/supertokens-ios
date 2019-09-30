@@ -1,7 +1,7 @@
 Pod::Spec.new do |spec|
 
-  spec.name         = "supertokens-session"
-  spec.version      = "0.0.3"
+  spec.name         = "SuperTokensSessions"
+  spec.version      = "0.0.4"
   spec.summary      = "SuperTokens session management implementation for iOS apps"
   spec.description  = "SuperTokens session management implementation for iOS apps."
 
@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   spec.source       = { :git => "https://github.com/supertokens/supertokens-ios.git", :tag => "v#{spec.version}" }
 
   spec.source_files  = "session/*.{h,m}", "session/*.swift", "session/utils/*.swift"
-  spec.exclude_files = "supertokens-ios/backend/*" , "*/*.plist"
+  spec.exclude_files = "backend/" , "*/*.plist"
   spec.swift_version = "4.0"
 
 end
