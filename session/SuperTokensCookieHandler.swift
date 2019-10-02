@@ -9,8 +9,8 @@
 import Foundation
 
 internal class SuperTokensCookieHandler {
-    static func saveIdRefreshFromCookies() {
-        for cookie in HTTPCookieStorage.shared.cookies! {
+    static func saveIdRefreshFromCookies(cookies: [HTTPCookie]) {
+        for cookie in cookies {
             if cookie.name == SuperTokensConstants.idRefreshCookieName {
                 let expiry = cookie.expiresDate!
                 let currentTime = Date()

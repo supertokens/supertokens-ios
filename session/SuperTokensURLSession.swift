@@ -42,7 +42,11 @@ public class SuperTokensURLSession {
             
             if response as? HTTPURLResponse != nil {
                 let httpResponse = response as! HTTPURLResponse
-                SuperTokensCookieHandler.saveIdRefreshFromCookies()
+                let headerFields = httpResponse.allHeaderFields as? [String:String]
+                if headerFields != nil && response!.url != nil {
+                    let cookies = HTTPCookie.cookies(withResponseHeaderFields: headerFields!, for: response!.url!)
+                    SuperTokensCookieHandler.saveIdRefreshFromCookies(cookies: cookies)
+                }
                 if httpResponse.statusCode == SuperTokens.sessionExpiryStatusCode {
                     handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: { shouldRetry, error in
                         
@@ -129,7 +133,11 @@ public class SuperTokensURLSession {
             
             if response as? HTTPURLResponse != nil {
                 let httpResponse = response as! HTTPURLResponse
-                SuperTokensCookieHandler.saveIdRefreshFromCookies()
+                let headerFields = httpResponse.allHeaderFields as? [String:String]
+                if headerFields != nil && response!.url != nil {
+                    let cookies = HTTPCookie.cookies(withResponseHeaderFields: headerFields!, for: response!.url!)
+                    SuperTokensCookieHandler.saveIdRefreshFromCookies(cookies: cookies)
+                }
                 if httpResponse.statusCode != 200 {
                     unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError("Refresh API returned with status code: \(httpResponse.statusCode)")))
                     return

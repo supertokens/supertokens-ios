@@ -16,6 +16,7 @@ class sessionTests: XCTestCase {
     let resetAPIURL = "\(testAPIBase)testReset"
     let refreshCounterAPIURL = "\(testAPIBase)testRefreshCounter"
     let userInfoAPIURL = "\(testAPIBase)userInfo"
+    let logoutAPIURL = "\(testAPIBase)logout"
     let sessionExpiryCode = 440
 
     override func setUp() {
@@ -170,6 +171,7 @@ class sessionTests: XCTestCase {
         let resetSemaphore = DispatchSemaphore(value: 0)
         
         resetAccessTokenValidity(validity: 3, failureCallback: {
+            failed = true
             resetSemaphore.signal()
         }, successCallback: {
             resetSemaphore.signal()
@@ -259,6 +261,7 @@ class sessionTests: XCTestCase {
         let resetSemaphore = DispatchSemaphore(value: 0)
         
         resetAccessTokenValidity(validity: 10, failureCallback: {
+            failed = true
             resetSemaphore.signal()
         }, successCallback: {
             resetSemaphore.signal()
@@ -347,6 +350,7 @@ class sessionTests: XCTestCase {
         let resetSemaphore = DispatchSemaphore(value: 0)
         
         resetAccessTokenValidity(validity: 10, failureCallback: {
+            failed = true
             resetSemaphore.signal()
         }, successCallback: {
             resetSemaphore.signal()
@@ -450,6 +454,86 @@ class sessionTests: XCTestCase {
             refreshCounterSemaphore.wait()
         }
         
+        XCTAssertTrue(!failed)
+    }
+    
+    func testThatSessionPossibleExistsIsFalseAfterLogout() {
+        var failed = false
+        
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            failed = true
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        resetSemaphore.wait()
+        
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        do {
+            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            SuperTokensURLSession.newTask(request: request, completionHandler: {
+                data, response, error in
+                
+                if error != nil {
+                    failed = true
+                    requestSemaphore.signal()
+                    return
+                }
+                
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        failed = true
+                        requestSemaphore.signal()
+                    } else {
+                        let logoutURL = URL(string: self.logoutAPIURL)!
+                        var logoutRequest = URLRequest(url: logoutURL)
+                        logoutRequest.httpMethod = "POST"
+                        SuperTokensURLSession.newTask(request: logoutRequest, completionHandler: {
+                            logoutData, logoutResponse, logoutError in
+                            
+                            if logoutError != nil {
+                                failed = true
+                                requestSemaphore.signal()
+                                return
+                            }
+                            
+                            if logoutResponse as? HTTPURLResponse != nil {
+                                let httpLogoutResponse = logoutResponse as! HTTPURLResponse
+                                if httpLogoutResponse.statusCode != 200 {
+                                    failed = true
+                                    requestSemaphore.signal()
+                                    return
+                                }
+                                
+                                let isSessionActive = SuperTokens.sessionPossiblyExists()
+                                if isSessionActive {
+                                    failed = true
+                                }
+                                requestSemaphore.signal()
+                            } else {
+                                failed = true
+                                requestSemaphore.signal()
+                            }
+                        })
+                    }
+                } else {
+                    failed = true
+                    requestSemaphore.signal()
+                }
+            })
+        } catch {
+            failed = true
+        }
+        
+        requestSemaphore.wait()
         XCTAssertTrue(!failed)
     }
 
