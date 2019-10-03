@@ -1,7 +1,7 @@
 #!/bin/sh
 # get current version----------
 version=`cat SuperTokensSession.podspec | grep -e "spec.version      =" -e "spec.version="`
-while IFS="'" read -ra ADDR; do
+while IFS='"' read -ra ADDR; do
     counter=0
     for i in "${ADDR[@]}"; do
         if [ $counter == 1 ]
