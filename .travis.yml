@@ -1,10 +1,9 @@
 os: osx
 osx_image: xcode11
-services:
-  - mysql
 script: 
   - node --version
-  - mysql --version
+  - xcodebuild -version
+  - brew install mysql
 
 
 branches:
