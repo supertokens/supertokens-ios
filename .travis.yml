@@ -6,11 +6,11 @@ script:
 - HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
 - brew services start mysql
 - sleep 10
-- mysql -uroot
 - mysql -uroot  -e "CREATE DATABASE auth_session;"
 - mysql -uroot --password=root -e "set global max_connections = 10000;"
 - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
 - cd backend/ && TEST_MODE=testing node build/index.js &
+- xcodebuild test -project session.xcodeproj -scheme session -destination 'platform=iOS,name=iPhone 11 Pro'
 
 branches:
   only:
