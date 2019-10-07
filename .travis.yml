@@ -1,0 +1,22 @@
+os: osx
+osx_image: xcode11
+jobs:
+  include:
+    - stage: test
+      if: tag =~ /dev-v[0-9]+(\.[0-9]+)*/
+      script:
+        - HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
+        - brew services start mysql
+        - sleep 10
+        - mysql -uroot  -e "CREATE DATABASE auth_session;"
+        - mysql -uroot -e "set global max_connections = 10000;"
+        - mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'"
+        - brew services restart mysql
+        - sleep 10
+        - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
+        - TEST_MODE=testing node build/index.js &
+        - cd ../ && xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS Simulator,name=iPhone 11 Pro'
+
+notifications:
+  slack:
+    secure: GGVzhnCu2C2iyeapPChm0SZil6i4QrgwFIprAgV/o5MOeslfQNbWiVnXcTjo++UsmxQ4Gcp4QNJ3CgsQhIE1wQI16Vbbtu1ZdELoZHGipC7p8XxpDWmnVrq7a0WhxZ449NIA3Si439GGLjbFoVEdTNOh4fO4/wW9Rd5OJ0vJ8eO8AZI8CC8Jwk8qhwZi8p+2DYtO7j+5t2LaYl1+NcIL7lgvVquqszdBauzwo68CQ5Gi+dJ5fY4Slsty05etnQyjc3AyZ2rKx7rtVSeV+NTpsGgwc/F3l1IXwQeBfwIRsBK9M00Z5IEIKQktgKf+OuXJaiwp7GNxjbXSqEG1jI7hvqy7FyRZIrYb4rPjxwXWRP6hU8aZLNPjmNJCDceyMvoVXdgEk+IqTWVmWx4Ih+MtvlVWpk0fQnxL3UsgzRUkP2nK4gZDjowZ6CNI3xXlTy5Fpq2dZ1ZDTDMxOzhYwzmtJf4bWG5gAj08pQaumXutreCCmBvqBpkJ+LUY0FKMXG2iaVzIrhmX/yD8I9XR/8lh5EucctZ/nCOyJHHMkOoDq7XC5GcuKP7c38h96OaZBmGwAkdyiGi+IhGojJu2H2ZioHxybG+qFsjSsAoY1F8tJvkP496kBlfmEqrbz6H2g12j/RhCMKDKYRZHVKtj0SCW0BU3t68Za4p1yqkLbQoJ4vk=
