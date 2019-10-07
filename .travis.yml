@@ -5,8 +5,8 @@ script:
 - xcodebuild -version
 - HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
 - brew services start mysql
-- mysql -u root --password=root -e "CREATE DATABASE auth_session;"
-- mysql -u root --password=root -e "set global max_connections = 10000;"
+- mysql -uroot  -e "CREATE DATABASE auth_session;"
+- mysql -uroot --password=root -e "set global max_connections = 10000;"
 - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
 branches:
   only:
