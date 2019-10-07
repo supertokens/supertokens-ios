@@ -10,7 +10,7 @@ script:
 - brew services restart mysql
 - sleep 10
 - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
-- TEST_MODE=testing node build/index.js
+- TEST_MODE=testing node build/index.js &
 - cd ../ && xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS Simulator,name=iPhone 11 Pro'
 
 branches:
