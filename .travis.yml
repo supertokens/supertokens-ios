@@ -6,6 +6,7 @@ script:
 - sleep 10
 - mysql -uroot  -e "CREATE DATABASE auth_session;"
 - mysql -uroot -e "set global max_connections = 10000;"
+- mysql -uroot -e "ALTER USER 'root' IDENTIFIED WITH mysql_native_password BY 'root';"
 - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
 - TEST_MODE=testing node build/index.js
 - cd ../ && xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS Simulator,name=iPhone 11 Pro'
