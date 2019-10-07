@@ -4,10 +4,15 @@ script:
 - node --version
 - xcodebuild -version
 - HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
+- rm -rf /usr/local/var/mysql/ # NOTE: this will delete your existing database!!!
+- HOMEBREW_NO_AUTO_UPDATE=1 brew postinstall mysql
 - brew services start mysql
-- mysql -uroot  -e "CREATE DATABASE auth_session;"
-- mysql -uroot --password=root -e "set global max_connections = 10000;"
+- mysql -uroot
+- mysql -u root  -e "CREATE DATABASE auth_session;"
+- mysql -u root --password=root -e "set global max_connections = 10000;"
 - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
+- cd backend/ && TEST_MODE=testing node build/index.js &
+
 branches:
   only:
   - master
