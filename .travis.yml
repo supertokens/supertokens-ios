@@ -10,7 +10,7 @@ script:
 - mysql -uroot -e "set global max_connections = 10000;"
 - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
 - cd backend/ && TEST_MODE=testing node build/index.js &
-- xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS,name=iPhone 11 Pro'
+- xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS Simulator,name=iPhone 11 Pro'
 
 branches:
   only:
