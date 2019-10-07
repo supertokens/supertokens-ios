@@ -111,7 +111,7 @@ class sessionTests: XCTestCase {
             resetSemaphore.signal()
         })
         
-        resetSemaphore.wait()
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         let url = URL(string: loginAPIURL)
         let request = URLRequest(url: url!)
@@ -130,7 +130,7 @@ class sessionTests: XCTestCase {
                 }
             }
         })
-        semaphore.wait()
+        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
         XCTAssertTrue(!failed)
     }
     
@@ -145,7 +145,7 @@ class sessionTests: XCTestCase {
             resetSemaphore.signal()
         })
         
-        resetSemaphore.wait()
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         SuperTokensURLSession.attemptRefreshingSession(completionHandler: { result, error in
             defer {
@@ -162,7 +162,7 @@ class sessionTests: XCTestCase {
                 }
             }
         })
-        semaphore.wait()
+        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
         XCTAssertTrue(!failed)
     }
     
@@ -177,7 +177,7 @@ class sessionTests: XCTestCase {
             resetSemaphore.signal()
         })
         
-        resetSemaphore.wait()
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
         do {
             try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
         } catch {
@@ -236,7 +236,7 @@ class sessionTests: XCTestCase {
             }
         })
         
-        requestSemaphore.wait()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         let refreshCounterSemaphore = DispatchSemaphore(value: 0)
         getRefreshTokenCounter(successCallback: {
@@ -251,7 +251,7 @@ class sessionTests: XCTestCase {
             failed = true
             refreshCounterSemaphore.signal()
         })
-        refreshCounterSemaphore.wait()
+        _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         XCTAssertTrue(!failed)
     }
@@ -267,7 +267,7 @@ class sessionTests: XCTestCase {
             resetSemaphore.signal()
         })
         
-        resetSemaphore.wait()
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
         let url = URL(string: loginAPIURL)
         var request = URLRequest(url: url!)
         request.httpMethod = "POST"
@@ -324,7 +324,7 @@ class sessionTests: XCTestCase {
             failed = true
         }
         
-        requestSemaphore.wait()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         let refreshCounterSemaphore = DispatchSemaphore(value: 0)
         getRefreshTokenCounter(successCallback: {
@@ -339,7 +339,7 @@ class sessionTests: XCTestCase {
             failed = true
             refreshCounterSemaphore.signal()
         })
-        refreshCounterSemaphore.wait()
+        _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         XCTAssertTrue(!failed)
     }
@@ -356,7 +356,7 @@ class sessionTests: XCTestCase {
             resetSemaphore.signal()
         })
         
-        resetSemaphore.wait()
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         let url = URL(string: loginAPIURL)
         var request = URLRequest(url: url!)
@@ -433,7 +433,7 @@ class sessionTests: XCTestCase {
             failed = true
         }
         
-        requestSemaphore.wait()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         if results.contains(false) {
             failed = true
@@ -451,7 +451,7 @@ class sessionTests: XCTestCase {
                 failed = true
                 refreshCounterSemaphore.signal()
             })
-            refreshCounterSemaphore.wait()
+            _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
         }
         
         XCTAssertTrue(!failed)
@@ -469,7 +469,7 @@ class sessionTests: XCTestCase {
             resetSemaphore.signal()
         })
         
-        resetSemaphore.wait()
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         let url = URL(string: loginAPIURL)
         var request = URLRequest(url: url!)
@@ -533,7 +533,7 @@ class sessionTests: XCTestCase {
             failed = true
         }
         
-        requestSemaphore.wait()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         XCTAssertTrue(!failed)
     }
 
