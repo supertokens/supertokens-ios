@@ -20,7 +20,7 @@ jobs:
       if: tag =~ /v[0-9]+(\.[0-9]+)*/
       script:
         - gem install cocoapods
-        - pod trunk register team@supertokens.io 'SuperTokens Travis' --description='From travis'
+        - export COCOAPODS_TRUNK_TOKEN=$COCOAPODS_TOKEN
         - pod lib lint SuperTokensSession.podspec --verbose
         - pod trunk push SuperTokensSession.podspec
 notifications:
