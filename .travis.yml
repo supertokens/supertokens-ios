@@ -1,9 +1,4 @@
-os: osx
-osx_image: xcode11
-script: 
-  - ls
-
-
-branches:
-  only:
-  - master
+language: ruby
+rvm:
+ - 2.2
+ - jruby
