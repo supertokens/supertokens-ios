@@ -1,4 +1,10 @@
-language: ruby
-rvm:
- - 2.2
- - jruby
+os: osx
+osx_image: xcode11
+script: 
+  - node --version
+  - mysql --version
+
+
+branches:
+  only:
+  - master
