@@ -31,7 +31,7 @@ class sessionTests: XCTestCase {
     }
 
     func resetAccessTokenValidity(validity: Int, failureCallback: @escaping () -> Void, successCallback: @escaping () -> Void) {
-        let resetExpectation = expectation(description: "Reset API")
+        let resetSemaphore = DispatchSemaphore(value: 0)
         let url = URL(string: resetAPIURL)
         var request = URLRequest(url: url!)
         request.httpMethod = "POST"
@@ -40,7 +40,7 @@ class sessionTests: XCTestCase {
         request.addValue("\(validity)", forHTTPHeaderField: "atValidity")
         let task = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
             defer {
-                resetExpectation.fulfill()
+                resetSemaphore.signal()
             }
             
             if response as? HTTPURLResponse != nil {
@@ -56,17 +56,17 @@ class sessionTests: XCTestCase {
             }
         })
         task.resume()
-        waitForExpectations(timeout: 5, handler: nil)
+        _ = resetSemaphore.wait(timeout: .distantFuture)
     }
     
     func getRefreshTokenCounter(successCallback: @escaping (Int) -> Void, failureCallback: @escaping () -> Void) {
-        let refreshCounterExpectation = expectation(description: "Refresh Counter")
+        let refreshCounterSempahore = DispatchSemaphore(value: 0)
         let url = URL(string: refreshCounterAPIURL)
         let request = URLRequest(url: url!)
         let task = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
             
             defer {
-                refreshCounterExpectation.fulfill()
+                refreshCounterSempahore.signal()
             }
             
             if response as? HTTPURLResponse != nil {
@@ -97,7 +97,7 @@ class sessionTests: XCTestCase {
             }
         })
         task.resume()
-        waitForExpectations(timeout: 5, handler: nil)
+        _ = refreshCounterSempahore.wait(timeout: .distantFuture)
     }
     
     func testThatRequestsFailIfInitIsNotCalled() {
