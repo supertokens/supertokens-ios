@@ -17,6 +17,7 @@ class sessionTests: XCTestCase {
     let refreshCounterAPIURL = "\(testAPIBase)testRefreshCounter"
     let userInfoAPIURL = "\(testAPIBase)userInfo"
     let logoutAPIURL = "\(testAPIBase)logout"
+    let testHeaderAPIURL = "\(testAPIBase)testHeader"
     let sessionExpiryCode = 440
 
     override func setUp() {
@@ -534,6 +535,283 @@ class sessionTests: XCTestCase {
         }
         
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(!failed)
+    }
+    
+    func testThatAPIWithoutAuthSucceedAfterLogout() {
+        var failed = false
+        
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            failed = true
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        do {
+            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            
+            SuperTokensURLSession.newTask(request: request, completionHandler: {
+                data, response, error in
+                
+                if error != nil {
+                    failed = true
+                    requestSemaphore.signal()
+                    return
+                }
+                
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        failed = true
+                        requestSemaphore.signal()
+                    } else {
+                        let logoutURL = URL(string: self.logoutAPIURL)!
+                        var logoutRequest = URLRequest(url: logoutURL)
+                        logoutRequest.httpMethod = "POST"
+                        SuperTokensURLSession.newTask(request: logoutRequest, completionHandler: {
+                            logoutData, logoutResponse, logoutError in
+                            
+                            if logoutError != nil {
+                                failed = true
+                                requestSemaphore.signal()
+                                return
+                            }
+                            
+                            if logoutResponse as? HTTPURLResponse != nil {
+                                let httpLogoutResponse = logoutResponse as! HTTPURLResponse
+                                if httpLogoutResponse.statusCode != 200 {
+                                    failed = true
+                                    requestSemaphore.signal()
+                                    return
+                                }
+                                
+                                let refreshCounterURL = URL(string: self.refreshCounterAPIURL)
+                                let refreshCounterRequest = URLRequest(url: refreshCounterURL!)
+                                
+                                SuperTokensURLSession.newTask(request: refreshCounterRequest, completionHandler: {
+                                    refreshCounterData, refreshCounterResponse, refreshCounterError in
+                                    
+                                    if refreshCounterError != nil {
+                                        failed = true
+                                        requestSemaphore.signal()
+                                        return
+                                    }
+                                    
+                                    if refreshCounterResponse as? HTTPURLResponse != nil {
+                                        let refereshCounterHttpResponse = refreshCounterResponse as! HTTPURLResponse
+                                        if refereshCounterHttpResponse.statusCode != 200 {
+                                            failed = true
+                                        }
+                                        requestSemaphore.signal()
+                                    } else {
+                                        failed = true
+                                        requestSemaphore.signal()
+                                    }
+                                })
+                                
+                                requestSemaphore.signal()
+                            } else {
+                                failed = true
+                                requestSemaphore.signal()
+                            }
+                        })
+                    }
+                } else {
+                    failed = true
+                    requestSemaphore.signal()
+                }
+            })
+        } catch {
+            failed = true
+        }
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(!failed)
+    }
+    
+    func testThatUserInfoAfterLogoutReturnsSessionExpiry() {
+        var failed = false
+        
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            failed = true
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        do {
+            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            SuperTokensURLSession.newTask(request: request, completionHandler: {
+                data, response, error in
+                
+                if error != nil {
+                    failed = true
+                    requestSemaphore.signal()
+                    return
+                }
+                
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        failed = true
+                        requestSemaphore.signal()
+                    } else {
+                        let logoutURL = URL(string: self.logoutAPIURL)!
+                        var logoutRequest = URLRequest(url: logoutURL)
+                        logoutRequest.httpMethod = "POST"
+                        SuperTokensURLSession.newTask(request: logoutRequest, completionHandler: {
+                            logoutData, logoutResponse, logoutError in
+                            
+                            if logoutError != nil {
+                                failed = true
+                                requestSemaphore.signal()
+                                return
+                            }
+                            
+                            if logoutResponse as? HTTPURLResponse != nil {
+                                let httpLogoutResponse = logoutResponse as! HTTPURLResponse
+                                if httpLogoutResponse.statusCode != 200 {
+                                    failed = true
+                                    requestSemaphore.signal()
+                                    return
+                                }
+                                
+                                let userInfoURL = URL(string: self.userInfoAPIURL)
+                                let userInfoRequest = URLRequest(url: userInfoURL!)
+                                
+                                SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                                    userInfoData, userInfoResponse, userInfoError in
+                                    
+                                    if userInfoError != nil {
+                                        failed = true
+                                        requestSemaphore.signal()
+                                        return
+                                    }
+                                    
+                                    if userInfoResponse as? HTTPURLResponse != nil {
+                                        let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                                        if userInfoHttpResponse.statusCode != self.sessionExpiryCode {
+                                            failed = true
+                                        }
+                                        requestSemaphore.signal()
+                                    } else {
+                                        failed = true
+                                        requestSemaphore.signal()
+                                    }
+                                })
+                                
+                                
+                            } else {
+                                failed = true
+                                requestSemaphore.signal()
+                            }
+                        })
+                    }
+                } else {
+                    failed = true
+                    requestSemaphore.signal()
+                }
+            })
+        } catch {
+            failed = true
+        }
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(!failed)
+    }
+    
+    func testThatCustomHeadersAreSent() {
+        var failed = false
+        
+        let resetSemaphore = DispatchSemaphore(value: 0)
+        
+        resetAccessTokenValidity(validity: 10, failureCallback: {
+            failed = true
+            resetSemaphore.signal()
+        }, successCallback: {
+            resetSemaphore.signal()
+        })
+        
+        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let url = URL(string: testHeaderAPIURL)
+        var request = URLRequest(url: url!)
+        request.addValue("st", forHTTPHeaderField: "st-custom-header")
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        do {
+            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            SuperTokensURLSession.newTask(request: request, completionHandler: {
+                data, response, error in
+                
+                if error != nil {
+                    failed = true
+                    requestSemaphore.signal()
+                    return;
+                }
+                
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    
+                    if httpResponse.statusCode != 200 {
+                        failed = true;
+                        requestSemaphore.signal();
+                        return;
+                    }
+                    
+                    if data == nil {
+                        failed = true;
+                        requestSemaphore.signal();
+                        return;
+                    }
+                    
+                    do {
+                        let jsonResponse = try JSONSerialization.jsonObject(with: data!, options: []) as! NSDictionary
+                        let success = jsonResponse.value(forKey: "success") as? Bool
+                        if success == nil {
+                            failed = true
+                            requestSemaphore.signal()
+                            return
+                        }
+                        
+                        if !success! {
+                            failed = true
+                        }
+                        
+                        requestSemaphore.signal()
+                    } catch {
+                        failed = true;
+                        requestSemaphore.signal()
+                    }
+                } else {
+                    failed = true
+                    requestSemaphore.signal()
+                }
+            })
+        } catch {
+            failed = true;
+        }
+        
+        _ = requestSemaphore.wait(timeout: .distantFuture)
         XCTAssertTrue(!failed)
     }
 
