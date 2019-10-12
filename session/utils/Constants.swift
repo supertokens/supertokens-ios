@@ -12,4 +12,8 @@ internal class SuperTokensConstants {
     static let antiCSRFHeaderKey = "anti-csrf"
     static let setCookieHeaderKey = "Set-Cookie"
     static let idRefreshCookieName = "sIdRefreshToken"
+    static let nameHeaderKey = "supertokens-sdk-name"
+    static let versionHeaderKey = "supertokens-sdk-version"
+    static let platformName = "ios"
+    static let sdkVersion = "0.0.10"
 }

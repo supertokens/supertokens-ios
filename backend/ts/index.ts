@@ -13,6 +13,7 @@ import testRefreshtoken from './testRefreshtoken';
 import testLogout from './testLogout';
 import resetConfig from './resetConfig';
 import { testGetRefreshCounter } from './getRefreshTokenCounter';
+import { testHeaders } from './testHeaders';
 
 let app = express();
 export const defaultConfig = {
@@ -112,6 +113,13 @@ function initRoutesAndServer() {
             console.log(err);
             res.status(500).send("");
         });
+    });
+
+    app.get("/api/testHeader", function (req, res) {
+        testHeaders(req, res).catch(err => {
+            console.log(err);
+            res.status(500).send("");
+        })
     });
 
     app.use("*", function (req, res, next) {
