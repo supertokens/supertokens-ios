@@ -30,6 +30,10 @@ public class SuperTokensURLSession {
             mutableRequest.addValue(antiCSRF!, forHTTPHeaderField: SuperTokensConstants.antiCSRFHeaderKey)
         }
         
+        // Add package info to headers
+        mutableRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
+        mutableRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
+        
         let apiRequest = mutableRequest.copy() as! URLRequest
         let apiTask = URLSession.shared.dataTask(with: apiRequest, completionHandler: { data, response, httpError in
             
@@ -123,6 +127,11 @@ public class SuperTokensURLSession {
         let refreshUrl = URL(string: refreshTokenEndpoint)!
         var refreshRequest = URLRequest(url: refreshUrl)
         refreshRequest.httpMethod = "POST"
+        
+        // Add package info to headers
+        refreshRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
+        refreshRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
+        
         let semaphore = DispatchSemaphore(value: 0)
         
         let refreshTask = URLSession.shared.dataTask(with: refreshRequest, completionHandler: { data, response, error in
