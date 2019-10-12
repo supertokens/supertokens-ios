@@ -33,7 +33,7 @@ then
     exit 1
 fi
 
- get git branch name-----------
+# get git branch name-----------
 branch_name="$(git symbolic-ref HEAD 2>/dev/null)" ||
 branch_name="(unnamed branch)"     # detached HEAD
 branch_name=${branch_name##refs/heads/}
