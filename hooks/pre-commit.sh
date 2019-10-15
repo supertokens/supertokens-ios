@@ -47,6 +47,12 @@ then
 elif [[ $version == $branch_name* ]]
 then
     exit 0
+elif ! [[ $branch_name* =~ ^[0-9].[0-9]$ ]]
+then
+    YELLOW='\033[1;33m'
+    NC='\033[0m' # No Color
+    printf "${YELLOW}Not committing to master or version branches${NC}\n"
+    exit 0
 fi
 RED='\033[0;31m'
 NC='\033[0m' # No Color
