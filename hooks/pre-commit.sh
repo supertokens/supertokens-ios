@@ -47,7 +47,7 @@ then
 elif [[ $version == $branch_name* ]]
 then
     exit 0
-elif ! [[ $branch_name* =~ ^[0-9].[0-9]$ ]]
+elif ! [[ $branch_name =~ ^[0-9].[0-9]$ ]]
 then
     YELLOW='\033[1;33m'
     NC='\033[0m' # No Color
