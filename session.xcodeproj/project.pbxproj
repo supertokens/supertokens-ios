@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		AE178FE12339EF3D00BCF394 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE178FE02339EF3D00BCF394 /* Constants.swift */; };
 		AE6AA311233CE77300DBD8C5 /* SuperTokensURLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE6AA310233CE77300DBD8C5 /* SuperTokensURLSession.swift */; };
-		AEBFE1EA233A0C8B000A8E85 /* SuperTokensCookieHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBFE1E9233A0C8B000A8E85 /* SuperTokensCookieHandler.swift */; };
 		AEBFE1F4233A1476000A8E85 /* UnauthorisedResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBFE1F3233A1476000A8E85 /* UnauthorisedResponse.swift */; };
 		AECF963B23349EC600474C4C /* session.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AECF963123349EC600474C4C /* session.framework */; };
 		AECF964023349EC600474C4C /* sessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECF963F23349EC600474C4C /* sessionTests.swift */; };
@@ -33,7 +32,6 @@
 /* Begin PBXFileReference section */
 		AE178FE02339EF3D00BCF394 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		AE6AA310233CE77300DBD8C5 /* SuperTokensURLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperTokensURLSession.swift; sourceTree = "<group>"; };
-		AEBFE1E9233A0C8B000A8E85 /* SuperTokensCookieHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperTokensCookieHandler.swift; sourceTree = "<group>"; };
 		AEBFE1F3233A1476000A8E85 /* UnauthorisedResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnauthorisedResponse.swift; sourceTree = "<group>"; };
 		AECF963123349EC600474C4C /* session.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = session.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AECF963423349EC600474C4C /* session.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = session.h; sourceTree = "<group>"; };
@@ -91,7 +89,6 @@
 				AECF963423349EC600474C4C /* session.h */,
 				AECF963523349EC600474C4C /* Info.plist */,
 				AECF964B2334A0F400474C4C /* SuperTokens.swift */,
-				AEBFE1E9233A0C8B000A8E85 /* SuperTokensCookieHandler.swift */,
 				AE6AA310233CE77300DBD8C5 /* SuperTokensURLSession.swift */,
 			);
 			path = session;
@@ -229,7 +226,6 @@
 			files = (
 				AECF964F2334A6ED00474C4C /* Error.swift in Sources */,
 				AECF964C2334A0F400474C4C /* SuperTokens.swift in Sources */,
-				AEBFE1EA233A0C8B000A8E85 /* SuperTokensCookieHandler.swift in Sources */,
 				AECF96512334B3AF00474C4C /* IdRefreshToken.swift in Sources */,
 				AE6AA311233CE77300DBD8C5 /* SuperTokensURLSession.swift in Sources */,
 				AECF96532334B7CB00474C4C /* AntiCSRF.swift in Sources */,
