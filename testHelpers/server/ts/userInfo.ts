@@ -1,5 +1,5 @@
 import * as express from 'express';
-import * as SuperTokens from 'supertokens-node-mysql-ref-jwt/express';
+import * as SuperTokens from 'supertokens-node';
 
 export default async function userInfo(req: express.Request, res: express.Response) {
     try {

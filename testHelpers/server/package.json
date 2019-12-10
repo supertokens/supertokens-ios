@@ -1,13 +1,11 @@
 {
-    "name": "android-backend",
+    "name": "ios-backend",
     "version": "0.0.1",
-    "description": "Backend for android",
+    "description": "Backend for ios",
     "dependencies": {
         "cookie-parser": "1.4.4",
         "express": "4.16.4",
-        "moment": "2.24.0",
-        "mysql": "2.17.1",
-        "supertokens-node-mysql-ref-jwt": "git+https://github.com/supertokens/supertokens-node-mysql-ref-jwt.git#dev"
+        "moment": "2.24.0"
     },
     "devDependencies": {
         "@types/cookie-parser": "1.4.1",

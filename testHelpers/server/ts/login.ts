@@ -1,5 +1,5 @@
 import * as express from 'express';
-import * as SuperTokens from 'supertokens-node-mysql-ref-jwt/express';
+import * as SuperTokens from 'supertokens-node';
 
 import Names from './names';
 

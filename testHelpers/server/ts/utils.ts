@@ -1,97 +1,151 @@
-import * as express from "express";
-import {setCookie} from 'supertokens-node-mysql-ref-jwt/lib/build/cookieAndHeaders';
-import Config from "supertokens-node-mysql-ref-jwt/lib/build/config";
+const { exec } = require("child_process");
+let { HandshakeInfo } = require("supertokens-node/lib/build/handshakeInfo");
+let { DeviceInfo } = require("supertokens-node/lib/build/deviceInfo");
+let { setCookie } = require("supertokens-node/lib/build/cookieAndHeaders");
+let fs = require("fs");
 
-const accessTokenCookieKey = "sAccessToken";
-const refreshTokenCookieKey = "sRefreshToken";
-const idRefreshTokenCookieKey = "sIdRefreshToken";
+export async function executeCommand(cmd: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+        exec(cmd, (err: any, stdout: any, stderr: any) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve({ stdout, stderr });
+        });
+    });
+};
 
-export function setHeader(res: express.Response, key: string, value: string) {
-    try {
-        let existingHeaders = res.getHeaders();
-        let existingValue = existingHeaders[key.toLowerCase()];
-        if (existingValue === undefined) {
-            res.header(key, value);
-        } else {
-            res.header(key, existingValue + ", " + value);
-        }
-    } catch (err) {
-        throw Error("General Error");
+export async function setupST() {
+    let installationPath = process.env.INSTALL_PATH;
+    await executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
+    await executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
+};
+
+export async function setKeyValueInConfig(key: any, value: any) {
+    return new Promise((resolve, reject) => {
+        let installationPath = process.env.INSTALL_PATH;
+        fs.readFile(installationPath + "/config.yaml", "utf8", function (err: any, data: any) {
+            if (err) {
+                reject(err);
+                return;
+            }
+            let oldStr = new RegExp("((#\\s)?)" + key + "(:|((:\\s).+))\n");
+            let newStr = key + ": " + value + "\n";
+            let result = data.replace(oldStr, newStr);
+            fs.writeFile(installationPath + "/config.yaml", result, "utf8", function (err: any) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
+};
+
+export async function cleanST() {
+    let installationPath = process.env.INSTALL_PATH;
+    await executeCommand("cd " + installationPath + " && rm licenseKey");
+    await executeCommand("cd " + installationPath + " && rm config.yaml");
+    await executeCommand("cd " + installationPath + " && rm -rf .webserver-temp-*");
+    await executeCommand("cd " + installationPath + " && rm -rf .started");
+};
+
+export async function stopST(pid: any) {
+    let pidsBefore = await getListOfPids();
+    if (pidsBefore.length === 0) {
+        return;
     }
-}
+    await executeCommand("kill " + pid);
+    let startTime = Date.now();
+    while (Date.now() - startTime < 10000) {
+        let pidsAfter = await getListOfPids();
+        if (pidsAfter.includes(pid)) {
+            await new Promise(r => setTimeout(r, 100));
+            continue;
+        } else {
+            return;
+        }
+    }
+    throw new Error("error while stopping ST with PID: " + pid);
+};
 
-export function clearSessionFromCookie(res: express.Response) {
-    let config = Config.get();
-    setCookie(
-        res,
-        accessTokenCookieKey,
-        "",
-        config.cookie.domain,
-        config.cookie.secure,
-        false,
-        0,
-        config.tokens.accessToken.accessTokenPath
-    );
-    setCookie(
-        res,
-        idRefreshTokenCookieKey,
-        "",
-        config.cookie.domain,
-        false,
-        false,
-        0,
-        config.tokens.accessToken.accessTokenPath
-    );
-    setCookie(
-        res,
-        refreshTokenCookieKey,
-        "",
-        config.cookie.domain,
-        config.cookie.secure,
-        false,
-        0,
-        config.tokens.refreshToken.renewTokenPath
-    );
-}
+export async function killAllST() {
+    let pids = await getListOfPids();
+    for (let i = 0; i < pids.length; i++) {
+        await stopST(pids[i]);
+    }
+    HandshakeInfo.reset();
+    DeviceInfo.reset();
+};
 
-export function attachAccessTokenToCookie(res: express.Response, token: string, expiry: number) {
-    let config = Config.get();
-    setCookie(
-        res,
-        accessTokenCookieKey,
-        token,
-        config.cookie.domain,
-        config.cookie.secure,
-        false,
-        expiry,
-        config.tokens.accessToken.accessTokenPath
-    );
-}
+export async function startST(host = "localhost", port = 9000) {
+    return new Promise(async (resolve, reject) => {
+        let installationPath = process.env.INSTALL_PATH;
+        let pidsBefore = await getListOfPids();
+        let returned = false;
+        executeCommand(
+            "cd " +
+            installationPath +
+            ` && java -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV host=` +
+            host +
+            " port=" +
+            port
+        )
+            .catch((err: any) => {
+                if (!returned) {
+                    returned = true;
+                    reject(err);
+                }
+            });
+        let startTime = Date.now();
+        while (Date.now() - startTime < 10000) {
+            let pidsAfter = await getListOfPids();
+            if (pidsAfter.length <= pidsBefore.length) {
+                await new Promise(r => setTimeout(r, 100));
+                continue;
+            }
+            let nonIntersection = pidsAfter.filter(x => !pidsBefore.includes(x));
+            if (nonIntersection.length !== 1) {
+                if (!returned) {
+                    returned = true;
+                    reject("something went wrong while starting ST");
+                }
+            } else {
+                if (!returned) {
+                    returned = true;
+                    resolve(nonIntersection[0]);
+                }
+            }
+        }
+        if (!returned) {
+            returned = true;
+            reject("could not start ST process");
+        }
+    });
+};
 
-export function attachRefreshTokenToCookie(res: express.Response, token: string, expiry: number) {
-    let config = Config.get();
-    setCookie(
-        res,
-        refreshTokenCookieKey,
-        token,
-        config.cookie.domain,
-        config.cookie.secure,
-        false,
-        expiry,
-        config.tokens.refreshToken.renewTokenPath
-    );
-}
-
-export function attachIdRefreshTokenToCookie(res: express.Response, token: string, expiry: number) {
-    let config = Config.get();
-    setCookie(
-        res,
-        idRefreshTokenCookieKey,
-        token,
-        config.cookie.domain,
-        false,
-        false,
-        expiry,
-        config.tokens.accessToken.accessTokenPath
-    );
+async function getListOfPids() {
+    let installationPath = process.env.INSTALL_PATH;
+    try {
+        (await executeCommand("cd " + installationPath + " && ls .started/")).stdout;
+    } catch (err) {
+        return [];
+    }
+    let currList = (await executeCommand("cd " + installationPath + " && ls .started/")).stdout;
+    currList = currList.split("\n");
+    let result = [];
+    for (let i = 0; i < currList.length; i++) {
+        let item = currList[i];
+        if (item === "") {
+            continue;
+        }
+        try {
+            let pid = (await executeCommand("cd " + installationPath + " && cat .started/" + item))
+                .stdout;
+            result.push(pid);
+        } catch (err) { }
+    }
+    return result;
 }

@@ -49,8 +49,10 @@ public class SuperTokensURLSession {
                 let httpResponse = response as! HTTPURLResponse
                 let headerFields = httpResponse.allHeaderFields as? [String:String]
                 if headerFields != nil && response!.url != nil {
-                    let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshCookieName]
-                    IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                    let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshTokenHeaderKey]
+                    if (idRefreshTokenFromResponse != nil) {
+                        IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                    }
                 }
                 if httpResponse.statusCode == SuperTokens.sessionExpiryStatusCode {
                     handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: { shouldRetry, error in
@@ -145,8 +147,10 @@ public class SuperTokensURLSession {
                 let httpResponse = response as! HTTPURLResponse
                 let headerFields = httpResponse.allHeaderFields as? [String:String]
                 if headerFields != nil && response!.url != nil {
-                    let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshCookieName]
-                    IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                    let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshTokenHeaderKey]
+                    if (idRefreshTokenFromResponse != nil) {
+                        IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                    }
                 }
                 if httpResponse.statusCode != 200 {
                     unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError("Refresh API returned with status code: \(httpResponse.statusCode)")))

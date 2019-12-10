@@ -1,5 +1,6 @@
 ## Build generated
 build/
+!testHelpers/server/build
 DerivedData/
 
 ## Various settings
