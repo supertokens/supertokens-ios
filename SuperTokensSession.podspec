@@ -7,7 +7,7 @@ Pod::Spec.new do |spec|
 
   spec.homepage     = "https://supertokens.github.io/supertokens-ios"
 
-  spec.license      = "MIT"
+  spec.license      = "Apache 2.0"
 
   spec.author       = { "SuperTokens" => "team@supertokens.io" }
 
@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   spec.source       = { :git => "https://github.com/supertokens/supertokens-ios.git", :tag => "v#{spec.version}" }
 
   spec.source_files  = "session/*.{h,m}", "session/*.swift", "session/utils/*.swift"
-  spec.exclude_files = "backend/" , "*/*.plist"
+  spec.exclude_files = "testHelpers/" , "*/*.plist", "hooks/", ".travis.yml", "frontendDriverInterfaceSupported.json", "setup-pre-commit.sh"
   spec.swift_version = "4.0"
 
 end

@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  deploy_gh_pages:
+    docker:
+      - image: circleci/node:8.10.0
+    steps:
+      - checkout
+      - run: (cd website && npm i)
+      - run: git config --global user.email "rishabh.poddar@gmail.com"
+      - run: git config --global user.name "Rishabh Poddar"
+      - run: ./publishToGit.sh
+
+workflows:
+  version: 2
+  tagged-build:
+    jobs:
+      - deploy_gh_pages:
+          filters:
+            branches:
+              only: 
+                - website
