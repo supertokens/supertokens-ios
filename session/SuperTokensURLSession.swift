@@ -11,6 +11,7 @@ import Foundation
 public class SuperTokensURLSession {
     private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
     
+    // TODO: change request to with
     public static func newTask(request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) {
         if !SuperTokens.isInitCalled {
             completionHandler(nil, nil, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.newTask"))
