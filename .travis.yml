@@ -22,6 +22,7 @@ jobs:
     - sleep 10
     - mysql -uroot  -e "CREATE DATABASE auth_session;"
     - mysql -uroot -e "set global max_connections = 10000;"
+    - mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'"
     - brew services restart mysql
     - sleep 10
     - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install jq
