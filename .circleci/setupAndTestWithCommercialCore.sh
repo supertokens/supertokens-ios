@@ -70,7 +70,8 @@ echo $SUPERTOKENS_API_KEY > apiPassword
 cd ../supertokens-ios/testHelpers/server/
 npm i -d
 npm i git+https://github.com:supertokens/supertokens-node.git#$2
-JAVA=/Users/travis/build/supertokens/jdk-12.0.2.jdk/Contents/Home/bin/java TEST_MODE=testing INSTALL_PATH=../../../com-root node ./build/index.js &
+ls ../../../../com-root
+JAVA=/Users/travis/build/supertokens/jdk-12.0.2.jdk/Contents/Home/bin/java TEST_MODE=testing INSTALL_PATH=../../../../com-root node ./build/index.js &
 cd ../../
 xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS Simulator,name=iPhone 11 Pro'
 cd .circleci
