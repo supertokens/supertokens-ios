@@ -14,7 +14,7 @@ jobs:
         - mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'"
         - brew services restart mysql
         - sleep 10
-        - (cd .circleci && ./doTests.sh)
+        - cd .circleci && ./doTests.sh
     - stage: deploy
       if: tag =~ ^v[0-9]+(\.[0-9]+)*$
       script:
