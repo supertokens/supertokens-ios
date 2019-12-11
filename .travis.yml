@@ -6,7 +6,14 @@ jobs:
       on:
         branch: 0.0
       script:
-        - /usr/libexec/java_home -V
+        - pwd
+        - cd ../
+        - wget https://download.java.net/java/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_osx-x64_bin.tar.gz
+        - tar -xzvf openjdk-12.0.2_osx-x64_bin.tar.gz
+        - update-alternatives --install "/usr/bin/java" "java" "/Users/travis/jdk-12.0.2.jdk/Contents/Home/bin/java" 1
+        - update-alternatives --install "/usr/bin/javac" "javac" "/Users/travis/jdk-12.0.2.jdk/Contents/Home/bin/javac" 1
+        - java --version
+        - cd supertokens-ios
         - echo -e "$BITBUCKET_SSH" >> ~/.ssh/id_rsa
         - chmod 400 ~/.ssh/id_rsa
         - echo -e "Host		bitbucket.org\nHostname	bitbucket.org\nIdentityFile	~/.ssh/id_rsa\nUser		rishabh-poddar" >> ~/.ssh/config
