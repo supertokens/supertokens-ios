@@ -115,9 +115,10 @@ function startST(host = "localhost", port = 9000) {
             let installationPath = process.env.INSTALL_PATH;
             let pidsBefore = yield getListOfPids();
             let returned = false;
+            let javaPath = process.env.JAVA === undefined ? "java" : process.env.JAVA;
             executeCommand("cd " +
                 installationPath +
-                ` && java -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV host=` +
+                ` && ${javaPath} -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV host=` +
                 host +
                 " port=" +
                 port)
