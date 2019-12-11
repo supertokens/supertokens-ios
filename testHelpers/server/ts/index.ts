@@ -30,10 +30,15 @@ SuperTokens.init([
 ]);
 
 app.post("/startst", async (req, res) => {
-    let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
-    await setKeyValueInConfig("access_token_validity", accessTokenValidity);
-    let pid = await startST();
-    res.send(pid + "");
+    console.log("STARTING ST!!!!!!!!!!!");
+    try {
+        let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
+        await setKeyValueInConfig("access_token_validity", accessTokenValidity);
+        let pid = await startST();
+        res.send(pid + "");
+    } catch (err) {
+        console.log(err);
+    }
 });
 
 app.post("/beforeeach", async (req, res) => {
