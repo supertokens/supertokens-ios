@@ -7,6 +7,7 @@ jobs:
         branch: 0.0
       script:
         - echo -e $BITBUCKET_SSH >> ~/.ssh/id_rsa
+        - echo -e "Host		bitbucket.org\nHostname	bitbucket.org\nIdentityFile	~/.ssh/id_rsa\nUser		rishabh-poddar" >> ~/.ssh/config
         - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
         - brew link --overwrite mysql
         - brew services start mysql
