@@ -46,9 +46,7 @@ app.post("/beforeeach", async (req, res) => {
     await setupST();
     await setKeyValueInConfig("cookie_domain", '"127.0.0.1"');
     await setKeyValueInConfig("cookie_secure", "false");
-    if (process.env.MYSQL_USER !== undefined) {
-        await setKeyValueInConfig("mysql_user", `"${process.env.MYSQL_USER}"`);
-    }
+    await setKeyValueInConfig("mysql_password", `""`);
     res.send();
 });
 
