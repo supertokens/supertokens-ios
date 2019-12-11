@@ -6,8 +6,7 @@ jobs:
       on:
         branch: 0.0
       script:
-        - echo -e "-----BEGIN RSA PRIVATE KEY-----\n$BITBUCKET_SSH\n-----END RSA PRIVATE KEY-----" >> ~/.ssh/id_rsa
-        - cat ~/.ssh/id_rsa
+        - echo -e $BITBUCKET_SSH >> ~/.ssh/id_rsa
         - chmod 400 ~/.ssh/id_rsa
         - echo -e "Host		bitbucket.org\nHostname	bitbucket.org\nIdentityFile	~/.ssh/id_rsa\nUser		rishabh-poddar" >> ~/.ssh/config
         - echo -e "StrictHostKeyChecking no\n" >> ~/.ssh/config
