@@ -129,9 +129,7 @@ function startST(host = "localhost", port = 9000) {
                 }
             });
             let startTime = Date.now();
-            console.log("Start time!!!!!!!!: " + Date.now());
             while (Date.now() - startTime < 10000) {
-                console.log((yield executeCommand("ps aux | grep supertokens")).stdout);
                 let pidsAfter = yield getListOfPids();
                 if (pidsAfter.length <= pidsBefore.length) {
                     yield new Promise(r => setTimeout(r, 100));
@@ -151,7 +149,7 @@ function startST(host = "localhost", port = 9000) {
                     }
                 }
             }
-            console.log("End time!!!!!!!!: " + Date.now());
+            console.log((yield executeCommand("cd " + installationPath + " && cat logs/error.log")).stdout);
             if (!returned) {
                 returned = true;
                 reject("could not start ST process");
