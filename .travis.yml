@@ -7,6 +7,7 @@ jobs:
         branch: 0.0
       script:
         - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
+        - brew link --overwrite mysql
         - brew services start mysql
         - sleep 10
         - mysql -uroot  -e "CREATE DATABASE auth_session;"
