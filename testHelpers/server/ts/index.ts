@@ -30,7 +30,6 @@ SuperTokens.init([
 ]);
 
 app.post("/startst", async (req, res) => {
-    console.log("STARTING ST!!!!!!!!!!!");
     try {
         let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
         await setKeyValueInConfig("access_token_validity", accessTokenValidity);

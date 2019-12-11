@@ -56,7 +56,6 @@ echo "Testing with node driver: $2, COMMERCIAL core: $coreVersion, plugin-interf
 cd ../../
 git clone git@bitbucket.org:vrai-labs/com-root.git
 cd com-root
-pwd
 echo -e "core,$1\nplugin-interface,$pluginInterfaceVersionXY\nmysql-plugin,$pluginVersionXY" > modules.txt
 ./loadModules --ssh
 cd com-core
@@ -71,8 +70,6 @@ echo $SUPERTOKENS_API_KEY > apiPassword
 cd ../supertokens-ios/testHelpers/server/
 npm i -d
 npm i git+https://github.com:supertokens/supertokens-node.git#$2
-pwd
-ls ../../../com-root
 JAVA=/Users/travis/build/supertokens/jdk-12.0.2.jdk/Contents/Home/bin/java TEST_MODE=testing INSTALL_PATH=../../../com-root node ./build/index.js &
 cd ../../
 xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS Simulator,name=iPhone 11 Pro'

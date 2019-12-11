@@ -34,7 +34,6 @@ SuperTokens.init([
     }
 ]);
 app.post("/startst", (req, res) => __awaiter(this, void 0, void 0, function* () {
-    console.log("STARTING ST!!!!!!!!!!!");
     try {
         let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
         yield utils_1.setKeyValueInConfig("access_token_validity", accessTokenValidity);
