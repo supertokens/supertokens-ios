@@ -3,7 +3,8 @@ osx_image: xcode11
 jobs:
   include:
     - stage: test
-      if: tag =~ ^dev-v[0-9]+(\.[0-9]+)*$
+      on:
+        branch: 0.0
       script:
         - HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
         - brew services start mysql
@@ -13,9 +14,7 @@ jobs:
         - mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'"
         - brew services restart mysql
         - sleep 10
-        - cd backend/ && npm i -d && ./node_modules/.bin/tsc -p tsconfig.json
-        - TEST_MODE=testing node build/index.js &
-        - cd ../ && xcodebuild test -project session.xcodeproj -scheme sessionTests -destination 'platform=iOS Simulator,name=iPhone 11 Pro'
+        - (cd .circleci && ./doTests.sh)
     - stage: deploy
       if: tag =~ ^v[0-9]+(\.[0-9]+)*$
       script:
