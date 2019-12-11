@@ -2,40 +2,40 @@ os: osx
 osx_image: xcode11
 jobs:
   include:
-    - stage: test
-      on:
-        branch: 0.0
-      script:
-        - pwd
-        - cd ../
-        - wget -q https://download.java.net/java/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_osx-x64_bin.tar.gz
-        - tar -xzf openjdk-12.0.2_osx-x64_bin.tar.gz
-        - export JAVA_HOME=/Users/travis/build/supertokens/jdk-12.0.2.jdk/Contents/Home
-        - java --version
-        - cd supertokens-ios
-        - echo -e "$BITBUCKET_SSH" >> ~/.ssh/id_rsa
-        - chmod 400 ~/.ssh/id_rsa
-        - echo -e "Host		bitbucket.org\nHostname	bitbucket.org\nIdentityFile	~/.ssh/id_rsa\nUser		rishabh-poddar" >> ~/.ssh/config
-        - echo -e "StrictHostKeyChecking no\n" >> ~/.ssh/config
-        - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
-        - brew link --overwrite mysql
-        - brew services start mysql
-        - sleep 10
-        - mysql -uroot  -e "CREATE DATABASE auth_session;"
-        - mysql -uroot -e "set global max_connections = 10000;"
-        - mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'"
-        - brew services restart mysql
-        - sleep 10
-        - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install jq
-        - cd .circleci && ./doTests.sh
-    - stage: deploy
-      if: tag =~ ^v[0-9]+(\.[0-9]+)*$
-      script:
-        - gem install cocoapods -v 1.7.5
-        - echo $COCOAPODS_TOKEN
-        - export COCOAPODS_TRUNK_TOKEN=$COCOAPODS_TOKEN
-        - pod lib lint SuperTokensSession.podspec --verbose
-        - pod trunk push SuperTokensSession.podspec
+  - stage: test
+    on:
+      branch: 0.0
+    script:
+    - cd ../
+    - wget -q https://download.java.net/java/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_osx-x64_bin.tar.gz
+    - tar -xzf openjdk-12.0.2_osx-x64_bin.tar.gz
+    - export JAVA_HOME=`pwd`/jdk-12.0.2.jdk/Contents/Home
+    - cd supertokens-ios
+    - echo -e "$BITBUCKET_SSH" >> ~/.ssh/id_rsa
+    - chmod 400 ~/.ssh/id_rsa
+    - "echo -e \"Host\t\tbitbucket.org\\nHostname\tbitbucket.org\\nIdentityFile\t~/.ssh/id_rsa\\nUser\t\trishabh-poddar\"
+      >> ~/.ssh/config"
+    - echo -e "StrictHostKeyChecking no\n" >> ~/.ssh/config
+    - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
+    - brew link --overwrite mysql
+    - brew services start mysql
+    - sleep 10
+    - mysql -uroot  -e "CREATE DATABASE auth_session;"
+    - mysql -uroot -e "set global max_connections = 10000;"
+    - mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password
+      BY 'root'"
+    - brew services restart mysql
+    - sleep 10
+    - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install jq
+    - cd .circleci && ./doTests.sh
+  - stage: deploy
+    if: tag =~ ^v[0-9]+(\.[0-9]+)*$
+    script:
+    - gem install cocoapods -v 1.7.5
+    - echo $COCOAPODS_TOKEN
+    - export COCOAPODS_TRUNK_TOKEN=$COCOAPODS_TOKEN
+    - pod lib lint SuperTokensSession.podspec --verbose
+    - pod trunk push SuperTokensSession.podspec
 notifications:
   slack:
-    secure: GGVzhnCu2C2iyeapPChm0SZil6i4QrgwFIprAgV/o5MOeslfQNbWiVnXcTjo++UsmxQ4Gcp4QNJ3CgsQhIE1wQI16Vbbtu1ZdELoZHGipC7p8XxpDWmnVrq7a0WhxZ449NIA3Si439GGLjbFoVEdTNOh4fO4/wW9Rd5OJ0vJ8eO8AZI8CC8Jwk8qhwZi8p+2DYtO7j+5t2LaYl1+NcIL7lgvVquqszdBauzwo68CQ5Gi+dJ5fY4Slsty05etnQyjc3AyZ2rKx7rtVSeV+NTpsGgwc/F3l1IXwQeBfwIRsBK9M00Z5IEIKQktgKf+OuXJaiwp7GNxjbXSqEG1jI7hvqy7FyRZIrYb4rPjxwXWRP6hU8aZLNPjmNJCDceyMvoVXdgEk+IqTWVmWx4Ih+MtvlVWpk0fQnxL3UsgzRUkP2nK4gZDjowZ6CNI3xXlTy5Fpq2dZ1ZDTDMxOzhYwzmtJf4bWG5gAj08pQaumXutreCCmBvqBpkJ+LUY0FKMXG2iaVzIrhmX/yD8I9XR/8lh5EucctZ/nCOyJHHMkOoDq7XC5GcuKP7c38h96OaZBmGwAkdyiGi+IhGojJu2H2ZioHxybG+qFsjSsAoY1F8tJvkP496kBlfmEqrbz6H2g12j/RhCMKDKYRZHVKtj0SCW0BU3t68Za4p1yqkLbQoJ4vk=
+    secure: lI5DdJYBeRHvHBGbTE7jr5eV4Epxt/KuCdNgAgU5+7OwOmyORWKGzrz5qR42TyFvkhbbdcRIwRDmC72pawQbooptOAqCtZYgY+FNVLqA+bRPlQqn2K7neouCgJC+eZmvn57DtSsBNFULVuiDHJ00tKH6xd5unlLo8JApP9QX7gw/JjiOrKuZj4ekoO5vtAkot8IZEFCLgHyIDnracziWfzdt/toiyW3Ehe62oGkJW8iViCsm5+c+657AJTacYf6j4cN5/q0up1YfeaiZXzn0lKCzFKkH4gr783ujmb5wQKFA/tOdQHpoKWFWztHUs1Ndgp8pVpye/wBpugNl+PJGnhrMhWnZD1DRz0cesg40TE+MfR2VOoBSwYmwWX6brX9AE44fRdWNrndkkS+ci2KyXC0cyEha3hWgLzcBHdFwWSV7sK4NuIlCezeVXlp744s22/PyCXUrlt3xwBl827opqNuxmgOQ4uJ3D4cxYgtqzDHB3KI+x1STmISj0teS/+IyXCzyvsOPkZgFlcvQ5AIGT2UClE+MhzzJcNkrzo5FmZGojozMkDjZud83r5p+SzQ6rn5fT8X1TxvsiaKrKDokUiVSUv4Hsf01WFt+skAMC7AkmWZMBZi60mlXwnDmCJIfW2eyVwIZaBjmEZuc2mKywfOhdCdj9peON8xpR62gjvQ=
