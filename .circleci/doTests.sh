@@ -62,7 +62,7 @@ while [ $i -lt $frontendDriverLength ]; do
     driverTag=$(echo $driverInfo | jq .tag | tr -d '"')
     driverVersion=$(echo $driverInfo | jq .version | tr -d '"')
 
-    git clone https://github.com:supertokens/supertokens-node.git
+    git clone https://github.com/supertokens/supertokens-node.git
     cd supertokens-node
     git checkout $driverTag
     coreDriverJson=`cat ./coreDriverInterfaceSupported.json`
