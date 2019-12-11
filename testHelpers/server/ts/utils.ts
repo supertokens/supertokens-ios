@@ -102,6 +102,7 @@ export async function startST(host = "localhost", port = 9000) {
             });
         let startTime = Date.now();
         while (Date.now() - startTime < 10000) {
+            console.log((await executeCommand("ps aux | grep supertokens")).stdout)
             let pidsAfter = await getListOfPids();
             if (pidsAfter.length <= pidsBefore.length) {
                 await new Promise(r => setTimeout(r, 100));
