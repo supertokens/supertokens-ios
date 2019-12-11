@@ -50,7 +50,6 @@ app.post("/beforeeach", (req, res) => __awaiter(this, void 0, void 0, function* 
     yield utils_1.setupST();
     yield utils_1.setKeyValueInConfig("cookie_domain", '"127.0.0.1"');
     yield utils_1.setKeyValueInConfig("cookie_secure", "false");
-    yield utils_1.setKeyValueInConfig("mysql_password", `""`);
     res.send();
 }));
 app.post("/after", (req, res) => __awaiter(this, void 0, void 0, function* () {
