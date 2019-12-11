@@ -6,10 +6,9 @@ jobs:
       on:
         branch: 0.0
       script:
-        - HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
+        - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
         - brew services start mysql
         - sleep 10
-        - ls /usr/local/mysql/bin/
         - mysql -uroot  -e "CREATE DATABASE auth_session;"
         - mysql -uroot -e "set global max_connections = 10000;"
         - mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'"
