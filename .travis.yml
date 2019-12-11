@@ -6,8 +6,7 @@ jobs:
       on:
         branch: 0.0
       script:
-        - echo -e $BITBUCKET_SSH >> a
-        - cat a
+        - echo -e $BITBUCKET_SSH >> ~/.ssh/id_rsa
         - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql
         - brew link --overwrite mysql
         - brew services start mysql
