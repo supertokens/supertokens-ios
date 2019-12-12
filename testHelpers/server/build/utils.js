@@ -129,7 +129,7 @@ function startST(host = "localhost", port = 9000) {
                 }
             });
             let startTime = Date.now();
-            while (Date.now() - startTime < 10000) {
+            while (Date.now() - startTime < 20000) {
                 console.log((yield executeCommand("ps aux | grep supertokens")).stdout);
                 let pidsAfter = yield getListOfPids();
                 if (pidsAfter.length <= pidsBefore.length) {
@@ -150,6 +150,7 @@ function startST(host = "localhost", port = 9000) {
                     }
                 }
             }
+            console.log("error.log: ");
             console.log((yield executeCommand("cd " + installationPath + " && cat logs/error.log")).stdout);
             if (!returned) {
                 returned = true;
