@@ -102,7 +102,6 @@ export async function startST(host = "localhost", port = 9000) {
             });
         let startTime = Date.now();
         while (Date.now() - startTime < 20000) {
-            console.log((await executeCommand("ps aux | grep supertokens")).stdout)
             let pidsAfter = await getListOfPids();
             if (pidsAfter.length <= pidsBefore.length) {
                 await new Promise(r => setTimeout(r, 100));
@@ -121,8 +120,6 @@ export async function startST(host = "localhost", port = 9000) {
                 }
             }
         }
-        console.log("error.log: ");
-        console.log((await executeCommand("cd " + installationPath + " && cat logs/error.log")).stdout)
         if (!returned) {
             returned = true;
             reject("could not start ST process");
