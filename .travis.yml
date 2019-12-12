@@ -17,11 +17,13 @@ jobs:
       >> ~/.ssh/config"
     - echo -e "StrictHostKeyChecking no\n" >> ~/.ssh/config
     - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql@5.6
+    - brew link --force mysql@5.6
+    - brew list mysql@5.6
     - brew services start mysql@5.6
     - sleep 10
-    - mysql@5.6 -u root  -e "CREATE DATABASE auth_session;"
-    - mysql@5.6 -u root -e "set global max_connections = 10000;"
-    - mysql@5.6 -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';"
+    - mysql -u root  -e "CREATE DATABASE auth_session;"
+    - mysql -u root -e "set global max_connections = 10000;"
+    - mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';"
     - brew services restart mysql@5.6
     - sleep 10
     - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install jq
