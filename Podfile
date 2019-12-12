@@ -9,7 +9,7 @@ target 'session' do
 
   target 'sessionTests' do
     inherit! :search_paths
-    pod 'AFNetworking', '~> 3.0'
+    # for testing
   end
 
 end
