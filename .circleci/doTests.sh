@@ -92,7 +92,6 @@ while [ $i -lt $frontendDriverLength ]; do
         git push --delete origin dev-v$version
         exit 1
     fi
-    cd .circleci
     rm -rf ../../com-root
     rm -rf ../testHelpers/server/node_modules/supertokens-node
     git checkout HEAD -- ../testHelpers/server/package.json
