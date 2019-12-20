@@ -13,13 +13,15 @@ public class SuperTokens {
     static var isInitCalled = false
     static var apiDomain: String? = nil
     static var refreshTokenEndpoint: String? = nil
+    static var refreshAPICustomHeaders: NSDictionary = NSDictionary()
     
-    public static func `init`(refreshTokenEndpoint: String, sessionExpiryStatusCode: Int? = nil) throws {
+    public static func initialise(refreshTokenEndpoint: String, sessionExpiryStatusCode: Int? = nil, refreshAPICustomHeaders: NSDictionary = NSDictionary()) throws {
         if SuperTokens.isInitCalled {
             return;
         }
         
         SuperTokens.refreshTokenEndpoint = refreshTokenEndpoint
+        SuperTokens.refreshAPICustomHeaders = refreshAPICustomHeaders
         if sessionExpiryStatusCode != nil {
             SuperTokens.sessionExpiryStatusCode = sessionExpiryStatusCode!
         }

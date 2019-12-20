@@ -28,6 +28,7 @@ import XCTest
  - Calling SuperTokens.init more than once works!
  - Proper change in anti-csrf token once access token resets
  - User passed config should be sent as well
+ - Custom refresh API headers are going through
  */
 
 class sessionTests: XCTestCase {
@@ -121,7 +122,7 @@ class sessionTests: XCTestCase {
         
         var failed = false
         do {
-            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
         } catch {
             failed = true
         }

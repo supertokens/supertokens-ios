@@ -134,6 +134,11 @@ public class SuperTokensURLSession {
         // Add package info to headers
         refreshRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
         refreshRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
+        for (headerKey, headerValue) in SuperTokens.refreshAPICustomHeaders {
+            if let val = headerValue as? String, let key = headerKey as? String {
+                refreshRequest.addValue(val, forHTTPHeaderField: key)
+            }
+        }
         
         let semaphore = DispatchSemaphore(value: 0)
         
