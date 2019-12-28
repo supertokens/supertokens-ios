@@ -30,3 +30,4 @@ node_modules
 
 apiPassword
 releasePassword
+.DS_Store
