@@ -9,17 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const SuperTokens = require("supertokens-node");
-function userInfo(req, res) {
+function loggedout(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             let sdkName = req.headers["supertokens-sdk-name"];
             let sdkVersion = req.headers["supertokens-sdk-version"];
-            let session = yield SuperTokens.getSession(req, res, true);
-            let userId = session.getUserId();
-            let metaInfo = yield session.getSessionData();
-            let name = metaInfo.name;
             res.send(JSON.stringify({
-                name, userId, sdkName, sdkVersion
+                sdkName, sdkVersion
             }));
         }
         catch (err) {
@@ -32,5 +28,5 @@ function userInfo(req, res) {
         }
     });
 }
-exports.default = userInfo;
-//# sourceMappingURL=userInfo.js.map
+exports.default = loggedout;
+//# sourceMappingURL=loggedout.js.map

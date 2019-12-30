@@ -11,7 +11,6 @@ import XCTest
 @testable import session
 
 /* TODO:
- - device info tests
  - multiple API calls in parallel when access token is expired (100 of them) and only 1 refresh should be called
  - session should not exist when user calls log out - use sessionPossiblyExists & check storage is empty
  - session should not exist when user's session fully expires - use sessionPossiblyExists & check storage is empty

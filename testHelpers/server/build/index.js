@@ -12,9 +12,12 @@ const cookieParser = require("cookie-parser");
 const express = require("express");
 const http = require("http");
 const SuperTokens = require("supertokens-node");
+const getRefreshDeviceInfo_1 = require("./getRefreshDeviceInfo");
 const getRefreshTokenCounter_1 = require("./getRefreshTokenCounter");
+const loggedout_1 = require("./loggedout");
 const login_1 = require("./login");
 const logout_1 = require("./logout");
+const refreshAPIDeviceInfo_1 = require("./refreshAPIDeviceInfo");
 const refreshtoken_1 = require("./refreshtoken");
 const refreshTokenCounter_1 = require("./refreshTokenCounter");
 const testHeaders_1 = require("./testHeaders");
@@ -46,6 +49,7 @@ app.post("/startst", (req, res) => __awaiter(this, void 0, void 0, function* () 
 }));
 app.post("/beforeeach", (req, res) => __awaiter(this, void 0, void 0, function* () {
     refreshTokenCounter_1.default.resetRefreshTokenCount();
+    refreshAPIDeviceInfo_1.default.reset();
     yield utils_1.killAllST();
     yield utils_1.setupST();
     yield utils_1.setKeyValueInConfig("cookie_domain", '"127.0.0.1"');
@@ -89,6 +93,18 @@ app.get("/refreshCounter", function (req, res) {
 });
 app.get("/header", function (req, res) {
     testHeaders_1.testHeaders(req, res).catch(err => {
+        console.log(err);
+        res.status(500).send("");
+    });
+});
+app.get("/loggedout", function (req, res) {
+    loggedout_1.default(req, res).catch(err => {
+        console.log(err);
+        res.status(500).send("");
+    });
+});
+app.get("/refreshDeviceInfo", function (req, res) {
+    getRefreshDeviceInfo_1.getRefreshDeviceInfo(req, res).catch(err => {
         console.log(err);
         res.status(500).send("");
     });

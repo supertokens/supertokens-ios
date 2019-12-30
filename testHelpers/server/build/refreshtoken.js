@@ -9,12 +9,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const SuperTokens = require("supertokens-node");
+const refreshAPIDeviceInfo_1 = require("./refreshAPIDeviceInfo");
 const refreshTokenCounter_1 = require("./refreshTokenCounter");
 function refreshtoken(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            let sdkName = req.headers["supertokens-sdk-name"];
+            let sdkVersion = req.headers["supertokens-sdk-version"];
             yield SuperTokens.refreshSession(req, res);
             refreshTokenCounter_1.default.incrementRefreshTokenCount();
+            refreshAPIDeviceInfo_1.default.set(sdkName, sdkVersion);
             res.send("");
         }
         catch (err) {

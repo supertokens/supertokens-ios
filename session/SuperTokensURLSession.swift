@@ -18,6 +18,9 @@ public class SuperTokensURLSession {
             return
         }
         
+        // we have a read write lock here. We take a read lock while making a request and a write lock while refreshing
+        // because if we dno't do that, then there may be a race condition where we may read a new id refresh token from storage
+        // but the cookies may still be the older ones.
         readWriteDispatchQueue.async {
             makeRequest(request: request, completionHandler: completionHandler)
         }
@@ -32,8 +35,10 @@ public class SuperTokensURLSession {
         }
         
         // Add package info to headers
-        mutableRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
-        mutableRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
+        if preRequestIdRefresh != nil {
+            mutableRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
+            mutableRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
+        }
         
         let apiRequest = mutableRequest.copy() as! URLRequest
         let apiTask = URLSession.shared.dataTask(with: apiRequest, completionHandler: { data, response, httpError in

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		139BDD20239FE5800075A7A7 /* utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 139BDD1F239FE5800075A7A7 /* utils.swift */; };
+		13F395D823B9DC0200637D12 /* deviceInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F395D723B9DC0200637D12 /* deviceInfoTests.swift */; };
 		AE178FE12339EF3D00BCF394 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE178FE02339EF3D00BCF394 /* Constants.swift */; };
 		AE6AA311233CE77300DBD8C5 /* SuperTokensURLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE6AA310233CE77300DBD8C5 /* SuperTokensURLSession.swift */; };
 		AEBFE1F4233A1476000A8E85 /* UnauthorisedResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEBFE1F3233A1476000A8E85 /* UnauthorisedResponse.swift */; };
@@ -32,6 +33,7 @@
 
 /* Begin PBXFileReference section */
 		139BDD1F239FE5800075A7A7 /* utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = utils.swift; sourceTree = "<group>"; };
+		13F395D723B9DC0200637D12 /* deviceInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = deviceInfoTests.swift; sourceTree = "<group>"; };
 		AE178FE02339EF3D00BCF394 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		AE6AA310233CE77300DBD8C5 /* SuperTokensURLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperTokensURLSession.swift; sourceTree = "<group>"; };
 		AEBFE1F3233A1476000A8E85 /* UnauthorisedResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnauthorisedResponse.swift; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				AECF963F23349EC600474C4C /* sessionTests.swift */,
 				AECF964123349EC600474C4C /* Info.plist */,
 				139BDD1F239FE5800075A7A7 /* utils.swift */,
+				13F395D723B9DC0200637D12 /* deviceInfoTests.swift */,
 			);
 			path = sessionTests;
 			sourceTree = "<group>";
@@ -241,6 +244,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				13F395D823B9DC0200637D12 /* deviceInfoTests.swift in Sources */,
 				AECF964023349EC600474C4C /* sessionTests.swift in Sources */,
 				139BDD20239FE5800075A7A7 /* utils.swift in Sources */,
 			);

@@ -3,9 +3,12 @@ import * as express from 'express';
 import * as http from 'http';
 import * as SuperTokens from 'supertokens-node';
 
+import { getRefreshDeviceInfo } from './getRefreshDeviceInfo';
 import { testGetRefreshCounter } from './getRefreshTokenCounter';
+import loggedout from './loggedout';
 import testLogin from './login';
 import testLogout from './logout';
+import RefreshAPIDeviceInfo from './refreshAPIDeviceInfo';
 import testRefreshtoken from './refreshtoken';
 import RefreshTokenCounter from './refreshTokenCounter';
 import { testHeaders } from './testHeaders';
@@ -42,6 +45,7 @@ app.post("/startst", async (req, res) => {
 
 app.post("/beforeeach", async (req, res) => {
     RefreshTokenCounter.resetRefreshTokenCount();
+    RefreshAPIDeviceInfo.reset();
     await killAllST();
     await setupST();
     await setKeyValueInConfig("cookie_domain", '"127.0.0.1"');
@@ -96,6 +100,20 @@ app.get("/header", function (req, res) {
         res.status(500).send("");
     })
 });
+
+app.get("/loggedout", function (req, res) {
+    loggedout(req, res).catch(err => {
+        console.log(err);
+        res.status(500).send("");
+    })
+})
+
+app.get("/refreshDeviceInfo", function (req, res) {
+    getRefreshDeviceInfo(req, res).catch(err => {
+        console.log(err);
+        res.status(500).send("");
+    })
+})
 
 app.use("*", function (req, res, next) {
     res.status(404).send("Not found");

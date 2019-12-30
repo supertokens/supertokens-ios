@@ -13,6 +13,7 @@ let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
 let afterAPIURL = "\(testAPIBase)after"
 let beforeEachAPIURL = "\(testAPIBase)beforeeach"
 let startSTAPIURL = "\(testAPIBase)startst"
+let refreshDeviceInfoAPIURL = "\(testAPIBase)refreshDeviceInfo"
 
 internal func afterAPI(successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
     let semaphore = DispatchSemaphore(value: 0)
@@ -142,6 +143,56 @@ private func getRefreshTokenCounterHelper(successCallback: @escaping (Int) -> Vo
                 } else {
                     successCallback(counterValue!)
                 }
+            } catch {
+                failureCallback()
+            }
+        } else {
+            failureCallback()
+        }
+    })
+    task.resume()
+    _ = refreshCounterSempahore.wait(timeout: .distantFuture)
+}
+
+
+internal func getRefreshAPIDeviceInfo() -> NSDictionary? {
+    let refreshCounterSemaphore = DispatchSemaphore(value: 0)
+    var result: NSDictionary? = nil;
+    getRefreshAPIDeviceInfoHelper(successCallback: {
+        json in
+        result = json
+        refreshCounterSemaphore.signal()
+    }, failureCallback: {
+        refreshCounterSemaphore.signal()
+    })
+    _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
+    return result;
+}
+
+private func getRefreshAPIDeviceInfoHelper(successCallback: @escaping (NSDictionary) -> Void, failureCallback: @escaping () -> Void) {
+    let refreshCounterSempahore = DispatchSemaphore(value: 0)
+    let url = URL(string: refreshDeviceInfoAPIURL)
+    let request = URLRequest(url: url!)
+    let task = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
+        
+        defer {
+            refreshCounterSempahore.signal()
+        }
+        
+        if response as? HTTPURLResponse != nil {
+            let httpResponse = response as! HTTPURLResponse
+            if httpResponse.statusCode != 200 {
+                failureCallback()
+                return
+            }
+            
+            if data == nil {
+                failureCallback()
+                return
+            }
+            do {
+                let jsonResponse = try JSONSerialization.jsonObject(with: data!, options: []) as! NSDictionary
+                successCallback(jsonResponse)
             } catch {
                 failureCallback()
             }
