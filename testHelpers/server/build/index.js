@@ -40,6 +40,10 @@ app.post("/startst", (req, res) => __awaiter(this, void 0, void 0, function* () 
     try {
         let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
         yield utils_1.setKeyValueInConfig("access_token_validity", accessTokenValidity);
+        let refreshTokenValidity = req.body.refreshTokenValidity;
+        if (refreshTokenValidity !== undefined) {
+            yield utils_1.setKeyValueInConfig("refresh_token_validity", refreshTokenValidity);
+        }
         let pid = yield utils_1.startST();
         res.send(pid + "");
     }

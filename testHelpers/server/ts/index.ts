@@ -36,6 +36,10 @@ app.post("/startst", async (req, res) => {
     try {
         let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
         await setKeyValueInConfig("access_token_validity", accessTokenValidity);
+        let refreshTokenValidity = req.body.refreshTokenValidity;
+        if (refreshTokenValidity !== undefined) {
+            await setKeyValueInConfig("refresh_token_validity", refreshTokenValidity);
+        }
         let pid = await startST();
         res.send(pid + "");
     } catch (err) {

@@ -38,9 +38,9 @@ internal func afterAPI(successCallback: @escaping () -> Void, failureCallback: @
     _ = semaphore.wait(timeout: .distantFuture)
 }
 
-internal func startST(validity: Int = 1) {
+internal func startST(validity: Int = 1, refreshValidity: Double? = nil) {
     let semaphore = DispatchSemaphore(value: 0)
-    startSTHelper(validity: validity, successCallback: {
+    startSTHelper(validity: validity, refreshValidity: refreshValidity, successCallback: {
         semaphore.signal()
     }) {
         semaphore.signal()
@@ -48,12 +48,15 @@ internal func startST(validity: Int = 1) {
     _ = semaphore.wait(timeout: DispatchTime.distantFuture)
 }
 
-private func startSTHelper(validity: Int = 1, successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
+private func startSTHelper(validity: Int = 1, refreshValidity: Double? = nil, successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
     let semaphore = DispatchSemaphore(value: 0)
     let url = URL(string: startSTAPIURL)
     var request = URLRequest(url: url!)
     
-    let json: [String: Any] = ["accessTokenValidity": validity]
+    var json: [String: Any] = ["accessTokenValidity": validity]
+    if refreshValidity != nil {
+        json = ["accessTokenValidity": validity, "refreshTokenValidity": refreshValidity!]
+    }
     let jsonData = try? JSONSerialization.data(withJSONObject: json)
     request.httpMethod = "POST"
     request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")

@@ -24,6 +24,7 @@ public class SuperTokensURLSession {
         readWriteDispatchQueue.async {
             makeRequest(request: request, completionHandler: completionHandler)
         }
+        
     }
     
     private static func makeRequest(request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) {
@@ -39,17 +40,8 @@ public class SuperTokensURLSession {
             mutableRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
             mutableRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
         }
-        
         let apiRequest = mutableRequest.copy() as! URLRequest
         let apiTask = URLSession.shared.dataTask(with: apiRequest, completionHandler: { data, response, httpError in
-            
-            defer {
-                let idRefreshToken = IdRefreshToken.getToken()
-                if idRefreshToken == nil {
-                    AntiCSRF.removeToken()
-                }
-            }
-            
             if response as? HTTPURLResponse != nil {
                 let httpResponse = response as! HTTPURLResponse
                 let headerFields = httpResponse.allHeaderFields as? [String:String]
@@ -61,15 +53,23 @@ public class SuperTokensURLSession {
                 }
                 if httpResponse.statusCode == SuperTokens.sessionExpiryStatusCode {
                     handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: { shouldRetry, error in
-                        
+                        // NOTE: this will run in delegate queue of URLSession.dataTask
                         if error != nil {
+                            if IdRefreshToken.getToken() == nil {
+                                AntiCSRF.removeToken()
+                            }
                             completionHandler(nil, nil, error)
                             return
                         }
                         
                         if shouldRetry {
-                            makeRequest(request: request, completionHandler: completionHandler)
+                            readWriteDispatchQueue.async {
+                                makeRequest(request: request, completionHandler: completionHandler)
+                            }
                         } else {
+                            if IdRefreshToken.getToken() == nil {
+                                AntiCSRF.removeToken()
+                            }
                             completionHandler(data, response, error)
                         }
                     })
@@ -79,139 +79,138 @@ public class SuperTokensURLSession {
                         let idRefreshPostResponse = IdRefreshToken.getToken()
                         AntiCSRF.setToken(antiCSRFToken: antiCSRFFromResponse as! String, associatedIdRefreshToken: idRefreshPostResponse)
                     }
+                    if IdRefreshToken.getToken() == nil {
+                        AntiCSRF.removeToken()
+                    }
                     completionHandler(data, response, httpError)
                 }
             } else {
+                if IdRefreshToken.getToken() == nil {
+                    AntiCSRF.removeToken()
+                }
                 completionHandler(data, response, httpError)
             }
         })
         apiTask.resume()
+        
+        // TODO: ideally we would like to return apiTask itself.. as that is what is expected from the user.
+        
+        // we are not using semaphors here to wait for the response from the request because we do not need to have a lock after the request has returned.. just before the request is made. This is because in refresh API, setting of cookies and idRefreshToken happen differently.. so a request may to go with new idRefreshToken, but old cookies yielding session expired, causing another call to refresh API
     }
     
     private static func handleUnauthorised(preRequestIdRefresh: String?, retryCallback: @escaping (Bool, Error?) -> Void) {
-        readWriteDispatchQueue.async(flags: .barrier) {
-            if preRequestIdRefresh == nil {
-                readWriteDispatchQueue.async {
-                    let idRefreshFromStorage = IdRefreshToken.getToken()
-                    retryCallback(idRefreshFromStorage != nil, nil)
-                }
+        // running in delegate queue of URLSession.dataTask
+        if preRequestIdRefresh == nil {
+            let idRefreshFromStorage = IdRefreshToken.getToken()
+            retryCallback(idRefreshFromStorage != nil, nil)
+            return
+        }
+        
+        onUnauthorisedResponse(refreshTokenEndpoint: SuperTokens.refreshTokenEndpoint!, preRequestIdRefresh: preRequestIdRefresh!, unauthorisedCallback: {
+            unauthorisedResponse in
+            // this is happening in the delegate queue of URLSession.dataTash API
+            if unauthorisedResponse.status == UnauthorisedResponse.UnauthorisedStatus.SESSION_EXPIRED {
+                retryCallback(false, nil)
+                return
+            } else if unauthorisedResponse.status == UnauthorisedResponse.UnauthorisedStatus.API_ERROR {
+                retryCallback(false, unauthorisedResponse.error)
                 return
             }
-            
-            onUnauthorisedResponse(refreshTokenEndpoint: SuperTokens.refreshTokenEndpoint!, preRequestIdRefresh: preRequestIdRefresh!, unauthorisedCallback: {
-                unauthorisedResponse in
-                
-                if unauthorisedResponse.status == UnauthorisedResponse.UnauthorisedStatus.SESSION_EXPIRED {
-                    readWriteDispatchQueue.async {
-                        retryCallback(false, nil)
-                    }
-                    return
-                } else if unauthorisedResponse.status == UnauthorisedResponse.UnauthorisedStatus.API_ERROR {
-                    readWriteDispatchQueue.async {
-                        retryCallback(false, unauthorisedResponse.error)
-                    }
-                    return
-                }
-                
-                readWriteDispatchQueue.async {
-                    retryCallback(true, nil)
-                }
-            })
-        }
+            retryCallback(true, nil)
+        })
     }
     
     private static func onUnauthorisedResponse(refreshTokenEndpoint: String, preRequestIdRefresh: String, unauthorisedCallback: @escaping (UnauthorisedResponse) -> Void) {
-        let postLockIdRefresh = IdRefreshToken.getToken()
-        if postLockIdRefresh == nil {
-            unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.SESSION_EXPIRED))
-            return
-        }
-        
-        if postLockIdRefresh != preRequestIdRefresh {
-            unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.RETRY))
-            return;
-        }
-        
-        let refreshUrl = URL(string: refreshTokenEndpoint)!
-        var refreshRequest = URLRequest(url: refreshUrl)
-        refreshRequest.httpMethod = "POST"
-        
-        // Add package info to headers
-        refreshRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
-        refreshRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
-        for (headerKey, headerValue) in SuperTokens.refreshAPICustomHeaders {
-            if let val = headerValue as? String, let key = headerKey as? String {
-                refreshRequest.addValue(val, forHTTPHeaderField: key)
-            }
-        }
-        
-        let semaphore = DispatchSemaphore(value: 0)
-        
-        let refreshTask = URLSession.shared.dataTask(with: refreshRequest, completionHandler: { data, response, error in
-            
-            defer {
-                semaphore.signal()
+        readWriteDispatchQueue.async(flags: .barrier) {
+            let postLockIdRefresh = IdRefreshToken.getToken()
+            if postLockIdRefresh == nil {
+                unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.SESSION_EXPIRED))
+                return
             }
             
-            if response as? HTTPURLResponse != nil {
-                let httpResponse = response as! HTTPURLResponse
-                let headerFields = httpResponse.allHeaderFields as? [String:String]
-                if headerFields != nil && response!.url != nil {
-                    let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshTokenHeaderKey]
-                    if (idRefreshTokenFromResponse != nil) {
-                        IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
-                    }
-                }
-                if httpResponse.statusCode != 200 {
-                    unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError("Refresh API returned with status code: \(httpResponse.statusCode)")))
-                    return
-                }
-                
-                let idRefreshToken = IdRefreshToken.getToken()
-                if idRefreshToken == nil {
-                    unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.SESSION_EXPIRED))
-                    return
-                }
-                
-                let antiCSRFFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.antiCSRFHeaderKey]
-                if antiCSRFFromResponse != nil {
-                    AntiCSRF.setToken(antiCSRFToken: antiCSRFFromResponse as! String, associatedIdRefreshToken: idRefreshToken)
-                }
-                
+            if postLockIdRefresh != preRequestIdRefresh {
                 unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.RETRY))
-            } else {
-                unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: error))
+                return;
             }
-        })
-        refreshTask.resume()
-        semaphore.wait()
-    }
-    
-    public static func attemptRefreshingSession(completionHandler: @escaping (Bool, Error?) -> Void) {
-        if !SuperTokens.isInitCalled {
-            completionHandler(false, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.attemptRefreshingSession"))
-            return
-        }
-        
-        readWriteDispatchQueue.async {
-            let preRequestIdRefresh = IdRefreshToken.getToken()
-            handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: {
-                result, error in
+            
+            let refreshUrl = URL(string: refreshTokenEndpoint)!
+            var refreshRequest = URLRequest(url: refreshUrl)
+            refreshRequest.httpMethod = "POST"
+            
+            // Add package info to headers
+            refreshRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
+            refreshRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
+            for (headerKey, headerValue) in SuperTokens.refreshAPICustomHeaders {
+                if let val = headerValue as? String, let key = headerKey as? String {
+                    refreshRequest.addValue(val, forHTTPHeaderField: key)
+                }
+            }
+            
+            let semaphore = DispatchSemaphore(value: 0)
+            
+            let refreshTask = URLSession.shared.dataTask(with: refreshRequest, completionHandler: { data, response, error in
                 
-                defer {
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    let headerFields = httpResponse.allHeaderFields as? [String:String]
+                    if headerFields != nil && response!.url != nil {
+                        let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshTokenHeaderKey]
+                        if (idRefreshTokenFromResponse != nil) {
+                            IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                        }
+                    }
+                    if httpResponse.statusCode != 200 {
+                        semaphore.signal()
+                        unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError("Refresh API returned with status code: \(httpResponse.statusCode)")))
+                        return
+                    }
+                    
                     let idRefreshToken = IdRefreshToken.getToken()
                     if idRefreshToken == nil {
-                        AntiCSRF.removeToken()
+                        semaphore.signal()
+                        unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.SESSION_EXPIRED))
+                        return
                     }
+                    
+                    let antiCSRFFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.antiCSRFHeaderKey]
+                    if antiCSRFFromResponse != nil {
+                        AntiCSRF.setToken(antiCSRFToken: antiCSRFFromResponse as! String, associatedIdRefreshToken: idRefreshToken)
+                    }
+                    semaphore.signal()
+                    unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.RETRY))
+                } else {
+                    semaphore.signal()
+                    unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: error))
                 }
-                
-                if error != nil {
-                    completionHandler(false, error!)
-                    return
-                }
-                
-                completionHandler(result, nil)
             })
+            refreshTask.resume()
+            semaphore.wait()    // this is there so that this function call waits for the callback to exeicute so that we still have the write lock on our queue.
         }
     }
+    
+    
+//    public static func attemptRefreshingSession(completionHandler: @escaping (Bool, Error?) -> Void) {
+//        if !SuperTokens.isInitCalled {
+//            completionHandler(false, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.attemptRefreshingSession"))
+//            return
+//        }
+//
+//        readWriteDispatchQueue.async {
+//            let preRequestIdRefresh = IdRefreshToken.getToken()
+//            handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: {
+//                result, error in
+//
+//                if IdRefreshToken.getToken() == nil {
+//                    AntiCSRF.removeToken()
+//                }
+//
+//                if error != nil {
+//                    completionHandler(false, error!)
+//                    return
+//                }
+//
+//                completionHandler(result, nil)
+//            })
+//        }
+//    }
 }

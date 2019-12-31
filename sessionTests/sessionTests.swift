@@ -11,8 +11,6 @@ import XCTest
 @testable import session
 
 /* TODO:
- - multiple API calls in parallel when access token is expired (100 of them) and only 1 refresh should be called
- - session should not exist when user calls log out - use sessionPossiblyExists & check storage is empty
  - session should not exist when user's session fully expires - use sessionPossiblyExists & check storage is empty
  - while logged in, test that APIs that there is proper change in id refresh stored in storage
  - tests APIs that don't require authentication work after logout.
@@ -28,6 +26,7 @@ import XCTest
  - Proper change in anti-csrf token once access token resets
  - User passed config should be sent as well
  - Custom refresh API headers are going through
+ - Things should work if anti-csrf is disabled.
  */
 
 class sessionTests: XCTestCase {
@@ -82,29 +81,6 @@ class sessionTests: XCTestCase {
             if error != nil {
                 switch error! {
                     case SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.newTask"):
-                        failed = false
-                        break
-                    default:
-                        break
-                }
-            }
-        })
-        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-        XCTAssertTrue(!failed)
-    }
-    
-    func testThatManualRefreshFailsIfInitIsNotCalled() {
-        var failed = true
-        let semaphore = DispatchSemaphore(value: 0)
-        
-        SuperTokensURLSession.attemptRefreshingSession(completionHandler: { result, error in
-            defer {
-                semaphore.signal()
-            }
-            
-            if error != nil {
-                switch error! {
-                    case SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.attemptRefreshingSession"):
                         failed = false
                         break
                     default:
@@ -186,6 +162,242 @@ class sessionTests: XCTestCase {
         }
         
         XCTAssertTrue(!failed)
+    }
+    
+    func testThatRefreshIsCalledOnlyOnceForMultipleThreads() {
+        var failed = true
+        startST(validity: 10)
+        
+        let runnableCount = 300
+
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        let countSemaphore = DispatchSemaphore(value: 0)
+        var results: [Bool] = []
+
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            SuperTokensURLSession.newTask(request: request, completionHandler: {
+                data, response, error in
+
+                if error != nil {
+                    requestSemaphore.signal()
+                    return
+                }
+
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                    } else {
+                        let userInfoURL = URL(string: self.userInfoAPIURL)
+                        let userInfoRequest = URLRequest(url: userInfoURL!)
+                        var runnables: [() -> ()] = []
+                        let resultsLock = NSObject()
+
+                        for i in 1...runnableCount {
+                            runnables.append {
+                                SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                                    userInfoData, userInfoResponse, userInfoError in
+
+                                    defer {
+                                        if results.count == runnableCount {
+                                            requestSemaphore.signal()
+                                        }
+                                    }
+
+                                    if userInfoResponse as? HTTPURLResponse != nil {
+                                        let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                                        var success = false
+                                        if userInfoHttpResponse.statusCode == 200 {
+                                            success = true
+                                        }
+                                        objc_sync_enter(resultsLock)
+                                        results.append(success)
+                                        objc_sync_exit(resultsLock)
+                                    } else {
+                                        objc_sync_enter(resultsLock)
+                                        results.append(false)
+                                        objc_sync_exit(resultsLock)
+                                    }
+                                })
+                            }
+                        }
+
+                        sleep(10)
+
+                        runnables.forEach({
+                            runnable in
+                            runnable()
+                        })
+                    }
+                } else {
+                    requestSemaphore.signal()
+                }
+            })
+        } catch {
+
+        }
+
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+
+        let counter = getRefreshTokenCounter()
+        if (counter == 1 && !results.contains(false) && results.count == runnableCount) {
+            failed = false;
+        }
+
+        XCTAssertTrue(!failed)
+    }
+    
+    func testThatSessionDoesNotExistAfterCallingLogout() {
+        var failureMessage: String? = nil;
+        startST(validity: 10)
+        
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            failureMessage = "init failed"
+        }
+        
+        var url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            if error != nil {
+                failureMessage = "login API error"
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                } else {
+                    if !SuperTokens.sessionPossiblyExists() {
+                        failureMessage = "Session may not exist accoring to library.. but it does!"
+                    } else {
+                        let idRefreshToken = IdRefreshToken.getToken()
+                        let antiCSRF = AntiCSRF.getToken(associatedIdRefreshToken: idRefreshToken);
+                        if idRefreshToken == nil || antiCSRF == nil {
+                            failureMessage = "antiCSRF or id refresh token is nil"
+                        }
+                    }
+                }
+            } else {
+                failureMessage = "http response is nil";
+            }
+            requestSemaphore.signal()
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        url = URL(string: logoutAPIURL)
+        request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        requestSemaphore = DispatchSemaphore(value: 0)
+        
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            if error != nil {
+                failureMessage = "logout API error"
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                } else {
+                    if SuperTokens.sessionPossiblyExists() {
+                        failureMessage = "Session exists accoring to library.. but it should not!"
+                    } else {
+                        let idRefreshToken = IdRefreshToken.getToken()
+                        let antiCSRFToken = UserDefaults.standard.string(forKey: "supertokens-android-anticsrf-key")
+                        if idRefreshToken != nil || antiCSRFToken != nil {
+                            failureMessage = "antiCSRF or id refresh token is not nil"
+                        }
+                    }
+                }
+            } else {
+                failureMessage = "http response is nil";
+            }
+            requestSemaphore.signal()
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
+    }
+    
+    func testThatSessionDoesNotExistAfterExpiry() {
+        var failureMessage: String? = nil;
+        startST(validity: 3, refreshValidity: 4/60)
+        
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            failureMessage = "init failed"
+        }
+        
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            if error != nil {
+                failureMessage = "login API error"
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                } else {
+                    if !SuperTokens.sessionPossiblyExists() {
+                        failureMessage = "Session may not exist accoring to library.. but it does!"
+                    } else {
+                        let idRefreshToken = IdRefreshToken.getToken()
+                        let antiCSRF = AntiCSRF.getToken(associatedIdRefreshToken: idRefreshToken);
+                        if idRefreshToken == nil || antiCSRF == nil {
+                            failureMessage = "antiCSRF or id refresh token is nil"
+                        }
+                    }
+                }
+            } else {
+                failureMessage = "http response is nil";
+            }
+            sleep(6)
+            requestSemaphore.signal()
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        if SuperTokens.sessionPossiblyExists() {
+            failureMessage = "session exists, but it should not"
+        } else {
+            let idRefreshToken = IdRefreshToken.getToken()
+            let antiCSRFToken = UserDefaults.standard.string(forKey: "supertokens-android-anticsrf-key")
+            if idRefreshToken != nil || antiCSRFToken == nil {
+                failureMessage = "antiCSRF is null or id refresh token is nil"
+            }
+        }
+        
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
     }
     
 //    func testIfRefreshIsCalledIfAntiCSRFIsCleared() {
@@ -276,118 +488,6 @@ class sessionTests: XCTestCase {
 //        XCTAssertTrue(!failed)
 //    }
 //
-//    func testThatRefreshIsCalledOnlyOnceForMultipleThreads() {
-//        var failed = false
-//
-//        let resetSemaphore = DispatchSemaphore(value: 0)
-//
-////        resetAccessTokenValidity(validity: 10, failureCallback: {
-////            failed = true
-////            resetSemaphore.signal()
-////        }, successCallback: {
-////            resetSemaphore.signal()
-////        })
-//
-//        _ = resetSemaphore.wait(timeout: DispatchTime.distantFuture)
-//
-//        let url = URL(string: loginAPIURL)
-//        var request = URLRequest(url: url!)
-//        request.httpMethod = "POST"
-//        let requestSemaphore = DispatchSemaphore(value: 0)
-//        let countSemaphore = DispatchSemaphore(value: 0)
-//        var results: [Bool] = []
-//
-//        do {
-//            try SuperTokens.`init`(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
-//            SuperTokensURLSession.newTask(request: request, completionHandler: {
-//                data, response, error in
-//
-//                if error != nil {
-//                    failed = true
-//                    requestSemaphore.signal()
-//                    return
-//                }
-//
-//                if response as? HTTPURLResponse != nil {
-//                    let httpResponse = response as! HTTPURLResponse
-//                    if httpResponse.statusCode != 200 {
-//                        failed = true
-//                        requestSemaphore.signal()
-//                    } else {
-//                        let userInfoURL = URL(string: self.userInfoAPIURL)
-//                        let userInfoRequest = URLRequest(url: userInfoURL!)
-//                        var runnables: [() -> ()] = []
-//                        let runnableCount = 100
-//                        let resultsLock = NSObject()
-//
-//                        for _ in 1...runnableCount {
-//                            runnables.append {
-//                                SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
-//                                    userInfoData, userInfoResponse, userInfoError in
-//
-//                                    defer {
-//                                        if results.count == runnableCount {
-//                                            requestSemaphore.signal()
-//                                        }
-//                                    }
-//
-//                                    if userInfoResponse as? HTTPURLResponse != nil {
-//                                        let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-//                                        var success = false
-//                                        if userInfoHttpResponse.statusCode == 200 {
-//                                            success = true
-//                                        }
-//                                        objc_sync_enter(resultsLock)
-//                                        results.append(success)
-//                                        objc_sync_exit(resultsLock)
-//                                    } else {
-//                                        objc_sync_enter(resultsLock)
-//                                        results.append(false)
-//                                        objc_sync_exit(resultsLock)
-//                                    }
-//                                })
-//                            }
-//                        }
-//
-//                        sleep(10)
-//
-//                        runnables.forEach({
-//                            runnable in
-//                            runnable()
-//                        })
-//                    }
-//                } else {
-//                    failed = true
-//                    requestSemaphore.signal()
-//                }
-//            })
-//        } catch {
-//            failed = true
-//        }
-//
-//        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-//
-//        if results.contains(false) {
-//            failed = true
-//        } else {
-//            let refreshCounterSemaphore = DispatchSemaphore(value: 0)
-//            getRefreshTokenCounter(successCallback: {
-//                counter in
-//
-//                if counter != 1 {
-//                    failed = true
-//                }
-//
-//                refreshCounterSemaphore.signal()
-//            }, failureCallback: {
-//                failed = true
-//                refreshCounterSemaphore.signal()
-//            })
-//            _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
-//        }
-//
-//        XCTAssertTrue(!failed)
-//    }
 //
 //    func testThatSessionPossibleExistsIsFalseAfterLogout() {
 //        var failed = false
