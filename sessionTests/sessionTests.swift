@@ -11,8 +11,6 @@ import XCTest
 @testable import session
 
 /* TODO:
- - session should not exist when user's session fully expires - use sessionPossiblyExists & check storage is empty
- - while logged in, test that APIs that there is proper change in id refresh stored in storage
  - tests APIs that don't require authentication work after logout.
  - test custom headers are being sent when logged in and when not.
  - if not logged in, test that API that requires auth throws session expired.
@@ -65,6 +63,79 @@ class sessionTests: XCTestCase {
             semaphore.signal()
         })
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    
+    // while logged in, test that APIs that there is proper change in id refresh stored in storage
+    func testIdRefreshChange() {
+        var failureMessage: String? = nil;
+        startST(validity: 3)
+        
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            failureMessage = "init failed"
+        }
+        
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            if error != nil {
+                failureMessage = "login API error"
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                    requestSemaphore.signal()
+                } else {
+                    let idBefore = IdRefreshToken.getToken()
+                    sleep(5)
+                    let userInfoURL = URL(string: self.userInfoAPIURL)
+                    let userInfoRequest = URLRequest(url: userInfoURL!)
+                    
+                    SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                        userInfoData, userInfoResponse, userInfoError in
+                        
+                        if userInfoError != nil {
+                            failureMessage = "userInfo API error"
+                            requestSemaphore.signal()
+                            return
+                        }
+                        
+                        if userInfoResponse as? HTTPURLResponse != nil {
+                            let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                            if userInfoHttpResponse.statusCode != 200 {
+                                failureMessage = "userInfo API non 200 HTTP status code"
+                            }
+                            let idAfter = IdRefreshToken.getToken()
+                            if idAfter == idBefore {
+                                failureMessage = "id before and after are not the same!"
+                            }
+                            requestSemaphore.signal()
+                        } else {
+                            failureMessage = "userInfo API response is nil"
+                            requestSemaphore.signal()
+                        }
+                    })
+                }
+            } else {
+                failureMessage = "http response is nil";
+                requestSemaphore.signal()
+            }
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
+        
     }
     
     func testThatRequestsFailIfInitIsNotCalled() {
@@ -164,6 +235,7 @@ class sessionTests: XCTestCase {
         XCTAssertTrue(!failed)
     }
     
+    // 300 requests should yield just 1 refresh call
     func testThatRefreshIsCalledOnlyOnceForMultipleThreads() {
         var failed = true
         startST(validity: 10)
@@ -251,6 +323,7 @@ class sessionTests: XCTestCase {
         XCTAssertTrue(!failed)
     }
     
+    // session should not exist on frontend once logout is called
     func testThatSessionDoesNotExistAfterCallingLogout() {
         var failureMessage: String? = nil;
         startST(validity: 10)
@@ -339,6 +412,7 @@ class sessionTests: XCTestCase {
         XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
     }
     
+    // session should not exist on frontend once session has actually expired completely
     func testThatSessionDoesNotExistAfterExpiry() {
         var failureMessage: String? = nil;
         startST(validity: 3, refreshValidity: 4/60)
