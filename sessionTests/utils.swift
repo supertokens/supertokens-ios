@@ -8,6 +8,8 @@
 
 import Foundation
 
+@testable import session
+
 let testAPIBase = "http://127.0.0.1:8080/"
 let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
 let afterAPIURL = "\(testAPIBase)after"
@@ -121,7 +123,6 @@ private func getRefreshTokenCounterHelper(successCallback: @escaping (Int) -> Vo
     let url = URL(string: refreshCounterAPIURL)
     let request = URLRequest(url: url!)
     let task = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
-        
         defer {
             refreshCounterSempahore.signal()
         }
@@ -154,6 +155,59 @@ private func getRefreshTokenCounterHelper(successCallback: @escaping (Int) -> Vo
         }
     })
     task.resume()
+    _ = refreshCounterSempahore.wait(timeout: .distantFuture)
+}
+
+internal func getRefreshTokenCounterUsingST() -> Int {
+    let refreshCounterSemaphore = DispatchSemaphore(value: 0)
+    var result = -1;
+    getRefreshTokenCounterHelperUsingST(successCallback: {
+        counter in
+        result = counter
+        refreshCounterSemaphore.signal()
+    }, failureCallback: {
+        refreshCounterSemaphore.signal()
+    })
+    _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
+    return result;
+}
+
+private func getRefreshTokenCounterHelperUsingST(successCallback: @escaping (Int) -> Void, failureCallback: @escaping () -> Void) {
+    let refreshCounterSempahore = DispatchSemaphore(value: 0)
+    let url = URL(string: refreshCounterAPIURL)
+    let request = URLRequest(url: url!)
+    SuperTokensURLSession.newTask(request: request, completionHandler: { data, response, error in
+        defer {
+            refreshCounterSempahore.signal()
+        }
+        
+        if response as? HTTPURLResponse != nil {
+            let httpResponse = response as! HTTPURLResponse
+            if httpResponse.statusCode != 200 {
+                failureCallback()
+                return
+            }
+            
+            if data == nil {
+                failureCallback()
+                return
+            }
+            
+            do {
+                let jsonResponse = try JSONSerialization.jsonObject(with: data!, options: []) as! NSDictionary
+                let counterValue = jsonResponse.value(forKey: "counter") as? Int
+                if counterValue == nil {
+                    failureCallback()
+                } else {
+                    successCallback(counterValue!)
+                }
+            } catch {
+                failureCallback()
+            }
+        } else {
+            failureCallback()
+        }
+    })
     _ = refreshCounterSempahore.wait(timeout: .distantFuture)
 }
 

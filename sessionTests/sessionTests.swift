@@ -11,7 +11,8 @@ import XCTest
 @testable import session
 
 /* TODO:
- - tests APIs that don't require authentication work after logout.
+ - tests other domain's (www.google.com) APIs that don't require authentication work, before, during and after logout.
+ - tests APIs that don't require authentication work, before, during and after logout.
  - test custom headers are being sent when logged in and when not.
  - if not logged in, test that API that requires auth throws session expired.
  - if any API throws error, it gets propogated to the user properly (with and without interception)
@@ -63,6 +64,196 @@ class sessionTests: XCTestCase {
             semaphore.signal()
         })
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    
+    // tests APIs that don't require authentication work, before, during and after logout - using our library.
+    func testNonAuthAPIWorksBeforeDuringAndAfterSession() {
+        var failureMessage: String? = nil;
+        startST(validity: 10)
+        
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            failureMessage = "init failed"
+        }
+        
+        var counter = getRefreshTokenCounter()
+        
+        if counter != 0 {
+            failureMessage = "API call before failed"
+        }
+        
+        var url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            defer {
+                requestSemaphore.signal()
+            }
+            
+            if error != nil {
+                failureMessage = "login API error"
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                }
+            } else {
+                failureMessage = "http response is nil";
+            }
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        counter = getRefreshTokenCounter()
+        if counter != 0 {
+            failureMessage = "API call during failed"
+        }
+        
+        url = URL(string: logoutAPIURL)
+        request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        requestSemaphore = DispatchSemaphore(value: 0)
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            if error != nil {
+                failureMessage = "logout API error"
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                } else {
+                    if SuperTokens.sessionPossiblyExists() {
+                        failureMessage = "Session exists accoring to library.. but it should not!"
+                    } else {
+                        let idRefreshToken = IdRefreshToken.getToken()
+                        let antiCSRFToken = UserDefaults.standard.string(forKey: "supertokens-android-anticsrf-key")
+                        if idRefreshToken != nil || antiCSRFToken != nil {
+                            failureMessage = "antiCSRF or id refresh token is not nil"
+                        }
+                    }
+                }
+            } else {
+                failureMessage = "http response is nil";
+            }
+            requestSemaphore.signal()
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        counter = getRefreshTokenCounter()
+        if counter != 0 {
+            failureMessage = "API call after failed"
+        }
+        
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
+    }
+    
+    // tests APIs that don't require authentication work, before, during and after logout - not using our lib.
+    func testNonAuthAPIWorksBeforeDuringAndAfterSessionWithURLSession() {
+        var failureMessage: String? = nil;
+        startST(validity: 10)
+        
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            failureMessage = "init failed"
+        }
+
+        var counter = getRefreshTokenCounter()
+        
+        if counter != 0 {
+            failureMessage = "API call before failed"
+        }
+        
+        var url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            defer {
+                requestSemaphore.signal()
+            }
+            
+            if error != nil {
+                failureMessage = "login API error"
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                }
+            } else {
+                failureMessage = "http response is nil";
+            }
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        counter = getRefreshTokenCounter()
+        if counter != 0 {
+            failureMessage = "API call during failed"
+        }
+        
+        url = URL(string: logoutAPIURL)
+        request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        requestSemaphore = DispatchSemaphore(value: 0)
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            
+            if error != nil {
+                failureMessage = "logout API error"
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "http response code is not 200";
+                } else {
+                    if SuperTokens.sessionPossiblyExists() {
+                        failureMessage = "Session exists accoring to library.. but it should not!"
+                    } else {
+                        let idRefreshToken = IdRefreshToken.getToken()
+                        let antiCSRFToken = UserDefaults.standard.string(forKey: "supertokens-android-anticsrf-key")
+                        if idRefreshToken != nil || antiCSRFToken != nil {
+                            failureMessage = "antiCSRF or id refresh token is not nil"
+                        }
+                    }
+                }
+            } else {
+                failureMessage = "http response is nil";
+            }
+            requestSemaphore.signal()
+        })
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        counter = getRefreshTokenCounter()
+        if counter != 0 {
+            failureMessage = "API call after failed"
+        }
+        
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
     }
     
     // while logged in, test that APIs that there is proper change in id refresh stored in storage
