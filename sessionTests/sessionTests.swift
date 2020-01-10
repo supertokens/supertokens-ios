@@ -135,7 +135,7 @@ class sessionTests: XCTestCase {
                 if httpResponse.statusCode != 200 {
                     failureMessage = "http response code is not 200";
                 } else {
-                    if SuperTokens.sessionPossiblyExists() {
+                    if SuperTokens.doesSessionExist() {
                         failureMessage = "Session exists accoring to library.. but it should not!"
                     } else {
                         let idRefreshToken = IdRefreshToken.getToken()
@@ -230,7 +230,7 @@ class sessionTests: XCTestCase {
                 if httpResponse.statusCode != 200 {
                     failureMessage = "http response code is not 200";
                 } else {
-                    if SuperTokens.sessionPossiblyExists() {
+                    if SuperTokens.doesSessionExist() {
                         failureMessage = "Session exists accoring to library.. but it should not!"
                     } else {
                         let idRefreshToken = IdRefreshToken.getToken()
@@ -544,7 +544,7 @@ class sessionTests: XCTestCase {
                 if httpResponse.statusCode != 200 {
                     failureMessage = "http response code is not 200";
                 } else {
-                    if !SuperTokens.sessionPossiblyExists() {
+                    if !SuperTokens.doesSessionExist() {
                         failureMessage = "Session may not exist accoring to library.. but it does!"
                     } else {
                         let idRefreshToken = IdRefreshToken.getToken()
@@ -581,7 +581,7 @@ class sessionTests: XCTestCase {
                 if httpResponse.statusCode != 200 {
                     failureMessage = "http response code is not 200";
                 } else {
-                    if SuperTokens.sessionPossiblyExists() {
+                    if SuperTokens.doesSessionExist() {
                         failureMessage = "Session exists accoring to library.. but it should not!"
                     } else {
                         let idRefreshToken = IdRefreshToken.getToken()
@@ -633,7 +633,7 @@ class sessionTests: XCTestCase {
                 if httpResponse.statusCode != 200 {
                     failureMessage = "http response code is not 200";
                 } else {
-                    if !SuperTokens.sessionPossiblyExists() {
+                    if !SuperTokens.doesSessionExist() {
                         failureMessage = "Session may not exist accoring to library.. but it does!"
                     } else {
                         let idRefreshToken = IdRefreshToken.getToken()
@@ -652,7 +652,7 @@ class sessionTests: XCTestCase {
         
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
-        if SuperTokens.sessionPossiblyExists() {
+        if SuperTokens.doesSessionExist() {
             failureMessage = "session exists, but it should not"
         } else {
             let idRefreshToken = IdRefreshToken.getToken()
