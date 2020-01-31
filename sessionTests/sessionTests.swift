@@ -18,21 +18,18 @@ import XCTest
 @testable import session
 
 /* TODO:
- - tests other domain's (www.google.com) APIs that don't require authentication work, before, during and after logout.
- - tests APIs that don't require authentication work, before, during and after logout.
- - test custom headers are being sent when logged in and when not.
+ - tests APIs that don't require authentication work, before, during and after logout - using our library.***
+ - test custom headers are being sent when logged in and when not.****
  - if not logged in, test that API that requires auth throws session expired.
- - if any API throws error, it gets propogated to the user properly (with and without interception)
- - if multiple interceptors are there, they should all work
- - testing attemptRefreshingSession works fine
- - testing sessionPossiblyExists works fine when user is logged in
- - Test everything without and without interception
- - Interception should not happen when domain is not the one that they gave
- - Calling SuperTokens.init more than once works!
+ - if any API throws error, it gets propogated to the user properly***
+ - tests other domain's (www.google.com) APIs that don't require authentication work, before, during and after logout.
+ - testing attemptRefreshingSession works fine****
+ - testing doesSessionExist works fine when user is logged in****
+ - Calling SuperTokens.initialise more than once works!****
  - Proper change in anti-csrf token once access token resets
- - User passed config should be sent as well
- - Custom refresh API headers are going through
- - Things should work if anti-csrf is disabled.
+ - User passed config should be sent as well****
+ - Custom refresh API headers are going through*****
+ - Things should work if anti-csrf is disabled.****
  */
 
 class sessionTests: XCTestCase {
@@ -73,7 +70,7 @@ class sessionTests: XCTestCase {
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
     }
     
-    // tests APIs that don't require authentication work, before, during and after logout - using our library.
+    // TODO: redo test. tests APIs that don't require authentication work, before, during and after logout - using our library.
     func testNonAuthAPIWorksBeforeDuringAndAfterSession() {
         var failureMessage: String? = nil;
         startST(validity: 10)
@@ -84,7 +81,7 @@ class sessionTests: XCTestCase {
             failureMessage = "init failed"
         }
         
-        var counter = getRefreshTokenCounter()
+        var counter = getRefreshTokenCounter()  // TODO: Do not call this as the API that doesnt requie auth.. make another API like /test and call that using SuperTokensURLSession.newTask
         
         if counter != 0 {
             failureMessage = "API call before failed"
@@ -496,7 +493,7 @@ class sessionTests: XCTestCase {
                             }
                         }
 
-                        sleep(10)
+                        sleep(10)   // TODO: make this slightly larger ~ 12
 
                         runnables.forEach({
                             runnable in
