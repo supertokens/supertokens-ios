@@ -23,7 +23,6 @@ import XCTest
  - if not logged in, test that API that requires auth throws session expired.
  - if any API throws error, it gets propogated to the user properly***
  - tests other domain's (www.google.com) APIs that don't require authentication work, before, during and after logout.
- - testing attemptRefreshingSession works fine****
  - testing doesSessionExist works fine when user is logged in****
  - Calling SuperTokens.initialise more than once works!****
  - Proper change in anti-csrf token once access token resets
