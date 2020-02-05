@@ -133,6 +133,14 @@ app.get("/refreshDeviceInfo", function (req, res) {
     })
 })
 
+app.use("/testing", async (req, res) => {
+    let tH:any = req.headers["testing"]
+    if (tH !== undefined) {
+        res.header("testing", tH);
+    }
+    res.send("success");
+});
+
 app.use("*", function (req, res, next) {
     res.status(404).send("Not found");
 });
