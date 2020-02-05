@@ -38,6 +38,7 @@ class sessionTests: XCTestCase {
     let userInfoAPIURL = "\(testAPIBase)userInfo"
     let logoutAPIURL = "\(testAPIBase)logout"
     let headerAPIURL = "\(testAPIBase)header"
+    let testinApiUrl = "\(testAPIBase)testing"
     let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
     let sessionExpiryCode = 440
     
@@ -647,6 +648,119 @@ class sessionTests: XCTestCase {
         
         
         XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
+    }
+    
+    // test custom headers are being sent when logged in and when not
+   func testCheckCustomHeadersForUsers () {
+        startST(validity: 10)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+                XCTFail("Calling init more than once fails the test")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        // Case1: When user is not logged in
+       var url = URL(string: testinApiUrl)!
+       var request = URLRequest(url: url)
+       request.httpMethod = "POST"
+        // Setting custom Headers
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("st-custom-header", forHTTPHeaderField: "testing")
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    } else {
+                        print(httpResponse)
+                        if let customHeaders = httpResponse.allHeaderFields["testing"] as? String  {
+                            if (customHeaders != "st-custom-header" ) {
+                                requestSemaphore.signal()
+                                XCTFail("Custom Header for Logged in user not equal")
+                                return
+                            }
+                        } else {
+                            requestSemaphore.signal()
+                            XCTFail("Custom Header for Logged in user not equal")
+                        }
+                    }
+                }
+                requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    
+       //Case2: When user is logged in
+    
+       //Logging in user
+        url = URL(string: loginAPIURL)!
+        request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    
+        //Making Request
+        url = URL(string: testinApiUrl)!
+        request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        // Setting custom Headers
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("st-custom-header", forHTTPHeaderField: "testing")
+    
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    } else {
+                        if let customHeaders = httpResponse.allHeaderFields["testing"] as? String  {
+                            if (customHeaders != "st-custom-header" ) {
+                                requestSemaphore.signal()
+                                XCTFail("Custom Header for Logged in user not equal")
+                                return
+                            }
+                        } else {
+                            requestSemaphore.signal()
+                            XCTFail("Custom Header for Logged in user not equal")
+                        }
+                    }
+                }
+                requestSemaphore.signal()
+        })
+      
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
     }
     
     // session should not exist on frontend once session has actually expired completely
