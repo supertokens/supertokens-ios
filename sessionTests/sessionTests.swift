@@ -335,7 +335,6 @@ class sessionTests: XCTestCase {
     func testThatRequestsFailIfInitIsNotCalled() {
         var failed = true
         let semaphore = DispatchSemaphore(value: 0)
-        
         let url = URL(string: loginAPIURL)
         let request = URLRequest(url: url!)
         SuperTokensURLSession.newTask(request: request, completionHandler: {
@@ -355,6 +354,50 @@ class sessionTests: XCTestCase {
         })
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
         XCTAssertTrue(!failed)
+    }
+    
+    // Calling SuperTokens.initialise more than once works
+    func testMoreThanOneCallToInitWorks () {
+        startST(validity: 3)
+        do {
+            // First call
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            // Second Call
+              try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+                XCTFail("Calling init more than once fails the test")
+        }
+        // Making Post Request to login and then calling init again
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        })
+        do {
+            // Recalling init
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        
+        } catch {
+            XCTFail("Calling init more than once fails the test")
+        }
+         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
     }
     
     func testIfRefreshIsCalledAfterAccessTokenExpires() {
@@ -616,7 +659,7 @@ class sessionTests: XCTestCase {
         } catch {
             failureMessage = "init failed"
         }
-        
+         
         let url = URL(string: loginAPIURL)
         var request = URLRequest(url: url!)
         request.httpMethod = "POST"
