@@ -737,6 +737,39 @@ class sessionTests: XCTestCase {
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
           XCTAssertTrue(sessionExist)
     }
+    // if not logged in, test that API that requires auth throws session expired
+    func testIfNotLoggedAuthApiThrowSessionExpired () {
+        startST(validity: 1)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+                XCTFail("Calling init more than once fails the test")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        let url = URL(string: userInfoAPIURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 440 {
+                        requestSemaphore.signal()
+                        XCTFail("Session Expired code 440 not returned")
+                        return
+                    }
+                    
+                }
+                requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
     
     
     // test custom headers are being sent when logged in and when not
