@@ -359,7 +359,7 @@ class sessionTests: XCTestCase {
     
     // Calling SuperTokens.initialise more than once works
     func testMoreThanOneCallToInitWorks () {
-        startST(validity: 3)
+        startST(validity: 1)
         do {
             // First call
             try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
@@ -652,7 +652,7 @@ class sessionTests: XCTestCase {
     
     // test custom headers are being sent when logged in and when not
    func testCheckCustomHeadersForUsers () {
-        startST(validity: 10)
+        startST(validity: 1)
         do {
             try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
         } catch {
