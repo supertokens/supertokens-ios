@@ -684,7 +684,7 @@ class sessionTests: XCTestCase {
                         XCTFail("login Api Error")
                         return
                     }
-                    guard let data = data, error == nil else {
+                    guard let data = data else {
                         requestSemaphore.signal()
                         XCTFail("No data")
                         return
@@ -701,6 +701,44 @@ class sessionTests: XCTestCase {
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         XCTAssertTrue(true)
     }
+    
+    // testing doesSessionExist works fine when user is logged in
+    func testdoesSessionExsistWhenUserIsLoggedIn () {
+        startST(validity: 1)
+        var sessionExist:Bool = false
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+                XCTFail("Calling init more than once fails the test")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        let url = URL(string: loginAPIURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                     sessionExist = SuperTokens.doesSessionExist()
+                    
+                }
+                requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+          XCTAssertTrue(sessionExist)
+    }
+    
+    
     // test custom headers are being sent when logged in and when not
    func testCheckCustomHeadersForUsers () {
         startST(validity: 1)
