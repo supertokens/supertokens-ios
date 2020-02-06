@@ -141,6 +141,11 @@ app.use("/testing", async (req, res) => {
     res.send("success");
 });
 
+app.post("/checkUserConfig", async (req, res) => {
+    let userConfig = req.body.testConfigKey;
+    res.status(200).send(userConfig);
+});
+
 app.use("*", function (req, res, next) {
     res.status(404).send("Not found");
 });
