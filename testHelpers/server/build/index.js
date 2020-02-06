@@ -92,7 +92,7 @@ app.get("/userInfo", function (req, res) {
     });
 });
 app.get("/testError", (req, res) => {
-    res.status(500).send();
+    res.status(500).send('Internal Server Error');
 });
 app.post("/refresh", function (req, res) {
     refreshtoken_1.default(req, res).catch(err => {
