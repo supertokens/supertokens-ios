@@ -91,6 +91,10 @@ app.get("/userInfo", function (req, res) {
     });
 });
 
+app.get("/testError", (req, res) => {
+    res.status(500).send('Internal Server Error');
+})
+
 app.post("/refresh", function (req, res) {
     testRefreshtoken(req, res).catch(err => {
         console.log(err);

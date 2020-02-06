@@ -91,6 +91,9 @@ app.get("/userInfo", function (req, res) {
         res.status(500).send("");
     });
 });
+app.get("/testError", (req, res) => {
+    res.status(500).send();
+});
 app.post("/refresh", function (req, res) {
     refreshtoken_1.default(req, res).catch(err => {
         console.log(err);
