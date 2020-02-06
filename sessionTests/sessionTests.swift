@@ -41,6 +41,7 @@ class sessionTests: XCTestCase {
     let testinApiUrl = "\(testAPIBase)testing"
     let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
     let checkUserConfig = "\(testAPIBase)checkUserConfig"
+    let testError = "\(testAPIBase)testError"
     let sessionExpiryCode = 440
     
 
@@ -650,13 +651,14 @@ class sessionTests: XCTestCase {
         
         XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
     }
+
     // User passed config should be sent as well
     func testIfUserPassedConfigIsSent () {
          startST(validity: 1)
          do {
             try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
           } catch {
-                XCTFail("Calling init more than once fails the test")
+                XCTFail("Unable to initialize")
           }
          let requestSemaphore = DispatchSemaphore(value: 0)
          // Case1: When user is not logged in
@@ -709,7 +711,7 @@ class sessionTests: XCTestCase {
         do {
             try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
         } catch {
-                XCTFail("Calling init more than once fails the test")
+                XCTFail("unable to initialize")
         }
         let requestSemaphore = DispatchSemaphore(value: 0)
         let url = URL(string: loginAPIURL)!
@@ -743,7 +745,7 @@ class sessionTests: XCTestCase {
         do {
             try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
         } catch {
-                XCTFail("Calling init more than once fails the test")
+                XCTFail("unable to initialize")
         }
         let requestSemaphore = DispatchSemaphore(value: 0)
         let url = URL(string: userInfoAPIURL)!
@@ -771,14 +773,57 @@ class sessionTests: XCTestCase {
         XCTAssertTrue(true)
     }
     
-    
-    // test custom headers are being sent when logged in and when not
-   func testCheckCustomHeadersForUsers () {
+    // if any API throws error, it gets propogated to the user properly
+    func testApiErrorPropogatesToUsers () {
         startST(validity: 1)
         do {
             try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
         } catch {
-                XCTFail("Calling init more than once fails the test")
+            XCTFail("unable to initialize")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+       let url = URL(string: testError)!
+       var request = URLRequest(url: url)
+       request.httpMethod = "GET"
+       SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 500 {
+                        requestSemaphore.signal()
+                        XCTFail("Unexpected Status code")
+                        return
+                    }
+                    guard let data = data else {
+                        requestSemaphore.signal()
+                        XCTFail("No data")
+                        return
+                    }
+                    let responseData = String(data: data, encoding: String.Encoding.utf8)
+                    if responseData != "Internal Server Error" {
+                        XCTFail("Incorrect Error Message")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
+    
+    // test custom headers are being sent when logged in and when not
+    func testCheckCustomHeadersForUsers () {
+        startST(validity: 1)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            XCTFail("unable to initialize")
         }
         let requestSemaphore = DispatchSemaphore(value: 0)
         // Case1: When user is not logged in
