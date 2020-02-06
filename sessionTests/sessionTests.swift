@@ -40,6 +40,7 @@ class sessionTests: XCTestCase {
     let headerAPIURL = "\(testAPIBase)header"
     let testinApiUrl = "\(testAPIBase)testing"
     let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
+    let checkUserConfig = "\(testAPIBase)checkUserConfig"
     let sessionExpiryCode = 440
     
 
@@ -649,7 +650,57 @@ class sessionTests: XCTestCase {
         
         XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
     }
-    
+    // User passed config should be sent as well
+    func testIfUserPassedConfigIsSent () {
+         startST(validity: 1)
+         do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+          } catch {
+                XCTFail("Calling init more than once fails the test")
+          }
+         let requestSemaphore = DispatchSemaphore(value: 0)
+         // Case1: When user is not logged in
+        let url = URL(string: checkUserConfig)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let parameters = ["testConfigKey": "testing"]
+        do {
+             request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted) // pass dictionary to data object and set it as request body
+        } catch {
+            XCTFail("Unable to localize")
+        }
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    requestSemaphore.signal()
+                    XCTFail("login Api Error")
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                    guard let data = data, error == nil else {
+                        requestSemaphore.signal()
+                        XCTFail("No data")
+                        return
+                    }
+                    let responseData = String(data: data, encoding: String.Encoding.utf8)
+                    if responseData != "testing" {
+                        requestSemaphore.signal()
+                         XCTFail("Incorrect Data in Body")
+                        return
+                    }
+                }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
     // test custom headers are being sent when logged in and when not
    func testCheckCustomHeadersForUsers () {
         startST(validity: 1)
