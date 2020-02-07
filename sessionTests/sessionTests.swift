@@ -42,6 +42,8 @@ class sessionTests: XCTestCase {
     let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
     let checkUserConfig = "\(testAPIBase)checkUserConfig"
     let testError = "\(testAPIBase)testError"
+    let fakeGetApi = "https://jsonplaceholder.typicode.com/todos/1"
+    let fakePostApi = "https://jsonplaceholder.typicode.com/posts"
     let sessionExpiryCode = 440
     
 
@@ -661,14 +663,13 @@ class sessionTests: XCTestCase {
                 XCTFail("Unable to initialize")
           }
          let requestSemaphore = DispatchSemaphore(value: 0)
-         // Case1: When user is not logged in
         let url = URL(string: checkUserConfig)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         let parameters = ["testConfigKey": "testing"]
         do {
-             request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted) // pass dictionary to data object and set it as request body
+             request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
         } catch {
             XCTFail("Unable to localize")
         }
@@ -739,6 +740,7 @@ class sessionTests: XCTestCase {
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
           XCTAssertTrue(sessionExist)
     }
+    
     // if not logged in, test that API that requires auth throws session expired
     func testIfNotLoggedAuthApiThrowSessionExpired () {
         startST(validity: 1)
@@ -817,7 +819,78 @@ class sessionTests: XCTestCase {
         XCTAssertTrue(true)
     }
     
-    // test custom headers are being sent when logged in and when not
+    // tests other domain's (www.google.com) APIs that don't require authentication work, before, during and after logout
+    func testOtherDomainsWorksWithoutAuthentication () {
+        startST(validity: 1)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        // Making Get Request
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        var url = URL(string: fakeGetApi)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+             data, response, error in
+                 if error != nil {
+                     XCTFail("login Api Error")
+                     requestSemaphore.signal()
+                     return
+                 }
+                 if response as? HTTPURLResponse != nil {
+                     let httpResponse = response as! HTTPURLResponse
+                     if httpResponse.statusCode != 200 {
+                         XCTFail("Unable to make Get API Request to external URL")
+                         requestSemaphore.signal()
+                         return
+                     }
+                 } else {
+                    requestSemaphore.signal()
+                    XCTFail("Unable to make Get API Request to external URL")
+                    return
+                 }
+             requestSemaphore.signal()
+         })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        // Making Post Request
+        url = URL(string: fakePostApi)!
+        request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let parameters = ["testConfigKey": "testing"]
+        do {
+             request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch {
+            XCTFail("Unable to localize")
+        }
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    requestSemaphore.signal()
+                    XCTFail("Api Error")
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 201 {
+                        requestSemaphore.signal()
+                        XCTFail("Incorrect Status code")
+                        return
+                    }
+                } else {
+                    requestSemaphore.signal()
+                    XCTFail("Problem with response of post request")
+                    return
+                }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
+    
+    // redo - test custom headers are being sent when logged in and when not
     func testCheckCustomHeadersForUsers () {
         startST(validity: 1)
         do {
@@ -920,6 +993,7 @@ class sessionTests: XCTestCase {
                         } else {
                             requestSemaphore.signal()
                             XCTFail("Custom Header for Logged in user not equal")
+                            return
                         }
                     }
                 }
