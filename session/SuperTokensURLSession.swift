@@ -160,12 +160,20 @@ public class SuperTokensURLSession {
                 if response as? HTTPURLResponse != nil {
                     let httpResponse = response as! HTTPURLResponse
                     let headerFields = httpResponse.allHeaderFields as? [String:String]
+                    
+                    var removeIdRefreshToken = true;
                     if headerFields != nil && response!.url != nil {
                         let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshTokenHeaderKey]
                         if (idRefreshTokenFromResponse != nil) {
                             IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                            removeIdRefreshToken = false;
                         }
                     }
+                    
+                    if httpResponse.statusCode == SuperTokens.sessionExpiryStatusCode && removeIdRefreshToken {
+                        IdRefreshToken.setToken(newIdRefreshToken: "remove");
+                    }
+                    
                     if httpResponse.statusCode != 200 {
                         semaphore.signal()
                         unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError("Refresh API returned with status code: \(httpResponse.statusCode)")))
