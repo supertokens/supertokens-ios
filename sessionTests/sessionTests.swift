@@ -18,17 +18,12 @@ import XCTest
 @testable import session
 
 /* TODO:
- - tests APIs that don't require authentication work, before, during and after logout - using our library.***
- - test custom headers are being sent when logged in and when not.****
  - if not logged in, test that API that requires auth throws session expired.
- - if any API throws error, it gets propogated to the user properly***
  - tests other domain's (www.google.com) APIs that don't require authentication work, before, during and after logout.
- - testing doesSessionExist works fine when user is logged in****
- - Calling SuperTokens.initialise more than once works!****
  - Proper change in anti-csrf token once access token resets
- - User passed config should be sent as well****
  - Custom refresh API headers are going through*****
  - Things should work if anti-csrf is disabled.****
+ - Test that if you are logged out and you call the /userInfo API, you get session expired output and that refresh token API doesnt get called***
  */
 
 class sessionTests: XCTestCase {
@@ -74,7 +69,8 @@ class sessionTests: XCTestCase {
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
     }
     
-    // TODO: redo test. tests APIs that don't require authentication work, before, during and after logout - using our library.
+    // tests APIs that don't require authentication work, before, during and after logout - using our library.
+    // TODO: redo test.
     func testNonAuthAPIWorksBeforeDuringAndAfterSession() {
         var failureMessage: String? = nil;
         startST(validity: 10)
@@ -361,16 +357,16 @@ class sessionTests: XCTestCase {
         XCTAssertTrue(!failed)
     }
     
-    // Calling SuperTokens.initialise more than once works
+    // Calling SuperTokens.initialise more than once works!
     func testMoreThanOneCallToInitWorks () {
-        startST(validity: 1)
+        startST(validity: 1)    // TODO: set this to something higher for this API
         do {
             // First call
             try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
             // Second Call
-              try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
         } catch {
-                XCTFail("Calling init more than once fails the test")
+            XCTFail("Calling init more than once fails the test")
         }
         // Making Post Request to login and then calling init again
         let url = URL(string: loginAPIURL)
@@ -402,6 +398,8 @@ class sessionTests: XCTestCase {
             XCTFail("Calling init more than once fails the test")
         }
          _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        // TODO: do mroe stuff here.. calling the "/userInfo" API and making sure you get a proper response etc..
         XCTAssertTrue(true)
     }
     
@@ -655,6 +653,7 @@ class sessionTests: XCTestCase {
     }
 
     // User passed config should be sent as well
+    // TODO: by config I do not mean post body. I mean a config like request timeout or anything else that someone may use to "configure" the request. Please redo test
     func testIfUserPassedConfigIsSent () {
          startST(validity: 1)
          do {
@@ -738,6 +737,8 @@ class sessionTests: XCTestCase {
         })
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
           XCTAssertTrue(sessionExist)
+        
+        // TODO: test also that after logout, session should not exist
     }
     
     // if not logged in, test that API that requires auth throws session expired
@@ -789,7 +790,7 @@ class sessionTests: XCTestCase {
        SuperTokensURLSession.newTask(request: request, completionHandler: {
             data, response, error in
                 if error != nil {
-                    XCTFail("login Api Error")
+                    XCTFail("login Api Error")  // TODO: you haven't logged in!! please check after copy/paste.
                     requestSemaphore.signal()
                     return
                 }
@@ -815,6 +816,8 @@ class sessionTests: XCTestCase {
             requestSemaphore.signal()
         })
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        // TODO: do the above after login as well.
         XCTAssertTrue(true)
     }
     
@@ -1031,10 +1034,10 @@ class sessionTests: XCTestCase {
             requestSemaphore.signal()
         })
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        XCTAssertTrue(true)
+        XCTAssertTrue(true) // TODO: remove this from all tests..
     }
     
-    // test custom headers are being sent when logged in and when not
+    // test custom headers are being sent when logged in and when not.
     func testCheckCustomHeadersForUsers () {
         startST(validity: 1)
         do {
@@ -1064,10 +1067,9 @@ class sessionTests: XCTestCase {
                         requestSemaphore.signal()
                         return
                     } else {
-                        print(httpResponse)
                         if let customHeaders = httpResponse.allHeaderFields["testing"] as? String  {
                             if (customHeaders != "st-custom-header" ) {
-                                XCTFail("Custom Header for Logged in user not equal")
+                                XCTFail("Custom Header for Logged in user not equal")   // TODO: please read up on this and then do we need the below two lines of code??
                                 requestSemaphore.signal()
                                 return
                             }
@@ -1098,7 +1100,7 @@ class sessionTests: XCTestCase {
                     let httpResponse = response as! HTTPURLResponse
                     if httpResponse.statusCode != 200 {
                         requestSemaphore.signal()
-                        XCTFail("login Api Error")
+                        XCTFail("login Api Error")  // TODO: some places you have it above, some places below (the signal call). Please make it consistent.
                         return
                 }
                 SuperTokensURLSession.newTask(request: testRequest, completionHandler: {
@@ -1135,7 +1137,7 @@ class sessionTests: XCTestCase {
             })
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
     
-      
+        // TODO: why is there twice here? Copy/paste is OK, but be aware please.
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         XCTAssertTrue(true)
     }
