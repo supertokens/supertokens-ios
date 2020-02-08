@@ -38,7 +38,12 @@ class sessionTests: XCTestCase {
     let userInfoAPIURL = "\(testAPIBase)userInfo"
     let logoutAPIURL = "\(testAPIBase)logout"
     let headerAPIURL = "\(testAPIBase)header"
+    let testinApiUrl = "\(testAPIBase)testing"
     let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
+    let checkUserConfig = "\(testAPIBase)checkUserConfig"
+    let testError = "\(testAPIBase)testError"
+    let fakeGetApi = "https://jsonplaceholder.typicode.com/todos/1"
+    let fakePostApi = "https://jsonplaceholder.typicode.com/posts"
     let sessionExpiryCode = 440
     
 
@@ -335,7 +340,6 @@ class sessionTests: XCTestCase {
     func testThatRequestsFailIfInitIsNotCalled() {
         var failed = true
         let semaphore = DispatchSemaphore(value: 0)
-        
         let url = URL(string: loginAPIURL)
         let request = URLRequest(url: url!)
         SuperTokensURLSession.newTask(request: request, completionHandler: {
@@ -355,6 +359,50 @@ class sessionTests: XCTestCase {
         })
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
         XCTAssertTrue(!failed)
+    }
+    
+    // Calling SuperTokens.initialise more than once works
+    func testMoreThanOneCallToInitWorks () {
+        startST(validity: 1)
+        do {
+            // First call
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+            // Second Call
+              try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+                XCTFail("Calling init more than once fails the test")
+        }
+        // Making Post Request to login and then calling init again
+        let url = URL(string: loginAPIURL)
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        })
+        do {
+            // Recalling init
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        
+        } catch {
+            XCTFail("Calling init more than once fails the test")
+        }
+         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
     }
     
     func testIfRefreshIsCalledAfterAccessTokenExpires() {
@@ -605,6 +653,492 @@ class sessionTests: XCTestCase {
         
         XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
     }
+
+    // User passed config should be sent as well
+    func testIfUserPassedConfigIsSent () {
+         startST(validity: 1)
+         do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+          } catch {
+                XCTFail("Unable to initialize")
+          }
+         let requestSemaphore = DispatchSemaphore(value: 0)
+        let url = URL(string: checkUserConfig)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let parameters = ["testConfigKey": "testing"]
+        do {
+             request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch {
+            XCTFail("Unable to localize")
+        }
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    requestSemaphore.signal()
+                    XCTFail("login Api Error")
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                    guard let data = data else {
+                        requestSemaphore.signal()
+                        XCTFail("No data")
+                        return
+                    }
+                    let responseData = String(data: data, encoding: String.Encoding.utf8)
+                    if responseData != "testing" {
+                        requestSemaphore.signal()
+                         XCTFail("Incorrect Data in Body")
+                        return
+                    }
+                }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
+    
+    // testing doesSessionExist works fine when user is logged in
+    func testdoesSessionExsistWhenUserIsLoggedIn () {
+        startST(validity: 1)
+        var sessionExist:Bool = false
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        let url = URL(string: loginAPIURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                    sessionExist = SuperTokens.doesSessionExist()
+                }
+                requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+          XCTAssertTrue(sessionExist)
+    }
+    
+    // if not logged in, test that API that requires auth throws session expired
+    func testIfNotLoggedAuthApiThrowSessionExpired () {
+        startST(validity: 1)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+                XCTFail("unable to initialize")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        let url = URL(string: userInfoAPIURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 440 {
+                        requestSemaphore.signal()
+                        XCTFail("Session Expired code 440 not returned")
+                        return
+                    }
+                    
+                }
+                requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
+    
+    // if any API throws error, it gets propogated to the user properly
+    func testApiErrorPropogatesToUsers () {
+        startST(validity: 1)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+       let url = URL(string: testError)!
+       var request = URLRequest(url: url)
+       request.httpMethod = "GET"
+       SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 500 {
+                        requestSemaphore.signal()
+                        XCTFail("Unexpected Status code")
+                        return
+                    }
+                    guard let data = data else {
+                        requestSemaphore.signal()
+                        XCTFail("No data")
+                        return
+                    }
+                    let responseData = String(data: data, encoding: String.Encoding.utf8)
+                    if responseData != "Internal Server Error" {
+                        XCTFail("Incorrect Error Message")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
+    
+    // tests other domain's (www.google.com) APIs that don't require authentication work, before, during and after logout
+    // redo this test
+    func testOtherDomainsWorksWithoutAuthentication () {
+        startST(validity: 1)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        // Before
+        // Making Get Request
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        let fakeGetUrl = URL(string: fakeGetApi)!
+        var fakeGetRequest = URLRequest(url: fakeGetUrl)
+        fakeGetRequest.httpMethod = "GET"
+        SuperTokensURLSession.newTask(request: fakeGetRequest, completionHandler: {
+            getData, getResponse, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if getResponse as? HTTPURLResponse != nil {
+                    let httpResponse = getResponse as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("Unable to make Get API Request to external URL")
+                        requestSemaphore.signal()
+                        return
+                    }
+                } else {
+                    XCTFail("Unable to make Get API Request to external URL")
+                    requestSemaphore.signal()
+                    return
+                }
+            requestSemaphore.signal()
+         })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        // Making Post Request
+        let fakePostUrl = URL(string: fakePostApi)!
+        var fakePostRequest = URLRequest(url: fakePostUrl)
+        fakePostRequest.httpMethod = "POST"
+        fakePostRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let parameters = ["testConfigKey": "testing"]
+        do {
+             fakePostRequest.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch {
+            XCTFail("Unable to localize")
+        }
+        SuperTokensURLSession.newTask(request: fakePostRequest, completionHandler: {
+            postData, postResponse, error in
+                if error != nil {
+                    XCTFail("Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if postResponse as? HTTPURLResponse != nil {
+                    let httpResponse = postResponse as! HTTPURLResponse
+                    if httpResponse.statusCode != 201 {
+                        XCTFail("Incorrect Status code")
+                        requestSemaphore.signal()
+                        return
+                    }
+                } else {
+                    requestSemaphore.signal()
+                    XCTFail("Problem with response of post request")
+                    return
+                }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        // After login
+        let url = URL(string: loginAPIURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                    // Get request
+                    SuperTokensURLSession.newTask(request: fakeGetRequest, completionHandler: {
+                        getData, getResponse, error in
+                            if error != nil {
+                                XCTFail("login Api Error")
+                                requestSemaphore.signal()
+                                return
+                            }
+                            if getResponse as? HTTPURLResponse != nil {
+                                let httpResponse = getResponse as! HTTPURLResponse
+                                if httpResponse.statusCode != 200 {
+                                    XCTFail("Unable to make Get API Request to external URL")
+                                    requestSemaphore.signal()
+                                    return
+                                }
+                            } else {
+                                XCTFail("Unable to make Get API Request to external URL")
+                                requestSemaphore.signal()
+                                return
+                            }
+                    })
+                    // Making Post Request
+                    // Error: Below Fake Post not being called
+                    SuperTokensURLSession.newTask(request: fakePostRequest, completionHandler: {
+                        postData, postResponse, error in
+                            print("Login Body")
+                            if error != nil {
+                                XCTFail("Api Error")
+                                requestSemaphore.signal()
+                                return
+                            }
+                            if postResponse as? HTTPURLResponse != nil {
+                                let httpResponse = postResponse as! HTTPURLResponse
+                                // This should fail, correct status code is 201
+                                if httpResponse.statusCode != 200 {
+                                    requestSemaphore.signal()
+                                    XCTFail("Incorrect Status code")
+                                    return
+                                }
+                            } else {
+                                requestSemaphore.signal()
+                                XCTFail("Problem with response of post request")
+                                return
+                            }
+                    })
+                }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        // After logout
+        let logoutUrl = URL(string: logoutAPIURL)
+        request = URLRequest(url: logoutUrl!)
+        request.httpMethod = "POST"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+            if error != nil {
+                XCTFail("Logout Api failed")
+                requestSemaphore.signal()
+                return
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    // Signbart error when changing the status code here
+                     XCTFail("Unable to make Get API Request to external URL")
+                     requestSemaphore.signal()
+                     return
+                 }
+                SuperTokensURLSession.newTask(request: fakeGetRequest, completionHandler: {
+                     getData, getResponse, error in
+                         if error != nil {
+                             XCTFail("login Api Error")
+                             requestSemaphore.signal()
+                             return
+                         }
+                         if getResponse as? HTTPURLResponse != nil {
+                             let httpResponse = getResponse as! HTTPURLResponse
+                             if httpResponse.statusCode != 200 {
+                                requestSemaphore.signal()
+                                 XCTFail("Unable to make Get API Request to external URL")
+                                 return
+                             }
+                         } else {
+                            XCTFail("Unable to make Get API Request to external URL")
+                            requestSemaphore.signal()
+                            return
+                         }
+                 })
+                // Making Post Request
+                let fakePostUrl = URL(string: self.fakePostApi)!
+                var fakePostRequest = URLRequest(url: fakePostUrl)
+                fakePostRequest.httpMethod = "POST"
+                fakePostRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                let parameters = ["testConfigKey": "testing"]
+                do {
+                     fakePostRequest.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+                } catch {
+                    XCTFail("Unable to localize")
+                }
+                SuperTokensURLSession.newTask(request: fakePostRequest, completionHandler: {
+                    postData, postResponse, error in
+                        if error != nil {
+                            requestSemaphore.signal()
+                            XCTFail("Api Error")
+                            return
+                        }
+                        if postResponse as? HTTPURLResponse != nil {
+                            let httpResponse = postResponse as! HTTPURLResponse
+                            if httpResponse.statusCode != 200 {
+                                requestSemaphore.signal()
+                                XCTFail("Incorrect Status code")
+                                return
+                            }
+                        } else {
+                            requestSemaphore.signal()
+                            XCTFail("Problem with response of post request")
+                            return
+                        }
+                })
+            }
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
+    
+    // test custom headers are being sent when logged in and when not
+    func testCheckCustomHeadersForUsers () {
+        startST(validity: 1)
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        // Case1: When user is not logged in
+       let testURL = URL(string: testinApiUrl)!
+       var testRequest = URLRequest(url: testURL)
+       testRequest.httpMethod = "POST"
+        // Setting custom Headers
+        testRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        testRequest.setValue("st-custom-header", forHTTPHeaderField: "testing")
+        SuperTokensURLSession.newTask(request: testRequest, completionHandler: {
+            testData, testResponse, testError in
+                if testError != nil {
+                    XCTFail("Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if testResponse as? HTTPURLResponse != nil {
+                    let httpResponse = testResponse as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("Api Error")
+                        requestSemaphore.signal()
+                        return
+                    } else {
+                        print(httpResponse)
+                        if let customHeaders = httpResponse.allHeaderFields["testing"] as? String  {
+                            if (customHeaders != "st-custom-header" ) {
+                                XCTFail("Custom Header for Logged in user not equal")
+                                requestSemaphore.signal()
+                                return
+                            }
+                        } else {
+                            requestSemaphore.signal()
+                            XCTFail("Custom Header for not logged in user not equal")
+                        }
+                    }
+                }
+                requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    
+       //Case2: When user is logged in
+    
+       //Logging in user
+        let url = URL(string: loginAPIURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        SuperTokensURLSession.newTask(request: request, completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                }
+                SuperTokensURLSession.newTask(request: testRequest, completionHandler: {
+                    testData, testResponse, testError in
+                        if testError != nil {
+                            XCTFail("login Api Error")
+                            requestSemaphore.signal()
+                            return
+                        }
+                        if testResponse as? HTTPURLResponse != nil {
+                            let httpResponse = testResponse as! HTTPURLResponse
+                            if httpResponse.statusCode != 200 {
+                                XCTFail("login Api Error")
+                                    requestSemaphore.signal()
+                                    return
+                                } else {
+                                    print(httpResponse)
+                                    if let customHeaders = httpResponse.allHeaderFields["testing"] as? String  {
+                                        if (customHeaders != "st-custom-header" ) {
+                                            XCTFail("Custom Header for Logged in user not equal")
+                                            requestSemaphore.signal()
+                                            return
+                                        }
+                                    } else {
+                                        requestSemaphore.signal()
+                                        XCTFail("Custom Header for logged in user not equal")
+                                    }
+                                }
+                            }
+                        requestSemaphore.signal()
+                    })
+                requestSemaphore.signal()
+                }
+            })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    
+      
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        XCTAssertTrue(true)
+    }
     
     // session should not exist on frontend once session has actually expired completely
     func testThatSessionDoesNotExistAfterExpiry() {
@@ -616,7 +1150,7 @@ class sessionTests: XCTestCase {
         } catch {
             failureMessage = "init failed"
         }
-        
+         
         let url = URL(string: loginAPIURL)
         var request = URLRequest(url: url!)
         request.httpMethod = "POST"

@@ -91,6 +91,9 @@ app.get("/userInfo", function (req, res) {
         res.status(500).send("");
     });
 });
+app.get("/testError", (req, res) => {
+    res.status(500).send('Internal Server Error');
+});
 app.post("/refresh", function (req, res) {
     refreshtoken_1.default(req, res).catch(err => {
         console.log(err);
@@ -127,6 +130,17 @@ app.get("/refreshDeviceInfo", function (req, res) {
         res.status(500).send("");
     });
 });
+app.use("/testing", (req, res) => __awaiter(this, void 0, void 0, function* () {
+    let tH = req.headers["testing"];
+    if (tH !== undefined) {
+        res.header("testing", tH);
+    }
+    res.send("success");
+}));
+app.post("/checkUserConfig", (req, res) => __awaiter(this, void 0, void 0, function* () {
+    let userConfig = req.body.testConfigKey;
+    res.status(200).send(userConfig);
+}));
 app.use("*", function (req, res, next) {
     res.status(404).send("Not found");
 });
