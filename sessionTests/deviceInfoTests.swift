@@ -75,7 +75,7 @@ class deviceInfoTests: XCTestCase {
         request.httpMethod = "POST"
         let requestSemaphore = DispatchSemaphore(value: 0)
         
-        SuperTokensURLSession.newTask(request: request, completionHandler: {
+        SuperTokensURLSession.dataTask(request: request, completionHandler: {
             data, response, error in
             
             if error != nil {
@@ -93,7 +93,7 @@ class deviceInfoTests: XCTestCase {
                     let userInfoURL = URL(string: self.userInfoAPIURL)
                     let userInfoRequest = URLRequest(url: userInfoURL!)
                     
-                    SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                    SuperTokensURLSession.dataTask(request: userInfoRequest, completionHandler: {
                         userInfoData, userInfoResponse, userInfoError in
                         
                         if userInfoError != nil {
@@ -148,7 +148,7 @@ class deviceInfoTests: XCTestCase {
         request.httpMethod = "GET"
         let requestSemaphore = DispatchSemaphore(value: 0)
         
-        SuperTokensURLSession.newTask(request: request, completionHandler: {
+        SuperTokensURLSession.dataTask(request: request, completionHandler: {
             data, response, error in
             
             if response as? HTTPURLResponse != nil {
@@ -192,7 +192,7 @@ class deviceInfoTests: XCTestCase {
         request.httpMethod = "POST"
         let requestSemaphore = DispatchSemaphore(value: 0)
         
-        SuperTokensURLSession.newTask(request: request, completionHandler: {
+        SuperTokensURLSession.dataTask(request: request, completionHandler: {
             data, response, error in
             
             if error != nil {
@@ -212,7 +212,7 @@ class deviceInfoTests: XCTestCase {
                     
                     sleep(5)
                     
-                    SuperTokensURLSession.newTask(request: userInfoRequest, completionHandler: {
+                    SuperTokensURLSession.dataTask(request: userInfoRequest, completionHandler: {
                         userInfoData, userInfoResponse, userInfoError in
                         
                         if userInfoError != nil {

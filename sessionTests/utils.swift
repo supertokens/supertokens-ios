@@ -47,9 +47,9 @@ internal func afterAPI(successCallback: @escaping () -> Void, failureCallback: @
     _ = semaphore.wait(timeout: .distantFuture)
 }
 
-internal func startST(validity: Int = 1, refreshValidity: Double? = nil) {
+internal func startST(validity: Int = 1, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false) {
     let semaphore = DispatchSemaphore(value: 0)
-    startSTHelper(validity: validity, refreshValidity: refreshValidity, successCallback: {
+    startSTHelper(validity: validity, refreshValidity: refreshValidity, disableAntiCSRF: disableAntiCSRF, successCallback: {
         semaphore.signal()
     }) {
         semaphore.signal()
@@ -57,14 +57,14 @@ internal func startST(validity: Int = 1, refreshValidity: Double? = nil) {
     _ = semaphore.wait(timeout: DispatchTime.distantFuture)
 }
 
-private func startSTHelper(validity: Int = 1, refreshValidity: Double? = nil, successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
+private func startSTHelper(validity: Int = 1, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false, successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
     let semaphore = DispatchSemaphore(value: 0)
     let url = URL(string: startSTAPIURL)
     var request = URLRequest(url: url!)
     
     var json: [String: Any] = ["accessTokenValidity": validity]
     if refreshValidity != nil {
-        json = ["accessTokenValidity": validity, "refreshTokenValidity": refreshValidity!]
+        json = ["accessTokenValidity": validity, "refreshTokenValidity": refreshValidity!, "disableAntiCSRF": disableAntiCSRF!]
     }
     let jsonData = try? JSONSerialization.data(withJSONObject: json)
     request.httpMethod = "POST"
@@ -125,6 +125,20 @@ internal func getRefreshTokenCounter() -> Int {
     return result;
 }
 
+internal func getRefreshTokenCounterUsingST() -> Int {
+    let refreshCounterSemaphore = DispatchSemaphore(value: 0)
+    var result = -1;
+    getRefreshTokenCounterHelperUsingST(successCallback: {
+        counter in
+        result = counter
+        refreshCounterSemaphore.signal()
+    }, failureCallback: {
+        refreshCounterSemaphore.signal()
+    })
+    _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
+    return result;
+}
+
 private func getRefreshTokenCounterHelper(successCallback: @escaping (Int) -> Void, failureCallback: @escaping () -> Void) {
     let refreshCounterSempahore = DispatchSemaphore(value: 0)
     let url = URL(string: refreshCounterAPIURL)
@@ -165,25 +179,11 @@ private func getRefreshTokenCounterHelper(successCallback: @escaping (Int) -> Vo
     _ = refreshCounterSempahore.wait(timeout: .distantFuture)
 }
 
-internal func getRefreshTokenCounterUsingST() -> Int {
-    let refreshCounterSemaphore = DispatchSemaphore(value: 0)
-    var result = -1;
-    getRefreshTokenCounterHelperUsingST(successCallback: {
-        counter in
-        result = counter
-        refreshCounterSemaphore.signal()
-    }, failureCallback: {
-        refreshCounterSemaphore.signal()
-    })
-    _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
-    return result;
-}
-
 private func getRefreshTokenCounterHelperUsingST(successCallback: @escaping (Int) -> Void, failureCallback: @escaping () -> Void) {
     let refreshCounterSempahore = DispatchSemaphore(value: 0)
     let url = URL(string: refreshCounterAPIURL)
     let request = URLRequest(url: url!)
-    SuperTokensURLSession.newTask(request: request, completionHandler: { data, response, error in
+    SuperTokensURLSession.dataTask(request: request, completionHandler: { data, response, error in
         defer {
             refreshCounterSempahore.signal()
         }
@@ -217,7 +217,6 @@ private func getRefreshTokenCounterHelperUsingST(successCallback: @escaping (Int
     })
     _ = refreshCounterSempahore.wait(timeout: .distantFuture)
 }
-
 
 internal func getRefreshAPIDeviceInfo() -> NSDictionary? {
     let refreshCounterSemaphore = DispatchSemaphore(value: 0)

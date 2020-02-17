@@ -17,11 +17,13 @@ import * as express from 'express';
 import * as http from 'http';
 import * as SuperTokens from 'supertokens-node';
 
+import { getRefreshCustomHeaderInfo } from './getRefreshCustomHeaderInfo';
 import { getRefreshDeviceInfo } from './getRefreshDeviceInfo';
 import { testGetRefreshCounter } from './getRefreshTokenCounter';
 import loggedout from './loggedout';
 import testLogin from './login';
 import testLogout from './logout';
+import RefreshAPICustomHeader from './refreshAPICustomHeader';
 import RefreshAPIDeviceInfo from './refreshAPIDeviceInfo';
 import testRefreshtoken from './refreshtoken';
 import RefreshTokenCounter from './refreshTokenCounter';
@@ -54,6 +56,10 @@ app.post("/startst", async (req, res) => {
         if (refreshTokenValidity !== undefined) {
             await setKeyValueInConfig("refresh_token_validity", refreshTokenValidity);
         }
+        let disableAntiCSRF = req.body.disableAntiCSRF;
+        if (disableAntiCSRF) {
+            await setKeyValueInConfig("enable_anti_csrf", false);
+        }
         let pid = await startST();
         res.send(pid + "");
     } catch (err) {
@@ -64,6 +70,7 @@ app.post("/startst", async (req, res) => {
 app.post("/beforeeach", async (req, res) => {
     RefreshTokenCounter.resetRefreshTokenCount();
     RefreshAPIDeviceInfo.reset();
+    RefreshAPICustomHeader.reset();
     await killAllST();
     await setupST();
     await setKeyValueInConfig("cookie_domain", '"127.0.0.1"');
@@ -137,8 +144,15 @@ app.get("/refreshDeviceInfo", function (req, res) {
     })
 })
 
+app.get("/refreshHeaderInfo", function (req, res) {
+    getRefreshCustomHeaderInfo(req, res).catch(err => {
+        console.log(err);
+        res.status(500).send("");
+    })
+})
+
 app.use("/testing", async (req, res) => {
-    let tH:any = req.headers["testing"]
+    let tH: any = req.headers["testing"]
     if (tH !== undefined) {
         res.header("testing", tH);
     }

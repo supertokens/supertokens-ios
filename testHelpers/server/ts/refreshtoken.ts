@@ -15,6 +15,7 @@
 import * as express from 'express';
 import * as SuperTokens from 'supertokens-node';
 
+import RefreshAPICustomHeader from './refreshAPICustomHeader';
 import RefreshAPIDeviceInfo from './refreshAPIDeviceInfo';
 import RefreshTokenCounter from './refreshTokenCounter';
 
@@ -22,9 +23,13 @@ export default async function refreshtoken(req: express.Request, res: express.Re
     try {
         let sdkName: any = req.headers["supertokens-sdk-name"];
         let sdkVersion: any = req.headers["supertokens-sdk-version"];
+        let customValue: any = req.headers["custom-header"];
         await SuperTokens.refreshSession(req, res);
         RefreshTokenCounter.incrementRefreshTokenCount();
         RefreshAPIDeviceInfo.set(sdkName, sdkVersion);
+        if (customValue === "custom-value") {
+            RefreshAPICustomHeader.set(customValue);
+        }
         res.send("");
     } catch (err) {
         if (SuperTokens.Error.isErrorFromAuth(err) && err.errType !== SuperTokens.Error.GENERAL_ERROR) {

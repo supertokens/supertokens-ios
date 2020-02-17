@@ -26,11 +26,13 @@ const cookieParser = require("cookie-parser");
 const express = require("express");
 const http = require("http");
 const SuperTokens = require("supertokens-node");
+const getRefreshCustomHeaderInfo_1 = require("./getRefreshCustomHeaderInfo");
 const getRefreshDeviceInfo_1 = require("./getRefreshDeviceInfo");
 const getRefreshTokenCounter_1 = require("./getRefreshTokenCounter");
 const loggedout_1 = require("./loggedout");
 const login_1 = require("./login");
 const logout_1 = require("./logout");
+const refreshAPICustomHeader_1 = require("./refreshAPICustomHeader");
 const refreshAPIDeviceInfo_1 = require("./refreshAPIDeviceInfo");
 const refreshtoken_1 = require("./refreshtoken");
 const refreshTokenCounter_1 = require("./refreshTokenCounter");
@@ -58,6 +60,12 @@ app.post("/startst", (req, res) => __awaiter(this, void 0, void 0, function* () 
         if (refreshTokenValidity !== undefined) {
             yield utils_1.setKeyValueInConfig("refresh_token_validity", refreshTokenValidity);
         }
+        let disableAntiCSRF = req.body.disableAntiCSRF;
+        console.log(disableAntiCSRF);
+        if (disableAntiCSRF) {
+            yield utils_1.setKeyValueInConfig("enable_anti_csrf", false);
+            console.log("hahaha");
+        }
         let pid = yield utils_1.startST();
         res.send(pid + "");
     }
@@ -68,6 +76,7 @@ app.post("/startst", (req, res) => __awaiter(this, void 0, void 0, function* () 
 app.post("/beforeeach", (req, res) => __awaiter(this, void 0, void 0, function* () {
     refreshTokenCounter_1.default.resetRefreshTokenCount();
     refreshAPIDeviceInfo_1.default.reset();
+    refreshAPICustomHeader_1.default.reset();
     yield utils_1.killAllST();
     yield utils_1.setupST();
     yield utils_1.setKeyValueInConfig("cookie_domain", '"127.0.0.1"');
@@ -126,6 +135,12 @@ app.get("/loggedout", function (req, res) {
 });
 app.get("/refreshDeviceInfo", function (req, res) {
     getRefreshDeviceInfo_1.getRefreshDeviceInfo(req, res).catch(err => {
+        console.log(err);
+        res.status(500).send("");
+    });
+});
+app.get("/refreshHeaderInfo", function (req, res) {
+    getRefreshCustomHeaderInfo_1.getRefreshCustomHeaderInfo(req, res).catch(err => {
         console.log(err);
         res.status(500).send("");
     });
