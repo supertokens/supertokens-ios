@@ -18,6 +18,7 @@ jobs:
     - HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install mysql@5.6
     - brew link --force mysql@5.6
     - export PATH=$PATH:/usr/local/Cellar/mysql@5.6/5.6.46/bin
+    - brew update-reset
     - brew services start mysql@5.6
     - sleep 10
     - mysql -u root  -e "CREATE DATABASE auth_session;"
