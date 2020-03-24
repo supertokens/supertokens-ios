@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'SuperTokensSession_Example' do
+  pod 'SuperTokensSession', :path => '../'
+
+  target 'SuperTokensSession_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end

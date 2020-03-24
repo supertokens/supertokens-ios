@@ -1,0 +1,22 @@
+{
+  "name": "SuperTokensSession",
+  "version": "0.1.0",
+  "summary": "A short description of SuperTokensSession.",
+  "description": "TODO: Add long description of the pod here.",
+  "homepage": "https://github.com/rishabhpoddar/SuperTokensSession",
+  "license": {
+    "type": "MIT",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "rishabhpoddar": "rishabh.poddar@gmail.com"
+  },
+  "source": {
+    "git": "https://github.com/rishabhpoddar/SuperTokensSession.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "8.0"
+  },
+  "source_files": "SuperTokensSession/Classes/**/*"
+}

@@ -1,0 +1,16 @@
+PODS:
+  - SuperTokensSession (0.1.0)
+
+DEPENDENCIES:
+  - SuperTokensSession (from `../`)
+
+EXTERNAL SOURCES:
+  SuperTokensSession:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  SuperTokensSession: 37bdabf2a9944b48c2d8dda0e3d0a18da56c034e
+
+PODFILE CHECKSUM: 100ad34791e50db17c4ed66ad66a832bdbf74c71
+
+COCOAPODS: 1.9.1

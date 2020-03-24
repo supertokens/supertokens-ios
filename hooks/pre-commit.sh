@@ -1,6 +1,7 @@
 #!/bin/sh
 # get current version----------
-version=`cat SuperTokensSession.podspec | grep -e "spec.version      =" -e "spec.version="`
+version=`cat SuperTokensSession.podspec | grep -e "s.version          =" -e "s.version="`
+
 while IFS='"' read -ra ADDR; do
     counter=0
     for i in "${ADDR[@]}"; do
@@ -13,7 +14,7 @@ while IFS='"' read -ra ADDR; do
 done <<< "$version"
 
 # get version from code
-codeversion=`cat session/utils/Constants.swift | grep -e "sdkVersion =" -e "sdkVersion="`
+codeversion=`cat SuperTokensSession/Classes/Constants.swift | grep -e "sdkVersion =" -e "sdkVersion="`
 while IFS='"' read -ra ADDR; do
     counter=0
     for i in "${ADDR[@]}"; do
