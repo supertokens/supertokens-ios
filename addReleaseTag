@@ -2,7 +2,7 @@
 # Expects a releasePassword file to be ./
 
 # get version------------
-version=`cat SuperTokensSession.podspec | grep -e "spec.version      =" -e "spec.version="`
+version=`cat SuperTokensSession.podspec | grep -e "s.version          =" -e "s.version="`
 
 while IFS='"' read -ra ADDR; do
     counter=0

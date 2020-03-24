@@ -4,7 +4,7 @@ frontendDriverArray=`echo $frontendDriverJson | jq ".versions"`
 echo "got frontend driver relations"
 
 # get sdk version
-version=`cat ../SuperTokensSession.podspec | grep -e "spec.version      =" -e "spec.version="`
+version=`cat ../SuperTokensSession.podspec | grep -e "s.version          =" -e "s.version="`
 while IFS='"' read -ra ADDR; do
     counter=0
     for i in "${ADDR[@]}"; do
