@@ -11,7 +11,7 @@ Pod::Spec.new do |spec|
 
   spec.author       = { "SuperTokens" => "team@supertokens.io" }
 
-  spec.platform     = :ios, "9.0"
+  spec.platform     = :ios, "11.0"
 
   spec.source       = { :git => "https://github.com/supertokens/supertokens-ios.git", :tag => "v#{spec.version}" }
 
