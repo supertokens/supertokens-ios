@@ -15,26 +15,29 @@
 
 import Foundation
 
-public class SuperTokens {
+public class SuperTokens: NSObject {
     static var sessionExpiryStatusCode = 440
     static var isInitCalled = false
     static var apiDomain: String? = nil
     static var refreshTokenEndpoint: String? = nil
     static var refreshAPICustomHeaders: NSDictionary = NSDictionary()
     
-    public static func initialise(refreshTokenEndpoint: String, sessionExpiryStatusCode: Int? = nil, refreshAPICustomHeaders: NSDictionary = NSDictionary()) throws {
+
+    @objc public static func initialise(refreshTokenEndpoint: String, sessionExpiryStatusCode: Int, refreshAPICustomHeaders: NSDictionary = NSDictionary()) throws {
         if SuperTokens.isInitCalled {
             return;
         }
         
         SuperTokens.refreshTokenEndpoint = refreshTokenEndpoint
         SuperTokens.refreshAPICustomHeaders = refreshAPICustomHeaders
-        if sessionExpiryStatusCode != nil {
-            SuperTokens.sessionExpiryStatusCode = sessionExpiryStatusCode!
-        }
+        SuperTokens.sessionExpiryStatusCode = sessionExpiryStatusCode
         
         SuperTokens.apiDomain = try SuperTokens.getApiDomain(refreshTokenEndpoint: refreshTokenEndpoint)
         SuperTokens.isInitCalled = true
+    }
+    
+    @objc public static func initialise(refreshTokenEndpoint: String, refreshAPICustomHeaders: NSDictionary = NSDictionary()) throws {
+        try SuperTokens.initialise(refreshTokenEndpoint:refreshTokenEndpoint, sessionExpiryStatusCode:SuperTokens.sessionExpiryStatusCode, refreshAPICustomHeaders:refreshAPICustomHeaders)
     }
     
     private static func getApiDomain(refreshTokenEndpoint: String) throws -> String {
@@ -53,7 +56,7 @@ public class SuperTokens {
         }
     }
     
-    public static func doesSessionExist() -> Bool {
+    @objc public static func doesSessionExist() -> Bool {
         let token = IdRefreshToken.getToken()
         return token != nil
     }

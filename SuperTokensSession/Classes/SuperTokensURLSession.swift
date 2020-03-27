@@ -15,10 +15,10 @@
 
 import Foundation
 
-public class SuperTokensURLSession {
+public class SuperTokensURLSession: NSObject {
     private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
     
-    public static func dataTask(request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) {
+    @objc public static func dataTask(request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) {
         if !SuperTokens.isInitCalled {
             completionHandler(nil, nil, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.newTask"))
             return
