@@ -28,7 +28,7 @@ internal class AntiCSRF {
     }
     
     private static var antiCSRFInfo: AntiCSRFInfo? = nil
-    private static let antiCSRFUserDefaultsKey = "supertokens-android-anticsrf-key"
+    private static let antiCSRFUserDefaultsKey = "supertokens-ios-anticsrf-key"
     
     internal static func getToken(associatedIdRefreshToken: String?) -> String? {
         if associatedIdRefreshToken == nil {
