@@ -61,10 +61,8 @@ app.post("/startst", (req, res) => __awaiter(this, void 0, void 0, function* () 
             yield utils_1.setKeyValueInConfig("refresh_token_validity", refreshTokenValidity);
         }
         let disableAntiCSRF = req.body.disableAntiCSRF;
-        console.log(disableAntiCSRF);
         if (disableAntiCSRF) {
             yield utils_1.setKeyValueInConfig("enable_anti_csrf", false);
-            console.log("hahaha");
         }
         let pid = yield utils_1.startST();
         res.send(pid + "");

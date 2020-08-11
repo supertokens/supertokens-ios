@@ -31,7 +31,7 @@ function refreshtoken(req, res) {
                 if (err.errType === SuperTokens.Error.TOKEN_THEFT_DETECTED) {
                     yield SuperTokens.revokeSessionUsingSessionHandle(err.err.sessionHandle);
                 }
-                res.status(440).send("Session expired");
+                res.status(401).send("Session expired");
             }
             else {
                 throw err;

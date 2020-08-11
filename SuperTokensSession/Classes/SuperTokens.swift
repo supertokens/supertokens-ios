@@ -16,7 +16,7 @@
 import Foundation
 
 public class SuperTokens: NSObject {
-    static var sessionExpiryStatusCode = 440
+    static var sessionExpiryStatusCode = 401
     static var isInitCalled = false
     static var apiDomain: String? = nil
     static var refreshTokenEndpoint: String? = nil

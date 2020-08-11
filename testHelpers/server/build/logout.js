@@ -18,7 +18,7 @@ function logout(req, res) {
         }
         catch (err) {
             if (SuperTokens.Error.isErrorFromAuth(err) && err.errType !== SuperTokens.Error.GENERAL_ERROR) {
-                res.status(440).send("Session expired");
+                res.status(401).send("Session expired");
             }
             else {
                 throw err;

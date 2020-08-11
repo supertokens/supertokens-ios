@@ -33,7 +33,7 @@ class sessionTests: XCTestCase {
     let testError = "\(testAPIBase)testError"
     let fakeGetApi = "https://www.google.com"
     let refreshCustomHeader = "\(testAPIBase)refreshHeaderInfo"
-    let sessionExpiryCode = 440
+    let sessionExpiryCode = 401
     
 
     override class func tearDown() {
@@ -89,7 +89,7 @@ class sessionTests: XCTestCase {
                 
                 if userInfoResponse as? HTTPURLResponse != nil {
                     let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-                    if userInfoHttpResponse.statusCode != 440 {
+                    if userInfoHttpResponse.statusCode != self.sessionExpiryCode {
                         XCTFail()
                     }
                     requestSemaphore.signal()
@@ -1002,9 +1002,9 @@ class sessionTests: XCTestCase {
                 }
                 if response as? HTTPURLResponse != nil {
                     let httpResponse = response as! HTTPURLResponse
-                    if httpResponse.statusCode != 440 {
+                    if httpResponse.statusCode != self.sessionExpiryCode {
                         requestSemaphore.signal()
-                        XCTFail("Session Expired code 440 not returned")
+                        XCTFail("Session Expired code 401 not returned")
                         return
                     }
                     
@@ -1399,7 +1399,7 @@ class sessionTests: XCTestCase {
             failureMessage = "session exists, but it should not"
         } else {
             let idRefreshToken = IdRefreshToken.getToken()
-            let antiCSRFToken = UserDefaults.standard.string(forKey: "supertokens-android-anticsrf-key")
+            let antiCSRFToken = UserDefaults.standard.string(forKey: "supertokens-ios-anticsrf-key")
             if idRefreshToken != nil || antiCSRFToken == nil {
                 failureMessage = "antiCSRF is null or id refresh token is nil"
             }

@@ -36,7 +36,7 @@ export default async function refreshtoken(req: express.Request, res: express.Re
             if (err.errType === SuperTokens.Error.TOKEN_THEFT_DETECTED) {
                 await SuperTokens.revokeSessionUsingSessionHandle(err.err.sessionHandle);
             }
-            res.status(440).send("Session expired");
+            res.status(401).send("Session expired");
         } else {
             throw err;
         }

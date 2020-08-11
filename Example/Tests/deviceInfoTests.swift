@@ -27,7 +27,7 @@ class deviceInfoTests: XCTestCase {
     let loginAPIURL = "\(testAPIBase)login"
     let userInfoAPIURL = "\(testAPIBase)userInfo"
     let loggedoutAPIURL = "\(testAPIBase)loggedout"
-    let sessionExpiryCode = 440
+    let sessionExpiryCode = 401
     
     
     override class func tearDown() {
