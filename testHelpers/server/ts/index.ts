@@ -41,12 +41,9 @@ app.use(urlencodedParser);
 app.use(jsonParser);
 app.use(cookieParser());
 
-SuperTokens.init([
-    {
-        hostname: "localhost",
-        port: 9000
-    }
-]);
+SuperTokens.init({
+    hosts: "http://localhost:9000",
+});
 
 app.post("/startst", async (req, res) => {
     try {

@@ -46,12 +46,9 @@ let app = express();
 app.use(urlencodedParser);
 app.use(jsonParser);
 app.use(cookieParser());
-SuperTokens.init([
-    {
-        hostname: "localhost",
-        port: 9000
-    }
-]);
+SuperTokens.init({
+    hosts: "http://localhost:9000",
+});
 app.post("/startst", (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
