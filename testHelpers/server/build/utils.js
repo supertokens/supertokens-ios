@@ -47,6 +47,7 @@ function setupST() {
         let installationPath = process.env.INSTALL_PATH;
         yield executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
         yield executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
+        yield setKeyValueInConfig("refresh_api_path", "/refresh");
     });
 }
 exports.setupST = setupST;
