@@ -13,7 +13,7 @@ This is an iOS SDK that is responsible for maintaining a SuperTokens session for
 Learn more at https://supertokens.io
 
 ## Documentation
-To see documentation, please click [here](https://supertokens.io/docs/android/installation).
+To see documentation, please click [here](https://supertokens.io/docs/ios/installation).
 
 ## Making changes
 Please see our [Contributing](https://github.com/supertokens/supertokens-ios/blob/master/CONTRIBUTING.md) guide.
