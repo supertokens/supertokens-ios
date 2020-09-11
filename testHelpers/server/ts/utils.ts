@@ -35,6 +35,7 @@ export async function setupST() {
     await executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
     await executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
     await setKeyValueInConfig("refresh_api_path", "/refresh");
+    await setKeyValueInConfig("enable_anti_csrf", "true");
 };
 
 export async function setKeyValueInConfig(key: any, value: any) {

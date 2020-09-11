@@ -5,7 +5,8 @@
     "dependencies": {
         "cookie-parser": "1.4.4",
         "express": "4.16.4",
-        "moment": "2.24.0"
+        "moment": "2.24.0",
+        "supertokens-node": "git+https://github.com/supertokens/supertokens-node.git#2.4"
     },
     "devDependencies": {
         "@types/cookie-parser": "1.4.1",

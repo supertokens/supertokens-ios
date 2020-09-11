@@ -48,6 +48,7 @@ function setupST() {
         yield executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
         yield executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
         yield setKeyValueInConfig("refresh_api_path", "/refresh");
+        yield setKeyValueInConfig("enable_anti_csrf", "true");
     });
 }
 exports.setupST = setupST;

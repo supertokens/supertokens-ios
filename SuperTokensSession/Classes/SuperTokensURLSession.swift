@@ -143,6 +143,11 @@ public class SuperTokensURLSession: NSObject {
             var refreshRequest = URLRequest(url: refreshUrl)
             refreshRequest.httpMethod = "POST"
             
+            let antiCSRF = AntiCSRF.getToken(associatedIdRefreshToken: preRequestIdRefresh)
+            if antiCSRF != nil {
+                refreshRequest.addValue(antiCSRF!, forHTTPHeaderField: SuperTokensConstants.antiCSRFHeaderKey)
+            }
+            
             // Add package info to headers
             refreshRequest.addValue(SuperTokensConstants.platformName, forHTTPHeaderField: SuperTokensConstants.nameHeaderKey)
             refreshRequest.addValue(SuperTokensConstants.sdkVersion, forHTTPHeaderField: SuperTokensConstants.versionHeaderKey)
@@ -201,30 +206,4 @@ public class SuperTokensURLSession: NSObject {
             semaphore.wait()    // this is there so that this function call waits for the callback to exeicute so that we still have the write lock on our queue.
         }
     }
-    
-    
-//    public static func attemptRefreshingSession(completionHandler: @escaping (Bool, Error?) -> Void) {
-//        if !SuperTokens.isInitCalled {
-//            completionHandler(false, SuperTokensError.illegalAccess("SuperTokens.init must be called before calling SuperTokensURLSession.attemptRefreshingSession"))
-//            return
-//        }
-//
-//        readWriteDispatchQueue.async {
-//            let preRequestIdRefresh = IdRefreshToken.getToken()
-//            handleUnauthorised(preRequestIdRefresh: preRequestIdRefresh, retryCallback: {
-//                result, error in
-//
-//                if IdRefreshToken.getToken() == nil {
-//                    AntiCSRF.removeToken()
-//                }
-//
-//                if error != nil {
-//                    completionHandler(false, error!)
-//                    return
-//                }
-//
-//                completionHandler(result, nil)
-//            })
-//        }
-//    }
 }
