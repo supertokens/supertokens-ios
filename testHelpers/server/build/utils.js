@@ -45,7 +45,10 @@ exports.executeCommand = executeCommand;
 function setupST() {
     return __awaiter(this, void 0, void 0, function* () {
         let installationPath = process.env.INSTALL_PATH;
-        yield executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
+        try {
+            yield executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
+        }
+        catch (ignored) { }
         yield executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
         yield setKeyValueInConfig("refresh_api_path", "/refresh");
         yield setKeyValueInConfig("enable_anti_csrf", "true");
@@ -82,7 +85,10 @@ exports.setKeyValueInConfig = setKeyValueInConfig;
 function cleanST() {
     return __awaiter(this, void 0, void 0, function* () {
         let installationPath = process.env.INSTALL_PATH;
-        yield executeCommand("cd " + installationPath + " && rm licenseKey");
+        try {
+            yield executeCommand("cd " + installationPath + " && rm licenseKey");
+        }
+        catch (ignored) { }
         yield executeCommand("cd " + installationPath + " && rm config.yaml");
         yield executeCommand("cd " + installationPath + " && rm -rf .webserver-temp-*");
         yield executeCommand("cd " + installationPath + " && rm -rf .started");

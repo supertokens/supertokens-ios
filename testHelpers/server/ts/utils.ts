@@ -32,7 +32,9 @@ export async function executeCommand(cmd: any): Promise<any> {
 
 export async function setupST() {
     let installationPath = process.env.INSTALL_PATH;
-    await executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
+    try {
+        await executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
+    } catch (ignored) { }
     await executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
     await setKeyValueInConfig("refresh_api_path", "/refresh");
     await setKeyValueInConfig("enable_anti_csrf", "true");
@@ -62,7 +64,9 @@ export async function setKeyValueInConfig(key: any, value: any) {
 
 export async function cleanST() {
     let installationPath = process.env.INSTALL_PATH;
-    await executeCommand("cd " + installationPath + " && rm licenseKey");
+    try {
+        await executeCommand("cd " + installationPath + " && rm licenseKey");
+    } catch (ignored) { }
     await executeCommand("cd " + installationPath + " && rm config.yaml");
     await executeCommand("cd " + installationPath + " && rm -rf .webserver-temp-*");
     await executeCommand("cd " + installationPath + " && rm -rf .started");
