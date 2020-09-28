@@ -15,28 +15,22 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
 
 ### Prerequisites
 - OS: macOS
-- IDE: [VSCode](https://code.visualstudio.com/download)(recommended) or equivalent IDE  
+- IDE: XCode
+- NodeJS
+- Java
 
 ### Project Setup
 1. Please setup `supertokens-core` by following [this guide](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md#development-setup). If you are not contributing to `supertokens-core`, please skip  steps 1 & 4 under "Project Setup" section.
 2. Clone the forked repository in the parent directory of the previously setup `supertokens-root`.  That is, `supertokens-ios` and `supertokens-root` should exist side by side within the same parent directory.
 3. `cd supertokens-ios`
-4. Install the project dependencies
+4. Add git pre-commit hooks
    ```
-   npm i -d
-   ```
-5. Add git pre-commit hooks
-   ```
-   npm run set-up-hooks
+   ./setup-pre-commit.sh
    ```
 
 ## Modifying Code  
-1. Open the `supertokens-ios` project in your IDE.
+1. Open the `supertokens-ios` project in XCode by double clicking on `./Example/SuperTokensSession.xcworkspace`.
 2. You can start modifying the code.
-3. After modification, you need to build the project:
-   ```
-   npm run build-pretty
-   ```
 
 ## Testing
 1. Navigate to the `supertokens-root` repository
@@ -47,15 +41,16 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
 3. In a new terminal, navigate to the `supertokens-ios` repository.
 4. Start a node server required for testing
    ```
-   cd ./test/server/
+   cd ./testHelpers/server/
    npm i -d
    npm i git+https://github.com:supertokens/supertokens-node.git
-   TEST_MODE=testing INSTALL_PATH=../../../supertokens-root NODE_PORT=8082 node .
+   TEST_MODE=testing INSTALL_PATH=../../../supertokens-root node ./build/index.js
    ```
 5. Open a new terminal in `supertokens-ios` and run all tests
    ```
-   INSTALL_PATH=../supertokens-root npm test
+   xcodebuild test -enableCodeCoverage YES -workspace Example/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 11' ONLY_ACTIVE_ARCH=NO | xcpretty
    ```
+   Alternatively, you can also run all tests via XCode. The tests are present in the `Example` project.
 6. If all tests pass the output should be:
 
    <img src="https://github.com/supertokens/supertokens-logo/blob/master/images/supertokens-ios-tests-passing.png" alt="IOS tests passing" width="500px">
