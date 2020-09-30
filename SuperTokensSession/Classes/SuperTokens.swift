@@ -41,8 +41,17 @@ public class SuperTokens: NSObject {
     }
     
     private static func getApiDomain(refreshTokenEndpoint: String) throws -> String {
-        if refreshTokenEndpoint.starts(with: "http://") || refreshTokenEndpoint.starts(with: "https://") {
-            let splitArray = refreshTokenEndpoint.split(separator: "/").map(String.init)
+        guard var urlComponents = URLComponents(string: refreshTokenEndpoint) else {
+            throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
+        }
+        if urlComponents.path.isEmpty || urlComponents.path == "/" {
+            urlComponents.path = "/session/refresh"
+        }
+        guard let endpoint = urlComponents.string else {
+            throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
+        }
+        if endpoint.starts(with: "http://") || endpoint.starts(with: "https://") {
+            let splitArray = endpoint.split(separator: "/").map(String.init)
             if splitArray.count < 3 {
                 throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
             }
