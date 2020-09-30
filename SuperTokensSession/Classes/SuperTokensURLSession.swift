@@ -178,7 +178,7 @@ public class SuperTokensURLSession: NSObject {
                         IdRefreshToken.setToken(newIdRefreshToken: "remove");
                     }
                     
-                    if httpResponse.statusCode != 200 {
+                    if httpResponse.statusCode >= 300 {
                         semaphore.signal()
                         unauthorisedCallback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError("Refresh API returned with status code: \(httpResponse.statusCode)")))
                         return
