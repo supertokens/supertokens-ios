@@ -83,11 +83,11 @@ class sessionTests: XCTestCase {
     
     func testSessionApiBaseResolvedCorrectlyAgainstSomeOtherPathUrl() {
         do {
-            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com/")
+            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com/some/other/url")
         } catch {
             XCTFail()
         }
-        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/session/refresh")
+        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/some/other/url")
     }
     
     // Test that if you are logged out and you call the /userInfo API, you get session expired output and that refresh token API doesnt get called

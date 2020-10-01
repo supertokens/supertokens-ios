@@ -27,7 +27,6 @@ public class SuperTokens: NSObject {
             return;
         }
         
-        SuperTokens.refreshTokenEndpoint = refreshTokenEndpoint
         SuperTokens.refreshAPICustomHeaders = refreshAPICustomHeaders
         SuperTokens.sessionExpiryStatusCode = sessionExpiryStatusCode
         SuperTokens.refreshTokenEndpoint = try SuperTokens.transformRefreshTokenEndpoint(refreshTokenEndpoint)
