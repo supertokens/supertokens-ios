@@ -63,6 +63,33 @@ class sessionTests: XCTestCase {
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
     }
     
+    func testSessionApiBaseResolvedCorrectlyAgainstNoPathUrl() {
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com")
+        } catch {
+            XCTFail()
+        }
+        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/session/refresh")
+    }
+    
+    func testSessionApiBaseResolvedCorrectlyAgainstZeroLengthPathUrl() {
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com/")
+        } catch {
+            XCTFail()
+        }
+        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/session/refresh")
+    }
+    
+    func testSessionApiBaseResolvedCorrectlyAgainstSomeOtherPathUrl() {
+        do {
+            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com/")
+        } catch {
+            XCTFail()
+        }
+        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/session/refresh")
+    }
+    
     // Test that if you are logged out and you call the /userInfo API, you get session expired output and that refresh token API doesnt get called
     func testSessionExpiredErrorAndNoRefreshToken() {
         startST(validity: 3)
