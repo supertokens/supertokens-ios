@@ -18,7 +18,6 @@ import Foundation
 public class SuperTokens: NSObject {
     static var sessionExpiryStatusCode = 401
     static var isInitCalled = false
-    static var apiDomain: String? = nil
     static var refreshTokenEndpoint: String? = nil
     static var refreshAPICustomHeaders: NSDictionary = NSDictionary()
     
@@ -28,11 +27,9 @@ public class SuperTokens: NSObject {
             return;
         }
         
-        SuperTokens.refreshTokenEndpoint = refreshTokenEndpoint
         SuperTokens.refreshAPICustomHeaders = refreshAPICustomHeaders
         SuperTokens.sessionExpiryStatusCode = sessionExpiryStatusCode
-        
-        SuperTokens.apiDomain = try SuperTokens.getApiDomain(refreshTokenEndpoint: refreshTokenEndpoint)
+        SuperTokens.refreshTokenEndpoint = try SuperTokens.transformRefreshTokenEndpoint(refreshTokenEndpoint)
         SuperTokens.isInitCalled = true
     }
     
@@ -40,20 +37,17 @@ public class SuperTokens: NSObject {
         try SuperTokens.initialise(refreshTokenEndpoint:refreshTokenEndpoint, sessionExpiryStatusCode:SuperTokens.sessionExpiryStatusCode, refreshAPICustomHeaders:refreshAPICustomHeaders)
     }
     
-    private static func getApiDomain(refreshTokenEndpoint: String) throws -> String {
-        if refreshTokenEndpoint.starts(with: "http://") || refreshTokenEndpoint.starts(with: "https://") {
-            let splitArray = refreshTokenEndpoint.split(separator: "/").map(String.init)
-            if splitArray.count < 3 {
-                throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
-            }
-            var apiDomainArray: [String] = []
-            for index in (0...2) {
-                apiDomainArray.append(splitArray[index])
-            }
-            return apiDomainArray.joined(separator: "/")
-        } else {
-            throw SuperTokensError.invalidURL("Refresh token endpoint must start with http or https")
+    private static func transformRefreshTokenEndpoint(_ refreshTokenEndpoint: String) throws -> String {
+        guard var urlComponents = URLComponents(string: refreshTokenEndpoint) else {
+            throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
         }
+        if urlComponents.path.isEmpty || urlComponents.path == "/" {
+            urlComponents.path = "/session/refresh"
+        }
+        guard let transformedEndpoint = urlComponents.string else {
+            throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
+        }
+        return transformedEndpoint
     }
     
     @objc public static func doesSessionExist() -> Bool {
