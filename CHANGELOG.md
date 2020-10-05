@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2020-10-05
+### Changed
+- Successful status code for refresh is >= 200 and < 300
+
 ## [1.3.0] - 2020-09-11
 ### Changed
 - Compatibility with FDI 1.2

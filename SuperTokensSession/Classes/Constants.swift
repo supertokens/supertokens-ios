@@ -22,5 +22,5 @@ internal class SuperTokensConstants {
     static let nameHeaderKey = "supertokens-sdk-name"
     static let versionHeaderKey = "supertokens-sdk-version"
     static let platformName = "ios"
-    static let sdkVersion = "1.3.0"
+    static let sdkVersion = "1.3.1"
 }
