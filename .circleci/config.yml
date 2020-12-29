@@ -1,4 +1,6 @@
-version: 2
+version: 2.1
+orbs:
+  slack: circleci/slack@3.4.2
 jobs:
   deploy_gh_pages:
     docker:
@@ -9,12 +11,14 @@ jobs:
       - run: git config --global user.email "rishabh.poddar@gmail.com"
       - run: git config --global user.name "Rishabh Poddar"
       - run: ./publishToGit.sh
-
+      - slack/status
 workflows:
   version: 2
   tagged-build:
     jobs:
       - deploy_gh_pages:
+          context:
+            - slack-notification
           filters:
             branches:
               only: 
