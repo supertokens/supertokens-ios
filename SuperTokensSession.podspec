@@ -26,11 +26,11 @@ SuperTokens SDK for iOS written in Swift. This SDK takes care of managing a sess
   s.author           = { 'rishabhpoddar' => 'rishabh@supertokens.io' }
   s.source           = { :git => 'https://github.com/supertokens/supertokens-ios.git', :tag => "v#{s.version.to_s}" }
 
-  s.ios.deployment_target = '8.0'
+  s.ios.deployment_target = '12.0'
 
   s.source_files = 'SuperTokensSession/Classes/**/*'
   
-  s.swift_versions = "4.0"
+  s.swift_versions = "5.0"
 
   # s.resource_bundles = {
   #   'SuperTokensSession' => ['SuperTokensSession/Assets/*.png']
