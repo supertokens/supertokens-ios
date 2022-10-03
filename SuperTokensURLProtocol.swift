@@ -176,7 +176,7 @@ class SuperTokensURLProtocol: URLProtocol {
             refreshRequest.addValue(SuperTokens.rid, forHTTPHeaderField: "rid")
             refreshRequest.addValue(Version.supported_fdi.joined(separator: ","), forHTTPHeaderField: "fdi-version")
             
-            // TODO: Nemi handle custom refresh headers
+            refreshRequest = SuperTokens.config!.preAPIHook(.REFRESH_SESSION, refreshRequest)
             
             let semaphore = DispatchSemaphore(value: 0)
             
@@ -206,6 +206,8 @@ class SuperTokensURLProtocol: URLProtocol {
                         callback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError(message: "Refresh API returned with status code: \(httpResponse.statusCode)")))
                         return
                     }
+                    
+                    SuperTokens.config!.postAPIHook(.REFRESH_SESSION, refreshRequest, response)
                     
                     let idRefreshToken = IdRefreshToken.getToken()
                     

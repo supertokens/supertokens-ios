@@ -23,6 +23,11 @@ public enum EventType {
     case UNAUTHORISED
 }
 
+public enum APIAction {
+    case SIGN_OUT
+    case REFRESH_SESSION
+}
+
 public class SuperTokens {
     static var sessionExpiryStatusCode = 401
     static var isInitCalled = false
@@ -31,12 +36,12 @@ public class SuperTokens {
     static var rid: String = ""
     static var config: NormalisedInputType? = nil
     
-    public static func initialize(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?) throws {
+    public static func initialize(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?) throws {
         if SuperTokens.isInitCalled {
             return;
         }
         
-        SuperTokens.config = try NormalisedInputType.normaliseInputType(apiDomain: apiDomain, apiBasePath: apiBasePath, sessionExpiredStatusCode: sessionExpiredStatusCode, cookieDomain: cookieDomain, eventHandler: eventHandler)
+        SuperTokens.config = try NormalisedInputType.normaliseInputType(apiDomain: apiDomain, apiBasePath: apiBasePath, sessionExpiredStatusCode: sessionExpiredStatusCode, cookieDomain: cookieDomain, eventHandler: eventHandler, preAPIHook: preAPIHook, postAPIHook: postAPIHook)
         
         guard let _config: NormalisedInputType = SuperTokens.config else {
             throw SuperTokensError.initError(message: "Error initialising SuperTokens")
@@ -53,8 +58,63 @@ public class SuperTokens {
         return token != nil
     }
     
-    public static func signOut() {
-        // TODO: NEMI Implement
-        SuperTokens.config!.eventHandler(.SIGN_OUT)
+    public static func signOut(completionHandler: @escaping (Error?) -> Void) {
+        if !doesSessionExist() {
+            SuperTokens.config!.eventHandler(.SIGN_OUT)
+            completionHandler(nil)
+            return
+        }
+        
+        guard let url: URL = URL(string: SuperTokens.signOutUrl) else {
+            completionHandler(SuperTokensError.initError(message: "Please provide a valid apiDomain and apiBasePath"))
+            return
+        }
+        
+        var sessionConfiguration: URLSessionConfiguration = URLSessionConfiguration.default
+        sessionConfiguration.protocolClasses?.insert(SuperTokensURLProtocol.self, at: 0)
+        let customSession = URLSession(configuration: sessionConfiguration)
+        
+        var signOutRequest = URLRequest(url: url)
+        signOutRequest.httpMethod = "POST"
+        signOutRequest.addValue(SuperTokens.rid, forHTTPHeaderField: "rid")
+        
+        signOutRequest = SuperTokens.config!.preAPIHook(.SIGN_OUT, signOutRequest)
+        
+        let executionSemaphore = DispatchSemaphore(value: 0)
+        
+        customSession.dataTask(with: signOutRequest, completionHandler: {
+            data, response, error in
+            
+            if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {
+                    // refresh must have already sent session expiry event
+                    executionSemaphore.signal()
+                    return
+                }
+                
+                if httpResponse.statusCode >= 300 {
+                    completionHandler(SuperTokensError.apiError(message: "Sign out failed with response code \(httpResponse.statusCode)"))
+                    executionSemaphore.signal()
+                    return
+                }
+                
+                SuperTokens.config!.postAPIHook(.SIGN_OUT, signOutRequest, response)
+                
+                if let _data: Data = data, let jsonResponse: SignOutResponse = try? JSONDecoder().decode(SignOutResponse.self, from: _data) {
+                    if jsonResponse.status == "GENERAL_ERROR" {
+                        completionHandler(SuperTokensError.generalError(message: jsonResponse.message!))
+                        executionSemaphore.signal()
+                    }
+                } else {
+                    completionHandler(SuperTokensError.apiError(message: "Invalid sign out response"))
+                    executionSemaphore.signal()
+                }
+            } else {
+                completionHandler(nil)
+                executionSemaphore.signal()
+            }
+            
+            // we do not send an event here since it's triggered in setIdRefreshToken area.
+        }).resume()
     }
 }

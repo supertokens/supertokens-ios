@@ -13,13 +13,17 @@ class NormalisedInputType {
     var sessionExpiredStatusCode: Int
     var cookieDomain: String?
     var eventHandler: (EventType) -> Void
+    var preAPIHook: (APIAction, URLRequest) -> URLRequest
+    var postAPIHook: (APIAction, URLRequest, URLResponse?) -> Void
     
-    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, cookieDomain: String?, eventHandler: @escaping (EventType) -> Void) {
+    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, cookieDomain: String?, eventHandler: @escaping (EventType) -> Void, preAPIHook: @escaping (APIAction, URLRequest) -> URLRequest, postAPIHook: @escaping (APIAction, URLRequest, URLResponse?) -> Void) {
         self.apiDomain = apiDomain
         self.apiBasePath = apiBasePath
         self.sessionExpiredStatusCode = sessionExpiredStatusCode
         self.cookieDomain = cookieDomain
         self.eventHandler = eventHandler
+        self.preAPIHook = preAPIHook
+        self.postAPIHook = postAPIHook
     }
     
     internal static func sessionScopeHelper(sessionScope: String) throws -> String {
@@ -64,7 +68,7 @@ class NormalisedInputType {
         return noDotNormalised
     }
     
-    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?) throws -> NormalisedInputType {
+    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?) throws -> NormalisedInputType {
         let _apiDomain = try NormalisedURLDomain(url: apiDomain)
         var _apiBasePath = try NormalisedURLPath(input: "/auth")
         
@@ -87,7 +91,23 @@ class NormalisedInputType {
             _eventHandler = eventHandler!
         }
         
-        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, cookieDomain: _cookieDomain, eventHandler: _eventHandler)
+        var _preAPIHook: (APIAction, URLRequest) -> URLRequest = {
+            _, request in
+            
+            return request
+        }
+        if preAPIHook != nil {
+            _preAPIHook = preAPIHook!
+        }
+        
+        var _postApiHook: (APIAction, URLRequest, URLResponse?) -> Void = {
+            _, _, _ in
+        }
+        if postAPIHook != nil {
+            _postApiHook = postAPIHook!
+        }
+        
+        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, cookieDomain: _cookieDomain, eventHandler: _eventHandler, preAPIHook: _preAPIHook, postAPIHook: _postApiHook)
     }
 }
 
@@ -136,4 +156,9 @@ internal class Utils {
         
         return input.matches(regex: regex)
     }
+}
+
+internal struct SignOutResponse: Codable {
+    var status: String
+    var message: String?
 }

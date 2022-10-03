@@ -18,6 +18,7 @@ import Foundation
 public enum SuperTokensError: Error {
     case initError(message: String)
     case apiError(message: String)
+    case generalError(message: String)
 }
 
 internal enum SDKFailableError: Error {
