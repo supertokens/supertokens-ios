@@ -36,32 +36,32 @@ class sessionTests: XCTestCase {
     let sessionExpiryCode = 401
     
 
-    override class func tearDown() {
-        let semaphore = DispatchSemaphore(value: 0)
-        afterAPI(successCallback: {
-            semaphore.signal()
-        }, failureCallback: {
-            semaphore.signal()
-        })
-         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        super.tearDown()
-    }
-
-    override func setUp() {
-        super.setUp()
-        SuperTokens.isInitCalled = false
-        AntiCSRF.removeToken()
-        IdRefreshToken.removeToken()
-        
-        let semaphore = DispatchSemaphore(value: 0)
-        beforeEachAPI(successCallback: {
-            semaphore.signal()
-        }, failureCallback: {
-            semaphore.signal()
-        })
-        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-    }
+//    override class func tearDown() {
+//        let semaphore = DispatchSemaphore(value: 0)
+//        afterAPI(successCallback: {
+//            semaphore.signal()
+//        }, failureCallback: {
+//            semaphore.signal()
+//        })
+//         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+//        
+//        super.tearDown()
+//    }
+//
+//    override func setUp() {
+//        super.setUp()
+//        SuperTokens.isInitCalled = false
+//        AntiCSRF.removeToken()
+//        IdRefreshToken.removeToken()
+//        
+//        let semaphore = DispatchSemaphore(value: 0)
+//        beforeEachAPI(successCallback: {
+//            semaphore.signal()
+//        }, failureCallback: {
+//            semaphore.signal()
+//        })
+//        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+//    }
     
 //    func testSessionApiBaseResolvedCorrectlyAgainstNoPathUrl() {
 //        do {

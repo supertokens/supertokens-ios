@@ -12,12 +12,14 @@ class NormalisedInputType {
     var apiBasePath: String
     var sessionExpiredStatusCode: Int
     var cookieDomain: String?
+    var eventHandler: (EventType) -> Void
     
-    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, cookieDomain: String?) {
+    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, cookieDomain: String?, eventHandler: @escaping (EventType) -> Void) {
         self.apiDomain = apiDomain
         self.apiBasePath = apiBasePath
         self.sessionExpiredStatusCode = sessionExpiredStatusCode
         self.cookieDomain = cookieDomain
+        self.eventHandler = eventHandler
     }
     
     internal static func sessionScopeHelper(sessionScope: String) throws -> String {
@@ -62,7 +64,7 @@ class NormalisedInputType {
         return noDotNormalised
     }
     
-    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?) throws -> NormalisedInputType {
+    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?) throws -> NormalisedInputType {
         let _apiDomain = try NormalisedURLDomain(url: apiDomain)
         var _apiBasePath = try NormalisedURLPath(input: "/auth")
         
@@ -80,7 +82,12 @@ class NormalisedInputType {
             _cookieDomain = try normaliseSessionScopeOrThrowError(sessionScope: cookieDomain!)
         }
         
-        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, cookieDomain: _cookieDomain)
+        var _eventHandler: (EventType) -> Void = { _ in }
+        if eventHandler != nil {
+            _eventHandler = eventHandler!
+        }
+        
+        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, cookieDomain: _cookieDomain, eventHandler: _eventHandler)
     }
 }
 

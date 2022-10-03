@@ -41,21 +41,34 @@ internal class IdRefreshToken {
         return IdRefreshToken.idRefreshInMemory
     }
     
-    internal static func setToken(newIdRefreshToken: String) {
+    internal static func setToken(newIdRefreshToken: String, statusCode: Int) {
+        let previousToken = getToken()
         if (newIdRefreshToken == "remove") {
             IdRefreshToken.removeToken()
-            return;
-        }
-        let splitted = newIdRefreshToken.components(separatedBy: ";");
-        let expiry = Int64(splitted[1])!;
-        let currentTime = Date().millisecondsSince1970
-        if expiry < currentTime {
-            IdRefreshToken.removeToken()
         } else {
-            let userDefaults = IdRefreshToken.getUserDefaults()
-            userDefaults.set(newIdRefreshToken, forKey: IdRefreshToken.idRefreshUserDefaultsKey)
-            userDefaults.synchronize()
-            IdRefreshToken.idRefreshInMemory = newIdRefreshToken
+            let splitted = newIdRefreshToken.components(separatedBy: ";");
+            let expiry = Int64(splitted[1])!;
+            let currentTime = Date().millisecondsSince1970
+            if expiry < currentTime {
+                IdRefreshToken.removeToken()
+            } else {
+                let userDefaults = IdRefreshToken.getUserDefaults()
+                userDefaults.set(newIdRefreshToken, forKey: IdRefreshToken.idRefreshUserDefaultsKey)
+                userDefaults.synchronize()
+                IdRefreshToken.idRefreshInMemory = newIdRefreshToken
+            }
+        }
+        
+        if newIdRefreshToken == "remove" && previousToken != nil {
+            if statusCode == SuperTokens.config!.sessionExpiredStatusCode {
+                SuperTokens.config!.eventHandler(.UNAUTHORISED)
+            } else {
+                SuperTokens.config!.eventHandler(.SIGN_OUT)
+            }
+        }
+        
+        if newIdRefreshToken != "remove" && previousToken == nil {
+            SuperTokens.config!.eventHandler(.SESSION_CREATED)
         }
     }
     

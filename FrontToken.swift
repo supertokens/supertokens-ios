@@ -86,7 +86,7 @@ internal class FrontToken {
             let newPayloadString = String(data: try! JSONSerialization.data(withJSONObject: newPayload), encoding: .utf8)!
             
             if oldPayloadString != newPayloadString {
-                // TODO: Nemi handle event firing
+                SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
             }
         }
         

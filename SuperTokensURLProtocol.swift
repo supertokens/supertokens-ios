@@ -80,7 +80,7 @@ class SuperTokensURLProtocol: URLProtocol {
                 if headerFields != nil && response!.url != nil {
                     let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshTokenHeaderKey]
                     if (idRefreshTokenFromResponse != nil) {
-                        IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                        IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String, statusCode: httpResponse.statusCode);
                     }
                 }
                 
@@ -154,6 +154,7 @@ class SuperTokensURLProtocol: URLProtocol {
         SuperTokensURLProtocol.readWriteDispatchQueue.async(flags: .barrier) {
             let postLockIdRefresh = IdRefreshToken.getToken()
             if postLockIdRefresh == nil {
+                SuperTokens.config!.eventHandler(.UNAUTHORISED)
                 callback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.SESSION_EXPIRED))
                 return
             }
@@ -191,13 +192,13 @@ class SuperTokensURLProtocol: URLProtocol {
                     if headerFields != nil && response!.url != nil {
                         let idRefreshTokenFromResponse = httpResponse.allHeaderFields[SuperTokensConstants.idRefreshTokenHeaderKey]
                         if (idRefreshTokenFromResponse != nil) {
-                            IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String);
+                            IdRefreshToken.setToken(newIdRefreshToken: idRefreshTokenFromResponse as! String, statusCode: httpResponse.statusCode);
                             removeIdRefreshToken = false;
                         }
                     }
                     
                     if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode && removeIdRefreshToken {
-                        IdRefreshToken.setToken(newIdRefreshToken: "remove");
+                        IdRefreshToken.setToken(newIdRefreshToken: "remove", statusCode: httpResponse.statusCode);
                     }
                     
                     if httpResponse.statusCode >= 300 {
@@ -227,6 +228,7 @@ class SuperTokensURLProtocol: URLProtocol {
                     }
                     
                     semaphore.signal()
+                    SuperTokens.config!.eventHandler(.REFRESH_SESSION)
                     callback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.RETRY))
                 } else {
                     semaphore.signal()
