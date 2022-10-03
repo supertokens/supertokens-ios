@@ -17,10 +17,7 @@ import Foundation
 
 internal class SuperTokensConstants {
     static let antiCSRFHeaderKey = "anti-csrf"
-    static let setCookieHeaderKey = "Set-Cookie"
+    static let frontTokenHeaderKey = "front-token"
     static let idRefreshTokenHeaderKey = "id-refresh-token"
-    static let nameHeaderKey = "supertokens-sdk-name"
-    static let versionHeaderKey = "supertokens-sdk-version"
     static let platformName = "ios"
-    static let sdkVersion = "1.3.1"
 }

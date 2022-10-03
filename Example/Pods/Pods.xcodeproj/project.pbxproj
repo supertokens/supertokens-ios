@@ -12,7 +12,6 @@
 		1956144CFC180219A46D43AEA5695E57 /* IdRefreshToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7E6521022139A98254EF3AEDDD6D8D /* IdRefreshToken.swift */; };
 		435FB05098B83CDEA675D53C4C076FA8 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFAFEEE671D455C040E786071C241A7 /* Constants.swift */; };
 		4E7DF6DA50C432140800CC721F50BE19 /* SuperTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34ECBB314A00DFE69A00E3AF1367155C /* SuperTokens.swift */; };
-		544B55F5633BEAE3CE972AF68FF36FED /* SuperTokensURLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACAD5B16A550D4E843585CF42F8CCD14 /* SuperTokensURLSession.swift */; };
 		56F0E5425F83ACBD3300325B9128154E /* Pods-SuperTokensSession_Tests-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = A86003E36BDDF5331EEFB2F2B42C3A50 /* Pods-SuperTokensSession_Tests-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B65862394FC4FC15449A03FF9FBB39F /* SuperTokensSession-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = C7CD57419317937A3839E987C5BBBB19 /* SuperTokensSession-dummy.m */; };
 		8D03C9DDAEEB2BDAE5B9589C00017F7A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
@@ -20,6 +19,13 @@
 		9A6EA323F79AB91954B8A0A1A4E173A3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
 		A6DC66AF7542CD7D3EA8F8BD9873D149 /* SuperTokensSession-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = A8DDBAAA891D8A97BDC9B73CD96DFA1A /* SuperTokensSession-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		ADA6C901E21165036F2F2A39CD28B14B /* Pods-SuperTokensSession_Tests-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 35C5DC5E55FD7E476F596D04EDF6719C /* Pods-SuperTokensSession_Tests-dummy.m */; };
+		B92E27F528E6FF0D00053686 /* SuperTokensURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27F428E6FF0D00053686 /* SuperTokensURLProtocol.swift */; };
+		B92E27F728E6FF5C00053686 /* FrontToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27F628E6FF5C00053686 /* FrontToken.swift */; };
+		B92E27F928E6FFE800053686 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27F828E6FFE800053686 /* Utils.swift */; };
+		B92E27FC28E7000B00053686 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27FB28E7000B00053686 /* String.swift */; };
+		B92E280128E7006000053686 /* NormalisedURLDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E280028E7006000053686 /* NormalisedURLDomain.swift */; };
+		B92E280328E7007B00053686 /* NormalisedURLPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E280228E7007B00053686 /* NormalisedURLPath.swift */; };
+		B92E280528E702DD00053686 /* Version.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E280428E702DD00053686 /* Version.swift */; };
 		C20EF9259AF094042326ABF47E7DE480 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
 		E04A6216201BF98342431E378AABE3B9 /* Pods-SuperTokensSession_Example-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 28FDE86240C0FF88D98D03A432656EFC /* Pods-SuperTokensSession_Example-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E165B8FC410AC2BC292250E0DC84D8F2 /* AntiCSRF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357FF2C16090B2B306196395F63614DB /* AntiCSRF.swift */; };
@@ -53,7 +59,7 @@
 		357FF2C16090B2B306196395F63614DB /* AntiCSRF.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AntiCSRF.swift; path = SuperTokensSession/Classes/AntiCSRF.swift; sourceTree = "<group>"; };
 		35C5DC5E55FD7E476F596D04EDF6719C /* Pods-SuperTokensSession_Tests-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-SuperTokensSession_Tests-dummy.m"; sourceTree = "<group>"; };
 		36FE363A204DE3B7884EBF2DF27E2F7D /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		38CA81A34A219B85948C71AAB65854E6 /* SuperTokensSession.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = SuperTokensSession.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		38CA81A34A219B85948C71AAB65854E6 /* SuperTokensIOS.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = SuperTokensIOS.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		3D592853D039CED0FF8D02E06D4B296D /* Pods-SuperTokensSession_Tests-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-SuperTokensSession_Tests-acknowledgements.plist"; sourceTree = "<group>"; };
 		4844AEEF9972DFF4D5A3C24B66E476DE /* SuperTokensSession-prefix.pch */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "SuperTokensSession-prefix.pch"; sourceTree = "<group>"; };
 		5CFAFEEE671D455C040E786071C241A7 /* Constants.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Constants.swift; path = SuperTokensSession/Classes/Constants.swift; sourceTree = "<group>"; };
@@ -70,8 +76,14 @@
 		A86003E36BDDF5331EEFB2F2B42C3A50 /* Pods-SuperTokensSession_Tests-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "Pods-SuperTokensSession_Tests-umbrella.h"; sourceTree = "<group>"; };
 		A887AB3E0888FB7953E3D594D8D5BAF0 /* SuperTokensSession.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SuperTokensSession.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8DDBAAA891D8A97BDC9B73CD96DFA1A /* SuperTokensSession-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "SuperTokensSession-umbrella.h"; sourceTree = "<group>"; };
-		ACAD5B16A550D4E843585CF42F8CCD14 /* SuperTokensURLSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SuperTokensURLSession.swift; path = SuperTokensSession/Classes/SuperTokensURLSession.swift; sourceTree = "<group>"; };
 		B65530409553B690E83BECD6D0B7DFF1 /* Pods-SuperTokensSession_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-SuperTokensSession_Example.debug.xcconfig"; sourceTree = "<group>"; };
+		B92E27F428E6FF0D00053686 /* SuperTokensURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperTokensURLProtocol.swift; sourceTree = "<group>"; };
+		B92E27F628E6FF5C00053686 /* FrontToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontToken.swift; sourceTree = "<group>"; };
+		B92E27F828E6FFE800053686 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
+		B92E27FB28E7000B00053686 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
+		B92E280028E7006000053686 /* NormalisedURLDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalisedURLDomain.swift; sourceTree = "<group>"; };
+		B92E280228E7007B00053686 /* NormalisedURLPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalisedURLPath.swift; sourceTree = "<group>"; };
+		B92E280428E702DD00053686 /* Version.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Version.swift; sourceTree = "<group>"; };
 		C51C4EAFF60FEDA6987B14718E57ACCF /* Pods-SuperTokensSession_Example-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-SuperTokensSession_Example-dummy.m"; sourceTree = "<group>"; };
 		C5966E68FF31F313FD27097F04CE008C /* Pods-SuperTokensSession_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-SuperTokensSession_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		C5C4F3CAB91A0E90BDA1EB436468774F /* Pods-SuperTokensSession_Example-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-SuperTokensSession_Example-acknowledgements.markdown"; sourceTree = "<group>"; };
@@ -173,9 +185,17 @@
 			children = (
 				DB3A62A91548DE0074886E170B113505 /* LICENSE.md */,
 				36FE363A204DE3B7884EBF2DF27E2F7D /* README.md */,
-				38CA81A34A219B85948C71AAB65854E6 /* SuperTokensSession.podspec */,
+				38CA81A34A219B85948C71AAB65854E6 /* SuperTokensIOS.podspec */,
 			);
 			name = Pod;
+			sourceTree = "<group>";
+		};
+		B92E27FA28E6FFFD00053686 /* extensions */ = {
+			isa = PBXGroup;
+			children = (
+				B92E27FB28E7000B00053686 /* String.swift */,
+			);
+			path = extensions;
 			sourceTree = "<group>";
 		};
 		CF1408CF629C7361332E53B88F7BD30C = {
@@ -227,15 +247,21 @@
 		EE24F47136EE97800F47674BF6D29D6D /* SuperTokensSession */ = {
 			isa = PBXGroup;
 			children = (
+				B92E27FA28E6FFFD00053686 /* extensions */,
 				357FF2C16090B2B306196395F63614DB /* AntiCSRF.swift */,
 				5CFAFEEE671D455C040E786071C241A7 /* Constants.swift */,
 				6A0FA216E36A299F28A0B5146207226C /* Error.swift */,
 				8E7E6521022139A98254EF3AEDDD6D8D /* IdRefreshToken.swift */,
 				34ECBB314A00DFE69A00E3AF1367155C /* SuperTokens.swift */,
-				ACAD5B16A550D4E843585CF42F8CCD14 /* SuperTokensURLSession.swift */,
 				E5F8906DBA0CEEECACA73E52C31CA0A6 /* UnauthorisedResponse.swift */,
 				9E6E4511AEBA3660842C415B1CFB89EA /* Pod */,
 				6D64104E136E004BA45AF851EDB68D5A /* Support Files */,
+				B92E27F428E6FF0D00053686 /* SuperTokensURLProtocol.swift */,
+				B92E27F628E6FF5C00053686 /* FrontToken.swift */,
+				B92E27F828E6FFE800053686 /* Utils.swift */,
+				B92E280028E7006000053686 /* NormalisedURLDomain.swift */,
+				B92E280228E7007B00053686 /* NormalisedURLPath.swift */,
+				B92E280428E702DD00053686 /* Version.swift */,
 			);
 			name = SuperTokensSession;
 			path = ../..;
@@ -394,12 +420,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				E165B8FC410AC2BC292250E0DC84D8F2 /* AntiCSRF.swift in Sources */,
+				B92E280528E702DD00053686 /* Version.swift in Sources */,
+				B92E27F728E6FF5C00053686 /* FrontToken.swift in Sources */,
 				435FB05098B83CDEA675D53C4C076FA8 /* Constants.swift in Sources */,
 				09DF2C8F22C8492B775FB529F76C0E7B /* Error.swift in Sources */,
 				1956144CFC180219A46D43AEA5695E57 /* IdRefreshToken.swift in Sources */,
+				B92E280128E7006000053686 /* NormalisedURLDomain.swift in Sources */,
+				B92E280328E7007B00053686 /* NormalisedURLPath.swift in Sources */,
 				4E7DF6DA50C432140800CC721F50BE19 /* SuperTokens.swift in Sources */,
+				B92E27FC28E7000B00053686 /* String.swift in Sources */,
 				8B65862394FC4FC15449A03FF9FBB39F /* SuperTokensSession-dummy.m in Sources */,
-				544B55F5633BEAE3CE972AF68FF36FED /* SuperTokensURLSession.swift in Sources */,
+				B92E27F928E6FFE800053686 /* Utils.swift in Sources */,
+				B92E27F528E6FF0D00053686 /* SuperTokensURLProtocol.swift in Sources */,
 				94C1A4FBB04B5F506C9C9BBF2BA71634 /* UnauthorisedResponse.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

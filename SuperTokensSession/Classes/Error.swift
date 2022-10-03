@@ -15,8 +15,11 @@
 
 import Foundation
 
-internal enum SuperTokensError: Error {
-    case invalidURL(String)
-    case illegalAccess(String)
-    case apiError(String)
+public enum SuperTokensError: Error {
+    case initError(message: String)
+    case apiError(message: String)
+}
+
+internal enum SDKFailableError: Error {
+    case failableError
 }

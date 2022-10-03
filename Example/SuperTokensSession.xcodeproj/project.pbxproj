@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0266756A68F86F09948708C0 /* Pods_SuperTokensSession_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8700AFF97566B52A27EA394F /* Pods_SuperTokensSession_Example.framework */; };
-		13089060242A62920063D4D2 /* deviceInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1308905F242A62920063D4D2 /* deviceInfoTests.swift */; };
 		13089062242A62A70063D4D2 /* sessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13089061242A62A70063D4D2 /* sessionTests.swift */; };
 		13089064242A62BC0063D4D2 /* utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13089063242A62BC0063D4D2 /* utils.swift */; };
 		5250950A43454B04A81431ED /* Pods_SuperTokensSession_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9213E46536971445AAF30B95 /* Pods_SuperTokensSession_Tests.framework */; };
@@ -32,7 +31,6 @@
 /* Begin PBXFileReference section */
 		12A41CA6980A935325495484 /* Pods-SuperTokensSession_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SuperTokensSession_Example.debug.xcconfig"; path = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		1308905E242A62910063D4D2 /* SuperTokensSession_Tests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SuperTokensSession_Tests-Bridging-Header.h"; sourceTree = "<group>"; };
-		1308905F242A62920063D4D2 /* deviceInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = deviceInfoTests.swift; sourceTree = "<group>"; };
 		13089061242A62A70063D4D2 /* sessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sessionTests.swift; sourceTree = "<group>"; };
 		13089063242A62BC0063D4D2 /* utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = utils.swift; sourceTree = "<group>"; };
 		1B90D38338642509B21CB0A0 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
@@ -120,7 +118,6 @@
 			isa = PBXGroup;
 			children = (
 				607FACE91AFB9204008FA782 /* Supporting Files */,
-				1308905F242A62920063D4D2 /* deviceInfoTests.swift */,
 				1308905E242A62910063D4D2 /* SuperTokensSession_Tests-Bridging-Header.h */,
 				13089061242A62A70063D4D2 /* sessionTests.swift */,
 				13089063242A62BC0063D4D2 /* utils.swift */,
@@ -348,7 +345,6 @@
 			files = (
 				13089064242A62BC0063D4D2 /* utils.swift in Sources */,
 				13089062242A62A70063D4D2 /* sessionTests.swift in Sources */,
-				13089060242A62920063D4D2 /* deviceInfoTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -15,42 +15,32 @@
 
 import Foundation
 
-public class SuperTokens: NSObject {
+public class SuperTokens {
     static var sessionExpiryStatusCode = 401
     static var isInitCalled = false
-    static var refreshTokenEndpoint: String? = nil
-    static var refreshAPICustomHeaders: NSDictionary = NSDictionary()
+    static var refreshTokenUrl: String = ""
+    static var signOutUrl: String = ""
+    static var rid: String = ""
+    static var config: NormalisedInputType? = nil
     
-
-    @objc public static func initialise(refreshTokenEndpoint: String, sessionExpiryStatusCode: Int, refreshAPICustomHeaders: NSDictionary = NSDictionary()) throws {
+    public static func initialize(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: (() -> Void)?) throws {
         if SuperTokens.isInitCalled {
             return;
         }
         
-        SuperTokens.refreshAPICustomHeaders = refreshAPICustomHeaders
-        SuperTokens.sessionExpiryStatusCode = sessionExpiryStatusCode
-        SuperTokens.refreshTokenEndpoint = try SuperTokens.transformRefreshTokenEndpoint(refreshTokenEndpoint)
+        SuperTokens.config = try NormalisedInputType.normaliseInputType(apiDomain: apiDomain, apiBasePath: apiBasePath, sessionExpiredStatusCode: sessionExpiredStatusCode, cookieDomain: cookieDomain)
+        
+        guard let _config: NormalisedInputType = SuperTokens.config else {
+            throw SuperTokensError.initError(message: "Error initialising SuperTokens")
+        }
+        
+        SuperTokens.refreshTokenUrl = _config.apiDomain + _config.apiBasePath + "/session/refresh"
+        SuperTokens.signOutUrl = _config.apiDomain + _config.apiBasePath + "/signout"
+        SuperTokens.rid = "session"
         SuperTokens.isInitCalled = true
     }
     
-    @objc public static func initialise(refreshTokenEndpoint: String, refreshAPICustomHeaders: NSDictionary = NSDictionary()) throws {
-        try SuperTokens.initialise(refreshTokenEndpoint:refreshTokenEndpoint, sessionExpiryStatusCode:SuperTokens.sessionExpiryStatusCode, refreshAPICustomHeaders:refreshAPICustomHeaders)
-    }
-    
-    private static func transformRefreshTokenEndpoint(_ refreshTokenEndpoint: String) throws -> String {
-        guard var urlComponents = URLComponents(string: refreshTokenEndpoint) else {
-            throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
-        }
-        if urlComponents.path.isEmpty || urlComponents.path == "/" {
-            urlComponents.path = "/session/refresh"
-        }
-        guard let transformedEndpoint = urlComponents.string else {
-            throw SuperTokensError.invalidURL("Invalid URL provided for refresh token endpoint")
-        }
-        return transformedEndpoint
-    }
-    
-    @objc public static func doesSessionExist() -> Bool {
+    public static func doesSessionExist() -> Bool {
         let token = IdRefreshToken.getToken()
         return token != nil
     }

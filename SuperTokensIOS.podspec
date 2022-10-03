@@ -7,7 +7,7 @@
 #
 
 Pod::Spec.new do |s|
-  s.name             = 'SuperTokensSession'
+  s.name             = 'SuperTokensIOS'
   s.version          = "1.3.1"
   s.summary          = 'iOS SuperTokens SDK.'
 
@@ -26,7 +26,7 @@ SuperTokens SDK for iOS written in Swift. This SDK takes care of managing a sess
   s.author           = { 'rishabhpoddar' => 'rishabh@supertokens.io' }
   s.source           = { :git => 'https://github.com/supertokens/supertokens-ios.git', :tag => "v#{s.version.to_s}" }
 
-  s.ios.deployment_target = '12.0'
+  s.ios.deployment_target = '13.0'
 
   s.source_files = 'SuperTokensSession/Classes/**/*'
   
