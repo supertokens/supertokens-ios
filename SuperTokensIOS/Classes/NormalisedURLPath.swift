@@ -40,8 +40,8 @@ class NormalisedURLPath {
             
             trimmedInput = url.path
             
-            if trimmedInput.indexOf(character: "/") == trimmedInput.endIndex {
-                return trimmedInput.substring(fromIndex: 0, endIndex: trimmedInput.index(trimmedInput.endIndex, offsetBy: -1))
+            if trimmedInput.hasSuffix("/") {
+                return trimmedInput.substring(fromIndex: 1)
             }
             
             return trimmedInput
@@ -72,7 +72,7 @@ class NormalisedURLPath {
     
     static func isDomainGiven(input: String) -> Bool {
         // If no dot, return false.
-        if input.indexOf(character: ".") != nil || input.starts(with: "/") {
+        if input.indexOf(character: ".") == nil || input.starts(with: "/") {
             return false
         }
         

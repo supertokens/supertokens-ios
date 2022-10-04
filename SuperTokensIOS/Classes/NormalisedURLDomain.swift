@@ -7,7 +7,7 @@
 
 import Foundation
 
-internal class NormalisedURLDomain {
+class NormalisedURLDomain {
     private let value: String
     
     init(url: String) throws {

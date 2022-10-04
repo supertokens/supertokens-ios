@@ -132,7 +132,7 @@ internal class Utils {
             
             return domain == (apiUrlObj.port == nil ? apiHostName : apiHostName + ":" + "\(apiUrlObj.port!)")
         } else {
-            var normalisedCookieDomain = try NormalisedURLDomain.normaliseUrlDomainOrThrowError(input: cookieDomain!)
+            var normalisedCookieDomain = try NormalisedInputType.normaliseSessionScopeOrThrowError(sessionScope: cookieDomain!)
             
             if cookieDomain!.split(separator: ":").count > 1 {
                 let portString: String = String(cookieDomain!.split(separator: ":")[cookieDomain!.split(separator: ":").count - 1])

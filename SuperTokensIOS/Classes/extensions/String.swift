@@ -21,6 +21,10 @@ extension String {
     }
     
     func substring(fromIndex: Int) -> String {
+        if fromIndex >= self.count {
+            return ""
+        }
+        
         let startIndex = self.index(self.startIndex, offsetBy: fromIndex)
         
         return String(self[startIndex..<self.endIndex])

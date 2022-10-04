@@ -36,6 +36,14 @@ public class SuperTokens {
     static var rid: String = ""
     static var config: NormalisedInputType? = nil
     
+    
+    internal static func resetForTests() {
+        FrontToken.removeToken()
+        AntiCSRF.removeToken()
+        IdRefreshToken.removeToken()
+        SuperTokens.isInitCalled = false
+    }
+    
     public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, cookieDomain: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
         if SuperTokens.isInitCalled {
             return;
