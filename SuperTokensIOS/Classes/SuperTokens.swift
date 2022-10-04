@@ -125,4 +125,56 @@ public class SuperTokens {
             // we do not send an event here since it's triggered in setIdRefreshToken area.
         }).resume()
     }
+    
+    public static func attemptRefreshingSession() throws -> Bool {
+        let preRequestIdRefreshToken = IdRefreshToken.getToken()
+        var error: Error?
+        let executionSemaphore = DispatchSemaphore(value: 0)
+        var shouldRetry: Bool = false
+        
+        SuperTokensURLProtocol.onUnauthorisedResponse(preRequestIdRefresh: preRequestIdRefreshToken, callback: {
+            unauthResponse in
+            
+            if unauthResponse.status == .API_ERROR {
+                error = unauthResponse.error
+            }
+            
+            shouldRetry = unauthResponse.status == .RETRY
+            executionSemaphore.signal()
+        })
+        
+        executionSemaphore.wait()
+        
+        if error != nil {
+            throw error!
+        }
+        
+        return shouldRetry
+    }
+    
+    public func getUserId() throws -> String {
+        guard let frontToken: [String: Any] = FrontToken.getToken(), let userId: String = frontToken["uid"] as? String else {
+            throw SuperTokensError.illegalAccess(message: "No session exists")
+        }
+        
+        return userId
+    }
+    
+    public func getAccessTokenPayloadSecruely() throws -> [String: Any] {
+        guard let frontToken: [String: Any] = FrontToken.getToken(), let accessTokenExpiry: Int = frontToken["ate"] as? Int, let userPayload: [String: Any] = frontToken["up"] as? [String: Any] else {
+            throw SuperTokensError.illegalAccess(message: "No session exists")
+        }
+        
+        if accessTokenExpiry < Date().millisecondsSince1970 {
+            let retry = try SuperTokens.attemptRefreshingSession()
+            
+            if retry {
+                return try getAccessTokenPayloadSecruely()
+            } else {
+                throw SuperTokensError.illegalAccess(message: "Could not refresh session")
+            }
+        }
+        
+        return userPayload
+    }
 }

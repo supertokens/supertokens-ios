@@ -85,7 +85,7 @@ public class SuperTokensURLProtocol: URLProtocol {
                 }
                 
                 if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {
-                    self.onUnauthorisedResponse(preRequestIdRefresh: preRequestIdRefresh, callback: {
+                    SuperTokensURLProtocol.onUnauthorisedResponse(preRequestIdRefresh: preRequestIdRefresh, callback: {
                         unauthResponse in
                         
                         if unauthResponse.status == .RETRY {
@@ -150,7 +150,7 @@ public class SuperTokensURLProtocol: URLProtocol {
         self.client?.urlProtocolDidFinishLoading(self)
     }
     
-    func onUnauthorisedResponse(preRequestIdRefresh: String?, callback: @escaping (UnauthorisedResponse) -> Void) {
+    static func onUnauthorisedResponse(preRequestIdRefresh: String?, callback: @escaping (UnauthorisedResponse) -> Void) {
         SuperTokensURLProtocol.readWriteDispatchQueue.async(flags: .barrier) {
             let postLockIdRefresh = IdRefreshToken.getToken()
             if postLockIdRefresh == nil {
