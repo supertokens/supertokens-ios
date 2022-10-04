@@ -7,96 +7,104 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		09DF2C8F22C8492B775FB529F76C0E7B /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0FA216E36A299F28A0B5146207226C /* Error.swift */; };
-		0A9F85DED98BDD39005F6B1642D2A4EC /* Pods-SuperTokensSession_Example-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = C51C4EAFF60FEDA6987B14718E57ACCF /* Pods-SuperTokensSession_Example-dummy.m */; };
-		1956144CFC180219A46D43AEA5695E57 /* IdRefreshToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7E6521022139A98254EF3AEDDD6D8D /* IdRefreshToken.swift */; };
-		435FB05098B83CDEA675D53C4C076FA8 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFAFEEE671D455C040E786071C241A7 /* Constants.swift */; };
-		4E7DF6DA50C432140800CC721F50BE19 /* SuperTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34ECBB314A00DFE69A00E3AF1367155C /* SuperTokens.swift */; };
+		196B1CF52F90F35A58DFEF80E8F6A55A /* SuperTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E42CD40366199CDDE327D8D04CC5DF57 /* SuperTokens.swift */; };
+		1DDA46014A6305E86F9D8C04BB04F008 /* FrontToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = D06ECB64AEDCB9EE4818BB2F37C066EF /* FrontToken.swift */; };
+		27D127B97EA04F1E579E7B5079DB8DA0 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
+		28054FE4F889AEC337F4560F1444A061 /* SuperTokensIOS-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = A5571EDE7304BE169DB8449740BDEA62 /* SuperTokensIOS-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		2EB834D02C9C9F0085A2A4C61638CE81 /* Pods-SuperTokensSession_Example-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 28FDE86240C0FF88D98D03A432656EFC /* Pods-SuperTokensSession_Example-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		2F5D9C1264FDFAEE6C8BF2E342FE98C3 /* SuperTokensIOS-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C796FE343FEBE662028F06175DB5672 /* SuperTokensIOS-dummy.m */; };
+		31477069FDDA319425972D923EFFCD8D /* Version.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D6159BC9424F2C9B70DB2FA50980938 /* Version.swift */; };
+		466284A656368BC4E5E6812028BAD74C /* Pods-SuperTokensSession_Example-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = C51C4EAFF60FEDA6987B14718E57ACCF /* Pods-SuperTokensSession_Example-dummy.m */; };
+		53CA444B10828C8B7F2E21D717E818EC /* UnauthorisedResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60F3403EE466A233384DE9D87B313F5C /* UnauthorisedResponse.swift */; };
 		56F0E5425F83ACBD3300325B9128154E /* Pods-SuperTokensSession_Tests-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = A86003E36BDDF5331EEFB2F2B42C3A50 /* Pods-SuperTokensSession_Tests-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8B65862394FC4FC15449A03FF9FBB39F /* SuperTokensSession-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = C7CD57419317937A3839E987C5BBBB19 /* SuperTokensSession-dummy.m */; };
+		5821A0240B68A5FAA7D6D2D84C75A3FB /* AntiCSRF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F4F9633E3BDA58E9E3B6C16BAD3453B /* AntiCSRF.swift */; };
+		5AECE23B9F5E716B4E35B5E50AE476E8 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
+		6BF4DCFD04F04AA61B6DFC80D9AAEA85 /* IdRefreshToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243C8E71E9E7E353AD65E8AD4F3ED95F /* IdRefreshToken.swift */; };
+		876755D0BAB37E9C73A30ECE2AD676E1 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509F52783679FF83B4BE464C03490A86 /* Utils.swift */; };
 		8D03C9DDAEEB2BDAE5B9589C00017F7A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
-		94C1A4FBB04B5F506C9C9BBF2BA71634 /* UnauthorisedResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F8906DBA0CEEECACA73E52C31CA0A6 /* UnauthorisedResponse.swift */; };
-		9A6EA323F79AB91954B8A0A1A4E173A3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
-		A6DC66AF7542CD7D3EA8F8BD9873D149 /* SuperTokensSession-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = A8DDBAAA891D8A97BDC9B73CD96DFA1A /* SuperTokensSession-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		9AFDF04E94AC7F771F5AC86879CACD25 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3C0C5E11FEB6330DD6FEFD7AE1E89C /* String.swift */; };
+		ACC646C7FB4328E1C590E05F67FAA799 /* NormalisedURLPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94C473C2758AE95DFCFFD372A35D4039 /* NormalisedURLPath.swift */; };
 		ADA6C901E21165036F2F2A39CD28B14B /* Pods-SuperTokensSession_Tests-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 35C5DC5E55FD7E476F596D04EDF6719C /* Pods-SuperTokensSession_Tests-dummy.m */; };
-		B92E27F528E6FF0D00053686 /* SuperTokensURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27F428E6FF0D00053686 /* SuperTokensURLProtocol.swift */; };
-		B92E27F728E6FF5C00053686 /* FrontToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27F628E6FF5C00053686 /* FrontToken.swift */; };
-		B92E27F928E6FFE800053686 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27F828E6FFE800053686 /* Utils.swift */; };
-		B92E27FC28E7000B00053686 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E27FB28E7000B00053686 /* String.swift */; };
-		B92E280128E7006000053686 /* NormalisedURLDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E280028E7006000053686 /* NormalisedURLDomain.swift */; };
-		B92E280328E7007B00053686 /* NormalisedURLPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E280228E7007B00053686 /* NormalisedURLPath.swift */; };
-		B92E280528E702DD00053686 /* Version.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92E280428E702DD00053686 /* Version.swift */; };
-		C20EF9259AF094042326ABF47E7DE480 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
-		E04A6216201BF98342431E378AABE3B9 /* Pods-SuperTokensSession_Example-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 28FDE86240C0FF88D98D03A432656EFC /* Pods-SuperTokensSession_Example-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E165B8FC410AC2BC292250E0DC84D8F2 /* AntiCSRF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357FF2C16090B2B306196395F63614DB /* AntiCSRF.swift */; };
+		C07CA6AD58767081DE4528C37151D102 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42BD5EE8A1C3F04428F74C428E4191E7 /* Constants.swift */; };
+		C8DC2E62B1B028083C80D700159BC626 /* SuperTokensURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E407B255242449543E2829CE8689C91 /* SuperTokensURLProtocol.swift */; };
+		EB16BFE3419D0E4922476879A5D4706F /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC56F63179B24728D58ED22B8C1C92C /* Error.swift */; };
+		FA3C22541A58C9FFD91F50EDB26F597A /* NormalisedURLDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF071229724F39F9436503B8A7CCD6B /* NormalisedURLDomain.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		225587633EF4A9814E0A42301B0D565B /* PBXContainerItemProxy */ = {
+		78EBB1C4360BEEF83D8E01BF02D259EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 22111B9B809C629766088073D2FCF6C4;
+			remoteInfo = SuperTokensIOS;
+		};
+		EA5EF0638CE71BA1D87324814F20D622 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C2EB4B51808385E0E558D5B0962EE0E5;
 			remoteInfo = "Pods-SuperTokensSession_Example";
 		};
-		BB726B0887E1ACDAB6D32A7CAC5CB92E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = BFDFE7DC352907FC980B868725387E98 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 217A27673998106BCD875F299B33B27E;
-			remoteInfo = SuperTokensSession;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0B0F1707C7EC6FB97703909D188805B8 /* Pods-SuperTokensSession_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-SuperTokensSession_Tests.release.xcconfig"; sourceTree = "<group>"; };
+		0C796FE343FEBE662028F06175DB5672 /* SuperTokensIOS-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "SuperTokensIOS-dummy.m"; sourceTree = "<group>"; };
+		0D6159BC9424F2C9B70DB2FA50980938 /* Version.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Version.swift; path = SuperTokensIOS/Classes/Version.swift; sourceTree = "<group>"; };
 		1F857736FFCE5A004FF77183B0CA8EC3 /* Pods-SuperTokensSession_Example-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-SuperTokensSession_Example-Info.plist"; sourceTree = "<group>"; };
-		239480F76ECAE625602D8499027C0D64 /* Pods_SuperTokensSession_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SuperTokensSession_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		239480F76ECAE625602D8499027C0D64 /* Pods-SuperTokensSession_Tests */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = "Pods-SuperTokensSession_Tests"; path = Pods_SuperTokensSession_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		243C8E71E9E7E353AD65E8AD4F3ED95F /* IdRefreshToken.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = IdRefreshToken.swift; path = SuperTokensIOS/Classes/IdRefreshToken.swift; sourceTree = "<group>"; };
 		265D08DA082C7ADED876929B1C0A6D8B /* Pods-SuperTokensSession_Tests.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = "Pods-SuperTokensSession_Tests.modulemap"; sourceTree = "<group>"; };
 		28FDE86240C0FF88D98D03A432656EFC /* Pods-SuperTokensSession_Example-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "Pods-SuperTokensSession_Example-umbrella.h"; sourceTree = "<group>"; };
-		3125CD21CBEA648DE411CD2CA35CCAE7 /* SuperTokensSession.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = SuperTokensSession.debug.xcconfig; sourceTree = "<group>"; };
-		34ECBB314A00DFE69A00E3AF1367155C /* SuperTokens.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SuperTokens.swift; path = SuperTokensSession/Classes/SuperTokens.swift; sourceTree = "<group>"; };
-		357FF2C16090B2B306196395F63614DB /* AntiCSRF.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AntiCSRF.swift; path = SuperTokensSession/Classes/AntiCSRF.swift; sourceTree = "<group>"; };
+		2EC56F63179B24728D58ED22B8C1C92C /* Error.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Error.swift; path = SuperTokensIOS/Classes/Error.swift; sourceTree = "<group>"; };
 		35C5DC5E55FD7E476F596D04EDF6719C /* Pods-SuperTokensSession_Tests-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-SuperTokensSession_Tests-dummy.m"; sourceTree = "<group>"; };
-		36FE363A204DE3B7884EBF2DF27E2F7D /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		38CA81A34A219B85948C71AAB65854E6 /* SuperTokensIOS.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = SuperTokensIOS.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		3D592853D039CED0FF8D02E06D4B296D /* Pods-SuperTokensSession_Tests-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-SuperTokensSession_Tests-acknowledgements.plist"; sourceTree = "<group>"; };
-		4844AEEF9972DFF4D5A3C24B66E476DE /* SuperTokensSession-prefix.pch */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "SuperTokensSession-prefix.pch"; sourceTree = "<group>"; };
-		5CFAFEEE671D455C040E786071C241A7 /* Constants.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Constants.swift; path = SuperTokensSession/Classes/Constants.swift; sourceTree = "<group>"; };
-		62418CC1CA38A0BB5C5C93F77F467469 /* SuperTokensSession.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = SuperTokensSession.modulemap; sourceTree = "<group>"; };
-		6A0FA216E36A299F28A0B5146207226C /* Error.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Error.swift; path = SuperTokensSession/Classes/Error.swift; sourceTree = "<group>"; };
+		3E19C628993CAA59352F3E89EBE9F6F5 /* SuperTokensIOS.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = SuperTokensIOS.debug.xcconfig; sourceTree = "<group>"; };
+		3E407B255242449543E2829CE8689C91 /* SuperTokensURLProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SuperTokensURLProtocol.swift; path = SuperTokensIOS/Classes/SuperTokensURLProtocol.swift; sourceTree = "<group>"; };
+		42BD5EE8A1C3F04428F74C428E4191E7 /* Constants.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Constants.swift; path = SuperTokensIOS/Classes/Constants.swift; sourceTree = "<group>"; };
+		476A4E2DAA3E852B84BA1BC40D17A22E /* SuperTokensIOS.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = SuperTokensIOS.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		4F4F9633E3BDA58E9E3B6C16BAD3453B /* AntiCSRF.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AntiCSRF.swift; path = SuperTokensIOS/Classes/AntiCSRF.swift; sourceTree = "<group>"; };
+		509F52783679FF83B4BE464C03490A86 /* Utils.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Utils.swift; path = SuperTokensIOS/Classes/Utils.swift; sourceTree = "<group>"; };
+		60F3403EE466A233384DE9D87B313F5C /* UnauthorisedResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UnauthorisedResponse.swift; path = SuperTokensIOS/Classes/UnauthorisedResponse.swift; sourceTree = "<group>"; };
 		73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
-		75AC3C1EBD390893EB350D1D9F64115C /* Pods_SuperTokensSession_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SuperTokensSession_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		75AC3C1EBD390893EB350D1D9F64115C /* Pods-SuperTokensSession_Example */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = "Pods-SuperTokensSession_Example"; path = Pods_SuperTokensSession_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		7DF071229724F39F9436503B8A7CCD6B /* NormalisedURLDomain.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NormalisedURLDomain.swift; path = SuperTokensIOS/Classes/NormalisedURLDomain.swift; sourceTree = "<group>"; };
+		7FC79EED5916409FAA57A2EC454039AB /* SuperTokensIOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = SuperTokensIOS.release.xcconfig; sourceTree = "<group>"; };
 		80193EA60AA82910BF8BA19FEFD3F58B /* Pods-SuperTokensSession_Example.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = "Pods-SuperTokensSession_Example.modulemap"; sourceTree = "<group>"; };
 		8245A7C39C7AA2F5956F43A2DE814649 /* Pods-SuperTokensSession_Example-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-SuperTokensSession_Example-acknowledgements.plist"; sourceTree = "<group>"; };
-		8E7E6521022139A98254EF3AEDDD6D8D /* IdRefreshToken.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = IdRefreshToken.swift; path = SuperTokensSession/Classes/IdRefreshToken.swift; sourceTree = "<group>"; };
+		8D37A58D3DEDB3CEF774AB88A7F2E2F2 /* SuperTokensIOS */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = SuperTokensIOS; path = SuperTokensIOS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		94C473C2758AE95DFCFFD372A35D4039 /* NormalisedURLPath.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NormalisedURLPath.swift; path = SuperTokensIOS/Classes/NormalisedURLPath.swift; sourceTree = "<group>"; };
+		967E58B13F6A7C1D8D4622435F80B05D /* SuperTokensIOS-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SuperTokensIOS-Info.plist"; sourceTree = "<group>"; };
 		9BEE27047CC0E20F5C7AFC94D75FABB4 /* Pods-SuperTokensSession_Tests-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-SuperTokensSession_Tests-acknowledgements.markdown"; sourceTree = "<group>"; };
-		9D940727FF8FB9C785EB98E56350EF41 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		9D940727FF8FB9C785EB98E56350EF41 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		9E50F610236BC77437BF02B5C7A0E345 /* Pods-SuperTokensSession_Example-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-SuperTokensSession_Example-frameworks.sh"; sourceTree = "<group>"; };
+		A5571EDE7304BE169DB8449740BDEA62 /* SuperTokensIOS-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "SuperTokensIOS-umbrella.h"; sourceTree = "<group>"; };
 		A86003E36BDDF5331EEFB2F2B42C3A50 /* Pods-SuperTokensSession_Tests-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "Pods-SuperTokensSession_Tests-umbrella.h"; sourceTree = "<group>"; };
-		A887AB3E0888FB7953E3D594D8D5BAF0 /* SuperTokensSession.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SuperTokensSession.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		A8DDBAAA891D8A97BDC9B73CD96DFA1A /* SuperTokensSession-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "SuperTokensSession-umbrella.h"; sourceTree = "<group>"; };
 		B65530409553B690E83BECD6D0B7DFF1 /* Pods-SuperTokensSession_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-SuperTokensSession_Example.debug.xcconfig"; sourceTree = "<group>"; };
-		B92E27F428E6FF0D00053686 /* SuperTokensURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperTokensURLProtocol.swift; sourceTree = "<group>"; };
-		B92E27F628E6FF5C00053686 /* FrontToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontToken.swift; sourceTree = "<group>"; };
-		B92E27F828E6FFE800053686 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
-		B92E27FB28E7000B00053686 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
-		B92E280028E7006000053686 /* NormalisedURLDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalisedURLDomain.swift; sourceTree = "<group>"; };
-		B92E280228E7007B00053686 /* NormalisedURLPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalisedURLPath.swift; sourceTree = "<group>"; };
-		B92E280428E702DD00053686 /* Version.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Version.swift; sourceTree = "<group>"; };
 		C51C4EAFF60FEDA6987B14718E57ACCF /* Pods-SuperTokensSession_Example-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-SuperTokensSession_Example-dummy.m"; sourceTree = "<group>"; };
 		C5966E68FF31F313FD27097F04CE008C /* Pods-SuperTokensSession_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-SuperTokensSession_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		C5C4F3CAB91A0E90BDA1EB436468774F /* Pods-SuperTokensSession_Example-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-SuperTokensSession_Example-acknowledgements.markdown"; sourceTree = "<group>"; };
-		C7CD57419317937A3839E987C5BBBB19 /* SuperTokensSession-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "SuperTokensSession-dummy.m"; sourceTree = "<group>"; };
-		CD7B3F1247163CA222AA90EFA9A535C1 /* SuperTokensSession-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "SuperTokensSession-Info.plist"; sourceTree = "<group>"; };
-		D4C6E82FC9D2A056B93B3BFC2DC18735 /* SuperTokensSession.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = SuperTokensSession.release.xcconfig; sourceTree = "<group>"; };
+		C6498A7DB8793817122006FADF0779AA /* LICENSE.md */ = {isa = PBXFileReference; includeInIndex = 1; path = LICENSE.md; sourceTree = "<group>"; };
+		C6A78175BE3C637FE68DFE222883E572 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; path = README.md; sourceTree = "<group>"; };
+		D06ECB64AEDCB9EE4818BB2F37C066EF /* FrontToken.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FrontToken.swift; path = SuperTokensIOS/Classes/FrontToken.swift; sourceTree = "<group>"; };
 		D5992BAFD1822DF4AD7DECF72870EBED /* Pods-SuperTokensSession_Tests-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-SuperTokensSession_Tests-Info.plist"; sourceTree = "<group>"; };
-		DB3A62A91548DE0074886E170B113505 /* LICENSE.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
+		DB026B4B8569DFE8DD0EF542B781FAA7 /* SuperTokensIOS.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = SuperTokensIOS.modulemap; sourceTree = "<group>"; };
 		DCCAABACBBCA8AF9BF6D13E0000A53B2 /* Pods-SuperTokensSession_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-SuperTokensSession_Example.release.xcconfig"; sourceTree = "<group>"; };
-		E5F8906DBA0CEEECACA73E52C31CA0A6 /* UnauthorisedResponse.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UnauthorisedResponse.swift; path = SuperTokensSession/Classes/UnauthorisedResponse.swift; sourceTree = "<group>"; };
+		E0B82BADAF4EDA03BF91C8084548EAB7 /* SuperTokensIOS-prefix.pch */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "SuperTokensIOS-prefix.pch"; sourceTree = "<group>"; };
+		E42CD40366199CDDE327D8D04CC5DF57 /* SuperTokens.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SuperTokens.swift; path = SuperTokensIOS/Classes/SuperTokens.swift; sourceTree = "<group>"; };
+		EA3C0C5E11FEB6330DD6FEFD7AE1E89C /* String.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2AAFE10270C904B2A0E17FDBC5CA5344 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5AECE23B9F5E716B4E35B5E50AE476E8 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6B5007C38AC13CE2C25866DA1F9AF17A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -105,39 +113,81 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9E62B871D6AC07B2D1A4D1DC579CC2A3 /* Frameworks */ = {
+		AF652F8E4E040525BC4987233E234C3A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9A6EA323F79AB91954B8A0A1A4E173A3 /* Foundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A64BB8BE7196104DD1C48968AE05311D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C20EF9259AF094042326ABF47E7DE480 /* Foundation.framework in Frameworks */,
+				27D127B97EA04F1E579E7B5079DB8DA0 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		14D1F604A4FDAAEC3BC80D07C1BA4D70 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				75AC3C1EBD390893EB350D1D9F64115C /* Pods-SuperTokensSession_Example */,
+				239480F76ECAE625602D8499027C0D64 /* Pods-SuperTokensSession_Tests */,
+				8D37A58D3DEDB3CEF774AB88A7F2E2F2 /* SuperTokensIOS */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		28643FE818239AEC6B12189AA79B42EF /* Pod */ = {
+			isa = PBXGroup;
+			children = (
+				C6498A7DB8793817122006FADF0779AA /* LICENSE.md */,
+				C6A78175BE3C637FE68DFE222883E572 /* README.md */,
+				476A4E2DAA3E852B84BA1BC40D17A22E /* SuperTokensIOS.podspec */,
+			);
+			name = Pod;
+			sourceTree = "<group>";
+		};
+		2E67DF5AD6B9F5432B1C947F2A3B0009 /* Support Files */ = {
+			isa = PBXGroup;
+			children = (
+				DB026B4B8569DFE8DD0EF542B781FAA7 /* SuperTokensIOS.modulemap */,
+				0C796FE343FEBE662028F06175DB5672 /* SuperTokensIOS-dummy.m */,
+				967E58B13F6A7C1D8D4622435F80B05D /* SuperTokensIOS-Info.plist */,
+				E0B82BADAF4EDA03BF91C8084548EAB7 /* SuperTokensIOS-prefix.pch */,
+				A5571EDE7304BE169DB8449740BDEA62 /* SuperTokensIOS-umbrella.h */,
+				3E19C628993CAA59352F3E89EBE9F6F5 /* SuperTokensIOS.debug.xcconfig */,
+				7FC79EED5916409FAA57A2EC454039AB /* SuperTokensIOS.release.xcconfig */,
+			);
+			name = "Support Files";
+			path = "Example/Pods/Target Support Files/SuperTokensIOS";
+			sourceTree = "<group>";
+		};
+		391B7814E63599D9721FE107D38DB98E /* SuperTokensIOS */ = {
+			isa = PBXGroup;
+			children = (
+				4F4F9633E3BDA58E9E3B6C16BAD3453B /* AntiCSRF.swift */,
+				42BD5EE8A1C3F04428F74C428E4191E7 /* Constants.swift */,
+				2EC56F63179B24728D58ED22B8C1C92C /* Error.swift */,
+				D06ECB64AEDCB9EE4818BB2F37C066EF /* FrontToken.swift */,
+				243C8E71E9E7E353AD65E8AD4F3ED95F /* IdRefreshToken.swift */,
+				7DF071229724F39F9436503B8A7CCD6B /* NormalisedURLDomain.swift */,
+				94C473C2758AE95DFCFFD372A35D4039 /* NormalisedURLPath.swift */,
+				E42CD40366199CDDE327D8D04CC5DF57 /* SuperTokens.swift */,
+				3E407B255242449543E2829CE8689C91 /* SuperTokensURLProtocol.swift */,
+				60F3403EE466A233384DE9D87B313F5C /* UnauthorisedResponse.swift */,
+				509F52783679FF83B4BE464C03490A86 /* Utils.swift */,
+				0D6159BC9424F2C9B70DB2FA50980938 /* Version.swift */,
+				A221146D3169FB5607366E3E26B50FC0 /* extensions */,
+				28643FE818239AEC6B12189AA79B42EF /* Pod */,
+				2E67DF5AD6B9F5432B1C947F2A3B0009 /* Support Files */,
+			);
+			name = SuperTokensIOS;
+			path = ../..;
+			sourceTree = "<group>";
+		};
 		578452D2E740E91742655AC8F1636D1F /* iOS */ = {
 			isa = PBXGroup;
 			children = (
 				73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */,
 			);
 			name = iOS;
-			sourceTree = "<group>";
-		};
-		60523E5C27E405A2171B8BBFCEE9D40B /* Development Pods */ = {
-			isa = PBXGroup;
-			children = (
-				EE24F47136EE97800F47674BF6D29D6D /* SuperTokensSession */,
-			);
-			name = "Development Pods";
 			sourceTree = "<group>";
 		};
 		646B3B8D30A5B015E26A745021FD1117 /* Pods-SuperTokensSession_Tests */ = {
@@ -156,19 +206,12 @@
 			path = "Target Support Files/Pods-SuperTokensSession_Tests";
 			sourceTree = "<group>";
 		};
-		6D64104E136E004BA45AF851EDB68D5A /* Support Files */ = {
+		67F489521D3364B07B3002814C8F484D /* Development Pods */ = {
 			isa = PBXGroup;
 			children = (
-				62418CC1CA38A0BB5C5C93F77F467469 /* SuperTokensSession.modulemap */,
-				C7CD57419317937A3839E987C5BBBB19 /* SuperTokensSession-dummy.m */,
-				CD7B3F1247163CA222AA90EFA9A535C1 /* SuperTokensSession-Info.plist */,
-				4844AEEF9972DFF4D5A3C24B66E476DE /* SuperTokensSession-prefix.pch */,
-				A8DDBAAA891D8A97BDC9B73CD96DFA1A /* SuperTokensSession-umbrella.h */,
-				3125CD21CBEA648DE411CD2CA35CCAE7 /* SuperTokensSession.debug.xcconfig */,
-				D4C6E82FC9D2A056B93B3BFC2DC18735 /* SuperTokensSession.release.xcconfig */,
+				391B7814E63599D9721FE107D38DB98E /* SuperTokensIOS */,
 			);
-			name = "Support Files";
-			path = "Example/Pods/Target Support Files/SuperTokensSession";
+			name = "Development Pods";
 			sourceTree = "<group>";
 		};
 		9C7F00DD224A32E0DCD248C5D9E22C9E /* Targets Support Files */ = {
@@ -180,31 +223,22 @@
 			name = "Targets Support Files";
 			sourceTree = "<group>";
 		};
-		9E6E4511AEBA3660842C415B1CFB89EA /* Pod */ = {
+		A221146D3169FB5607366E3E26B50FC0 /* extensions */ = {
 			isa = PBXGroup;
 			children = (
-				DB3A62A91548DE0074886E170B113505 /* LICENSE.md */,
-				36FE363A204DE3B7884EBF2DF27E2F7D /* README.md */,
-				38CA81A34A219B85948C71AAB65854E6 /* SuperTokensIOS.podspec */,
+				EA3C0C5E11FEB6330DD6FEFD7AE1E89C /* String.swift */,
 			);
-			name = Pod;
-			sourceTree = "<group>";
-		};
-		B92E27FA28E6FFFD00053686 /* extensions */ = {
-			isa = PBXGroup;
-			children = (
-				B92E27FB28E7000B00053686 /* String.swift */,
-			);
-			path = extensions;
+			name = extensions;
+			path = SuperTokensIOS/Classes/extensions;
 			sourceTree = "<group>";
 		};
 		CF1408CF629C7361332E53B88F7BD30C = {
 			isa = PBXGroup;
 			children = (
 				9D940727FF8FB9C785EB98E56350EF41 /* Podfile */,
-				60523E5C27E405A2171B8BBFCEE9D40B /* Development Pods */,
+				67F489521D3364B07B3002814C8F484D /* Development Pods */,
 				D210D550F4EA176C3123ED886F8F87F5 /* Frameworks */,
-				EC6BD33C7BF57320A43B6468940627E4 /* Products */,
+				14D1F604A4FDAAEC3BC80D07C1BA4D70 /* Products */,
 				9C7F00DD224A32E0DCD248C5D9E22C9E /* Targets Support Files */,
 			);
 			sourceTree = "<group>";
@@ -234,47 +268,14 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		EC6BD33C7BF57320A43B6468940627E4 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				75AC3C1EBD390893EB350D1D9F64115C /* Pods_SuperTokensSession_Example.framework */,
-				239480F76ECAE625602D8499027C0D64 /* Pods_SuperTokensSession_Tests.framework */,
-				A887AB3E0888FB7953E3D594D8D5BAF0 /* SuperTokensSession.framework */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		EE24F47136EE97800F47674BF6D29D6D /* SuperTokensSession */ = {
-			isa = PBXGroup;
-			children = (
-				B92E27FA28E6FFFD00053686 /* extensions */,
-				357FF2C16090B2B306196395F63614DB /* AntiCSRF.swift */,
-				5CFAFEEE671D455C040E786071C241A7 /* Constants.swift */,
-				6A0FA216E36A299F28A0B5146207226C /* Error.swift */,
-				8E7E6521022139A98254EF3AEDDD6D8D /* IdRefreshToken.swift */,
-				34ECBB314A00DFE69A00E3AF1367155C /* SuperTokens.swift */,
-				E5F8906DBA0CEEECACA73E52C31CA0A6 /* UnauthorisedResponse.swift */,
-				9E6E4511AEBA3660842C415B1CFB89EA /* Pod */,
-				6D64104E136E004BA45AF851EDB68D5A /* Support Files */,
-				B92E27F428E6FF0D00053686 /* SuperTokensURLProtocol.swift */,
-				B92E27F628E6FF5C00053686 /* FrontToken.swift */,
-				B92E27F828E6FFE800053686 /* Utils.swift */,
-				B92E280028E7006000053686 /* NormalisedURLDomain.swift */,
-				B92E280228E7007B00053686 /* NormalisedURLPath.swift */,
-				B92E280428E702DD00053686 /* Version.swift */,
-			);
-			name = SuperTokensSession;
-			path = ../..;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		21FF9766D731D273184B7FEC14B27EC3 /* Headers */ = {
+		C9157E470392BDFCCA9FBBB009FC8750 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A6DC66AF7542CD7D3EA8F8BD9873D149 /* SuperTokensSession-umbrella.h in Headers */,
+				28054FE4F889AEC337F4560F1444A061 /* SuperTokensIOS-umbrella.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -286,52 +287,52 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EC54998A1CAD28554610A403F766EBDA /* Headers */ = {
+		EB39FAE88CC1EDE3843B44FA4A61A2DF /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E04A6216201BF98342431E378AABE3B9 /* Pods-SuperTokensSession_Example-umbrella.h in Headers */,
+				2EB834D02C9C9F0085A2A4C61638CE81 /* Pods-SuperTokensSession_Example-umbrella.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		217A27673998106BCD875F299B33B27E /* SuperTokensSession */ = {
+		22111B9B809C629766088073D2FCF6C4 /* SuperTokensIOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 84DDA4D7F8DA62FF70F2C1EE4D838209 /* Build configuration list for PBXNativeTarget "SuperTokensSession" */;
+			buildConfigurationList = 7F30EF97B77F6FB5E284C8BBBF3861B6 /* Build configuration list for PBXNativeTarget "SuperTokensIOS" */;
 			buildPhases = (
-				21FF9766D731D273184B7FEC14B27EC3 /* Headers */,
-				99245F463C80C5D24A78F93B889D80F3 /* Sources */,
-				A64BB8BE7196104DD1C48968AE05311D /* Frameworks */,
-				06A186DD484889E2EC029747368BE6F0 /* Resources */,
+				C9157E470392BDFCCA9FBBB009FC8750 /* Headers */,
+				390149C20D4E9A6FAAF0970F8E6ABE3A /* Sources */,
+				2AAFE10270C904B2A0E17FDBC5CA5344 /* Frameworks */,
+				65A3FD9BD8BC90D92253A17F9BCCC465 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = SuperTokensSession;
-			productName = SuperTokensSession;
-			productReference = A887AB3E0888FB7953E3D594D8D5BAF0 /* SuperTokensSession.framework */;
+			name = SuperTokensIOS;
+			productName = SuperTokensIOS;
+			productReference = 8D37A58D3DEDB3CEF774AB88A7F2E2F2 /* SuperTokensIOS */;
 			productType = "com.apple.product-type.framework";
 		};
 		C2EB4B51808385E0E558D5B0962EE0E5 /* Pods-SuperTokensSession_Example */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EA811D0D7E92E01E6FCB93049DF4A4E1 /* Build configuration list for PBXNativeTarget "Pods-SuperTokensSession_Example" */;
+			buildConfigurationList = 8388EE18BDA5D6736AFC7EC0D01BAFE4 /* Build configuration list for PBXNativeTarget "Pods-SuperTokensSession_Example" */;
 			buildPhases = (
-				EC54998A1CAD28554610A403F766EBDA /* Headers */,
-				BDBD67DB5CF88660D01F27E217BD47BA /* Sources */,
-				9E62B871D6AC07B2D1A4D1DC579CC2A3 /* Frameworks */,
-				2650E8FD16E1945BC1DAD7207F83C04B /* Resources */,
+				EB39FAE88CC1EDE3843B44FA4A61A2DF /* Headers */,
+				ECE0EC06467DFAABE2AE59778C644122 /* Sources */,
+				AF652F8E4E040525BC4987233E234C3A /* Frameworks */,
+				188549005CFF0B7E2700CFEF1D96D435 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				B07885E6CE48991EAEBE0FF7A5950EA4 /* PBXTargetDependency */,
+				A08FEB52110CE40A471756A33971BAD1 /* PBXTargetDependency */,
 			);
 			name = "Pods-SuperTokensSession_Example";
 			productName = Pods_SuperTokensSession_Example;
-			productReference = 75AC3C1EBD390893EB350D1D9F64115C /* Pods_SuperTokensSession_Example.framework */;
+			productReference = 75AC3C1EBD390893EB350D1D9F64115C /* Pods-SuperTokensSession_Example */;
 			productType = "com.apple.product-type.framework";
 		};
 		CE51FB1251A1A93796B21AB234B047BD /* Pods-SuperTokensSession_Tests */ = {
@@ -346,11 +347,11 @@
 			buildRules = (
 			);
 			dependencies = (
-				D03063DB5BA1E2120F9F27929EE14606 /* PBXTargetDependency */,
+				0294474B1971E07AD9DC9E52559B9D0E /* PBXTargetDependency */,
 			);
 			name = "Pods-SuperTokensSession_Tests";
 			productName = Pods_SuperTokensSession_Tests;
-			productReference = 239480F76ECAE625602D8499027C0D64 /* Pods_SuperTokensSession_Tests.framework */;
+			productReference = 239480F76ECAE625602D8499027C0D64 /* Pods-SuperTokensSession_Tests */;
 			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
@@ -359,8 +360,8 @@
 		BFDFE7DC352907FC980B868725387E98 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 1240;
-				LastUpgradeCheck = 1400;
+				LastSwiftUpdateCheck = 1300;
+				LastUpgradeCheck = 1300;
 			};
 			buildConfigurationList = 4821239608C13582E20E6DA73FD5F1F9 /* Build configuration list for PBXProject "Pods" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -371,26 +372,19 @@
 				en,
 			);
 			mainGroup = CF1408CF629C7361332E53B88F7BD30C;
-			productRefGroup = EC6BD33C7BF57320A43B6468940627E4 /* Products */;
+			productRefGroup = 14D1F604A4FDAAEC3BC80D07C1BA4D70 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				C2EB4B51808385E0E558D5B0962EE0E5 /* Pods-SuperTokensSession_Example */,
 				CE51FB1251A1A93796B21AB234B047BD /* Pods-SuperTokensSession_Tests */,
-				217A27673998106BCD875F299B33B27E /* SuperTokensSession */,
+				22111B9B809C629766088073D2FCF6C4 /* SuperTokensIOS */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		06A186DD484889E2EC029747368BE6F0 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		2650E8FD16E1945BC1DAD7207F83C04B /* Resources */ = {
+		188549005CFF0B7E2700CFEF1D96D435 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -398,6 +392,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2B2774BB6044719F319308B73409CB39 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		65A3FD9BD8BC90D92253A17F9BCCC465 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -415,57 +416,59 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		99245F463C80C5D24A78F93B889D80F3 /* Sources */ = {
+		390149C20D4E9A6FAAF0970F8E6ABE3A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E165B8FC410AC2BC292250E0DC84D8F2 /* AntiCSRF.swift in Sources */,
-				B92E280528E702DD00053686 /* Version.swift in Sources */,
-				B92E27F728E6FF5C00053686 /* FrontToken.swift in Sources */,
-				435FB05098B83CDEA675D53C4C076FA8 /* Constants.swift in Sources */,
-				09DF2C8F22C8492B775FB529F76C0E7B /* Error.swift in Sources */,
-				1956144CFC180219A46D43AEA5695E57 /* IdRefreshToken.swift in Sources */,
-				B92E280128E7006000053686 /* NormalisedURLDomain.swift in Sources */,
-				B92E280328E7007B00053686 /* NormalisedURLPath.swift in Sources */,
-				4E7DF6DA50C432140800CC721F50BE19 /* SuperTokens.swift in Sources */,
-				B92E27FC28E7000B00053686 /* String.swift in Sources */,
-				8B65862394FC4FC15449A03FF9FBB39F /* SuperTokensSession-dummy.m in Sources */,
-				B92E27F928E6FFE800053686 /* Utils.swift in Sources */,
-				B92E27F528E6FF0D00053686 /* SuperTokensURLProtocol.swift in Sources */,
-				94C1A4FBB04B5F506C9C9BBF2BA71634 /* UnauthorisedResponse.swift in Sources */,
+				5821A0240B68A5FAA7D6D2D84C75A3FB /* AntiCSRF.swift in Sources */,
+				C07CA6AD58767081DE4528C37151D102 /* Constants.swift in Sources */,
+				EB16BFE3419D0E4922476879A5D4706F /* Error.swift in Sources */,
+				1DDA46014A6305E86F9D8C04BB04F008 /* FrontToken.swift in Sources */,
+				6BF4DCFD04F04AA61B6DFC80D9AAEA85 /* IdRefreshToken.swift in Sources */,
+				FA3C22541A58C9FFD91F50EDB26F597A /* NormalisedURLDomain.swift in Sources */,
+				ACC646C7FB4328E1C590E05F67FAA799 /* NormalisedURLPath.swift in Sources */,
+				9AFDF04E94AC7F771F5AC86879CACD25 /* String.swift in Sources */,
+				196B1CF52F90F35A58DFEF80E8F6A55A /* SuperTokens.swift in Sources */,
+				2F5D9C1264FDFAEE6C8BF2E342FE98C3 /* SuperTokensIOS-dummy.m in Sources */,
+				C8DC2E62B1B028083C80D700159BC626 /* SuperTokensURLProtocol.swift in Sources */,
+				53CA444B10828C8B7F2E21D717E818EC /* UnauthorisedResponse.swift in Sources */,
+				876755D0BAB37E9C73A30ECE2AD676E1 /* Utils.swift in Sources */,
+				31477069FDDA319425972D923EFFCD8D /* Version.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BDBD67DB5CF88660D01F27E217BD47BA /* Sources */ = {
+		ECE0EC06467DFAABE2AE59778C644122 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A9F85DED98BDD39005F6B1642D2A4EC /* Pods-SuperTokensSession_Example-dummy.m in Sources */,
+				466284A656368BC4E5E6812028BAD74C /* Pods-SuperTokensSession_Example-dummy.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		B07885E6CE48991EAEBE0FF7A5950EA4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = SuperTokensSession;
-			target = 217A27673998106BCD875F299B33B27E /* SuperTokensSession */;
-			targetProxy = BB726B0887E1ACDAB6D32A7CAC5CB92E /* PBXContainerItemProxy */;
-		};
-		D03063DB5BA1E2120F9F27929EE14606 /* PBXTargetDependency */ = {
+		0294474B1971E07AD9DC9E52559B9D0E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "Pods-SuperTokensSession_Example";
 			target = C2EB4B51808385E0E558D5B0962EE0E5 /* Pods-SuperTokensSession_Example */;
-			targetProxy = 225587633EF4A9814E0A42301B0D565B /* PBXContainerItemProxy */;
+			targetProxy = EA5EF0638CE71BA1D87324814F20D622 /* PBXContainerItemProxy */;
+		};
+		A08FEB52110CE40A471756A33971BAD1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = SuperTokensIOS;
+			target = 22111B9B809C629766088073D2FCF6C4 /* SuperTokensIOS */;
+			targetProxy = 78EBB1C4360BEEF83D8E01BF02D259EC /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		2ADA7590F972AED8453635ED0597CC38 /* Release */ = {
+		3ABB93B990F24BCAFC80E272027805C6 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D4C6E82FC9D2A056B93B3BFC2DC18735 /* SuperTokensSession.release.xcconfig */;
+			baseConfigurationReference = B65530409553B690E83BECD6D0B7DFF1 /* Pods-SuperTokensSession_Example.debug.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
@@ -475,14 +478,47 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensSession/SuperTokensSession-prefix.pch";
-				INFOPLIST_FILE = "Target Support Files/SuperTokensSession/SuperTokensSession-Info.plist";
+				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MODULEMAP_FILE = "Target Support Files/SuperTokensSession/SuperTokensSession.modulemap";
-				PRODUCT_MODULE_NAME = SuperTokensSession;
-				PRODUCT_NAME = SuperTokensSession;
+				MACH_O_TYPE = staticlib;
+				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example.modulemap";
+				OTHER_LDFLAGS = "";
+				OTHER_LIBTOOLFLAGS = "";
+				PODS_ROOT = "$(SRCROOT)";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		570238A6F6A262D304717B5CE512F96E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7FC79EED5916409FAA57A2EC454039AB /* SuperTokensIOS.release.xcconfig */;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensIOS/SuperTokensIOS-prefix.pch";
+				INFOPLIST_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MODULEMAP_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS.modulemap";
+				PRODUCT_MODULE_NAME = SuperTokensIOS;
+				PRODUCT_NAME = SuperTokensIOS;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
@@ -494,7 +530,76 @@
 			};
 			name = Release;
 		};
-		2B9E26EAE2CD392AD762421F663075A1 /* Debug */ = {
+		5CBC7591AD054C0C93DEF327D11BC185 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DCCAABACBBCA8AF9BF6D13E0000A53B2 /* Pods-SuperTokensSession_Example.release.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MACH_O_TYPE = staticlib;
+				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example.modulemap";
+				OTHER_LDFLAGS = "";
+				OTHER_LIBTOOLFLAGS = "";
+				PODS_ROOT = "$(SRCROOT)";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		72483EE71BF664801FB77BA26ABE099D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C5966E68FF31F313FD27097F04CE008C /* Pods-SuperTokensSession_Tests.debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MACH_O_TYPE = staticlib;
+				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests.modulemap";
+				OTHER_LDFLAGS = "";
+				OTHER_LIBTOOLFLAGS = "";
+				PODS_ROOT = "$(SRCROOT)";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		8DE5143C03248BB6CD542DE3963D6F3A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -529,7 +634,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -548,7 +652,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -561,41 +665,7 @@
 			};
 			name = Debug;
 		};
-		4CDFDFE863C4FA3F8DFF0F9B839016D3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = DCCAABACBBCA8AF9BF6D13E0000A53B2 /* Pods-SuperTokensSession_Example.release.xcconfig */;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example-Info.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MACH_O_TYPE = staticlib;
-				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example.modulemap";
-				OTHER_LDFLAGS = "";
-				OTHER_LIBTOOLFLAGS = "";
-				PODS_ROOT = "$(SRCROOT)";
-				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Release;
-		};
-		63FAF33E1C55B71A5F5A8B3CC8749F99 /* Release */ = {
+		9E406C6AAF85E580207CD97B0044DEAB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -630,7 +700,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -646,22 +715,24 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = NO;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 				SYMROOT = "${SRCROOT}/../build";
 			};
 			name = Release;
 		};
-		7E2B322C868499D716A87F2852BC94A2 /* Release */ = {
+		A2ACDADD3064F6A59570F7D996FC7B5B /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0B0F1707C7EC6FB97703909D188805B8 /* Pods-SuperTokensSession_Tests.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
@@ -673,7 +744,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				MACH_O_TYPE = staticlib;
 				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests.modulemap";
@@ -691,11 +762,11 @@
 			};
 			name = Release;
 		};
-		9D2A2F97F515E47CF9261914BC04F129 /* Debug */ = {
+		E2B9212862EE2F68550582906EFD1C14 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B65530409553B690E83BECD6D0B7DFF1 /* Pods-SuperTokensSession_Example.debug.xcconfig */;
+			baseConfigurationReference = 3E19C628993CAA59352F3E89EBE9F6F5 /* SuperTokensIOS.debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
@@ -705,79 +776,14 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example-Info.plist";
+				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensIOS/SuperTokensIOS-prefix.pch";
+				INFOPLIST_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MACH_O_TYPE = staticlib;
-				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example.modulemap";
-				OTHER_LDFLAGS = "";
-				OTHER_LIBTOOLFLAGS = "";
-				PODS_ROOT = "$(SRCROOT)";
-				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Debug;
-		};
-		EC6C7009AB3701D1259F0E6337835D9C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = C5966E68FF31F313FD27097F04CE008C /* Pods-SuperTokensSession_Tests.debug.xcconfig */;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests-Info.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MACH_O_TYPE = staticlib;
-				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests.modulemap";
-				OTHER_LDFLAGS = "";
-				OTHER_LIBTOOLFLAGS = "";
-				PODS_ROOT = "$(SRCROOT)";
-				PRODUCT_BUNDLE_IDENTIFIER = "org.cocoapods.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Debug;
-		};
-		EF3EE0C226180714DCC657218A984B9E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3125CD21CBEA648DE411CD2CA35CCAE7 /* SuperTokensSession.debug.xcconfig */;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensSession/SuperTokensSession-prefix.pch";
-				INFOPLIST_FILE = "Target Support Files/SuperTokensSession/SuperTokensSession-Info.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MODULEMAP_FILE = "Target Support Files/SuperTokensSession/SuperTokensSession.modulemap";
-				PRODUCT_MODULE_NAME = SuperTokensSession;
-				PRODUCT_NAME = SuperTokensSession;
+				MODULEMAP_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS.modulemap";
+				PRODUCT_MODULE_NAME = SuperTokensIOS;
+				PRODUCT_NAME = SuperTokensIOS;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
@@ -794,8 +800,17 @@
 		4821239608C13582E20E6DA73FD5F1F9 /* Build configuration list for PBXProject "Pods" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2B9E26EAE2CD392AD762421F663075A1 /* Debug */,
-				63FAF33E1C55B71A5F5A8B3CC8749F99 /* Release */,
+				8DE5143C03248BB6CD542DE3963D6F3A /* Debug */,
+				9E406C6AAF85E580207CD97B0044DEAB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7F30EF97B77F6FB5E284C8BBBF3861B6 /* Build configuration list for PBXNativeTarget "SuperTokensIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E2B9212862EE2F68550582906EFD1C14 /* Debug */,
+				570238A6F6A262D304717B5CE512F96E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -803,26 +818,17 @@
 		812069E42EE30DD15E4238241C4870FA /* Build configuration list for PBXNativeTarget "Pods-SuperTokensSession_Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EC6C7009AB3701D1259F0E6337835D9C /* Debug */,
-				7E2B322C868499D716A87F2852BC94A2 /* Release */,
+				72483EE71BF664801FB77BA26ABE099D /* Debug */,
+				A2ACDADD3064F6A59570F7D996FC7B5B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		84DDA4D7F8DA62FF70F2C1EE4D838209 /* Build configuration list for PBXNativeTarget "SuperTokensSession" */ = {
+		8388EE18BDA5D6736AFC7EC0D01BAFE4 /* Build configuration list for PBXNativeTarget "Pods-SuperTokensSession_Example" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EF3EE0C226180714DCC657218A984B9E /* Debug */,
-				2ADA7590F972AED8453635ED0597CC38 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		EA811D0D7E92E01E6FCB93049DF4A4E1 /* Build configuration list for PBXNativeTarget "Pods-SuperTokensSession_Example" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				9D2A2F97F515E47CF9261914BC04F129 /* Debug */,
-				4CDFDFE863C4FA3F8DFF0F9B839016D3 /* Release */,
+				3ABB93B990F24BCAFC80E272027805C6 /* Debug */,
+				5CBC7591AD054C0C93DEF327D11BC185 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

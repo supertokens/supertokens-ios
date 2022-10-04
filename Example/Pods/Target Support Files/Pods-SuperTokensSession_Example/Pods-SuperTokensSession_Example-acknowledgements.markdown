@@ -1,7 +1,7 @@
 # Acknowledgements
 This application makes use of the following third party libraries:
 
-## SuperTokensSession
+## SuperTokensIOS
 
    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
 

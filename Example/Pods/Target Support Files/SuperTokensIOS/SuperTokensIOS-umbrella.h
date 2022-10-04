@@ -11,6 +11,6 @@
 #endif
 
 
-FOUNDATION_EXPORT double SuperTokensSessionVersionNumber;
-FOUNDATION_EXPORT const unsigned char SuperTokensSessionVersionString[];
+FOUNDATION_EXPORT double SuperTokensIOSVersionNumber;
+FOUNDATION_EXPORT const unsigned char SuperTokensIOSVersionString[];
 

@@ -14,7 +14,7 @@
  */
 
 import XCTest
-import SuperTokensSession
+import SuperTokensIOS
 
 let testAPIBase = "http://127.0.0.1:8080/"
 let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"

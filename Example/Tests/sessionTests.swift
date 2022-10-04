@@ -13,7 +13,7 @@
  * under the License.
  */
 import XCTest
-@testable import SuperTokensSession
+@testable import SuperTokensIOS
 
 /* TODO:
  - Proper change in anti-csrf token once access token resets

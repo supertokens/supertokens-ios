@@ -28,7 +28,7 @@ SuperTokens SDK for iOS written in Swift. This SDK takes care of managing a sess
 
   s.ios.deployment_target = '13.0'
 
-  s.source_files = 'SuperTokensSession/Classes/**/*'
+  s.source_files = 'SuperTokensIOS/Classes/**/*'
   
   s.swift_versions = "5.0"
 
