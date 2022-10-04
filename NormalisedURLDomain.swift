@@ -30,14 +30,16 @@ internal class NormalisedURLDomain {
                 throw SDKFailableError.failableError
             }
             
+            let hostSuffix = url.port == nil ? hostName : hostName + ":\(url.port!)"
+            
             if ignoreProtocol {
                 if hostName.starts(with: "localhost") || Utils.isIpAddress(input: hostName) {
-                    trimmedInput = "http://" + hostName
+                    trimmedInput = "http://" + hostSuffix
                 } else {
-                    trimmedInput = "https://" + hostName
+                    trimmedInput = "https://" + hostSuffix
                 }
             } else {
-                trimmedInput = scheme + "://" + hostName
+                trimmedInput = scheme + "://" + hostSuffix
             }
             
             return trimmedInput

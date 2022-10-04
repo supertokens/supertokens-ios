@@ -64,7 +64,7 @@ class NormalisedURLPath {
                 throw SDKFailableError.failableError
             }
             
-            return try normaliseURLPathOrThrowError(input: trimmedInput)
+            return try normaliseURLPathOrThrowError(input: "http://example.com" + trimmedInput)
         } catch {
             throw SuperTokensError.initError(message: "Please provide a valid URL path")
         }

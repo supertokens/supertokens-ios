@@ -36,7 +36,7 @@ public class SuperTokens {
     static var rid: String = ""
     static var config: NormalisedInputType? = nil
     
-    public static func initialize(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?) throws {
+    public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, cookieDomain: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
         if SuperTokens.isInitCalled {
             return;
         }
@@ -70,7 +70,7 @@ public class SuperTokens {
             return
         }
         
-        var sessionConfiguration: URLSessionConfiguration = URLSessionConfiguration.default
+        let sessionConfiguration: URLSessionConfiguration = URLSessionConfiguration.default
         sessionConfiguration.protocolClasses?.insert(SuperTokensURLProtocol.self, at: 0)
         let customSession = URLSession(configuration: sessionConfiguration)
         

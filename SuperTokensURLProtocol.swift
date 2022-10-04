@@ -7,14 +7,14 @@
 
 import Foundation
 
-class SuperTokensURLProtocol: URLProtocol {
+public class SuperTokensURLProtocol: URLProtocol {
     private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
     
-    override class func canInit(with request: URLRequest) -> Bool {
+    public override class func canInit(with request: URLRequest) -> Bool {
         if !SuperTokens.isInitCalled {
             // We cannot throw in this function because that would be an invalid override
             // In this case we need to rely on printing instead
-            print("SuperTokens Error: SuperTokens.init has not been called, if you are trying to make a network request using auth make sure to call SuperTokens.init before making the request")
+            print("SuperTokens Error: SuperTokens.init has not been called")
             return false
         }
         
@@ -40,11 +40,11 @@ class SuperTokensURLProtocol: URLProtocol {
         return false
     }
     
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    public override class func canonicalRequest(for request: URLRequest) -> URLRequest {
         return request
     }
     
-    override func startLoading() {
+    public override func startLoading() {
         // we have a read write lock here. We take a read lock while making a request and a write lock while refreshing
         // because if we dno't do that, then there may be a race condition where we may read a new id refresh token from storage
         // but the cookies may still be the older ones.
@@ -242,7 +242,7 @@ class SuperTokensURLProtocol: URLProtocol {
         }
     }
     
-    override func stopLoading() {
+    public override func stopLoading() {
         // Do nothing, this is required to be implemented
     }
 }
