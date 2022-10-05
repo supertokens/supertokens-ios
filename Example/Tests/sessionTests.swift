@@ -21,218 +21,217 @@ import XCTest
  */
 
 class sessionTests: XCTestCase {
-    static let testAPIBase = "http://127.0.0.1:8080/"
-    let refreshTokenAPIURL = "\(testAPIBase)refresh"
-    let loginAPIURL = "\(testAPIBase)login"
-    let userInfoAPIURL = "\(testAPIBase)userInfo"
-    let logoutAPIURL = "\(testAPIBase)logout"
-    let headerAPIURL = "\(testAPIBase)header"
-    let testinApiUrl = "\(testAPIBase)testing"
-    let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
-    let checkUserConfig = "\(testAPIBase)checkUserConfig"
-    let testError = "\(testAPIBase)testError"
-    let fakeGetApi = "https://www.google.com"
-    let refreshCustomHeader = "\(testAPIBase)refreshHeaderInfo"
-    let sessionExpiryCode = 401
+//    static let testAPIBase = "http://127.0.0.1:8080/"
+//    let refreshTokenAPIURL = "\(testAPIBase)refresh"
+//    let loginAPIURL = "\(testAPIBase)login"
+//    let userInfoAPIURL = "\(testAPIBase)userInfo"
+//    let logoutAPIURL = "\(testAPIBase)logout"
+//    let headerAPIURL = "\(testAPIBase)header"
+//    let testinApiUrl = "\(testAPIBase)testing"
+//    let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
+//    let checkUserConfig = "\(testAPIBase)checkUserConfig"
+//    let testError = "\(testAPIBase)testError"
+//    let fakeGetApi = "https://www.google.com"
+//    let refreshCustomHeader = "\(testAPIBase)refreshHeaderInfo"
+//    let sessionExpiryCode = 401
     
 
-//    override class func tearDown() {
-//        let semaphore = DispatchSemaphore(value: 0)
-//        afterAPI(successCallback: {
-//            semaphore.signal()
-//        }, failureCallback: {
-//            semaphore.signal()
-//        })
-//         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-//        
-//        super.tearDown()
-//    }
-//
-//    override func setUp() {
-//        super.setUp()
-//        SuperTokens.isInitCalled = false
-//        AntiCSRF.removeToken()
-//        IdRefreshToken.removeToken()
-//        
-//        let semaphore = DispatchSemaphore(value: 0)
-//        beforeEachAPI(successCallback: {
-//            semaphore.signal()
-//        }, failureCallback: {
-//            semaphore.signal()
-//        })
-//        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-//    }
+    // MARK: Runs after all tests
+    override class func tearDown() {
+        let semaphore = DispatchSemaphore(value: 0)
+
+        TestUtils.afterAllTests {
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        super.tearDown()
+    }
     
-//    func testSessionApiBaseResolvedCorrectlyAgainstNoPathUrl() {
-//        do {
-//            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com")
-//        } catch {
-//            XCTFail()
-//        }
-//        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/session/refresh")
-//    }
+    // MARK: Runs after each test
+    override func tearDown() {
+        URLProtocol.unregisterClass(SuperTokensURLProtocol.self)
+        super.tearDown()
+    }
+    
+    // MARK: Runs before all tests
+    override class func setUp() {
+        super.setUp()
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        
+        TestUtils.beforeAllTests {
+            semaphore.signal()
+        }
+        
+        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    
+    // MARK: Runs before each test
+    override func setUp() {
+        super.setUp()
+        let semaphore = DispatchSemaphore(value: 0)
+        
+        TestUtils.beforeEachTest {
+            semaphore.signal()
+        }
+        
+        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+        URLProtocol.registerClass(SuperTokensURLProtocol.self)
+    }
+
+    /**
+     Test that if you are logged out and you call an API that requires sessions,
+     you get session expired output and that refresh token API doesnt get called
+     */
+    func testSessionExpiredErrorAndNoRefreshToken() {
+        TestUtils.startST(validity: 3)
+
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail()
+        }
+
+        do {
+            let userInfoURL = URL(string: "\(testAPIBase)/")
+            let userInfoRequest = URLRequest(url: userInfoURL!)
+            let requestSemaphore = DispatchSemaphore(value: 0)
+
+            URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+                userInfoData, userInfoResponse, userInfoError in
+
+                if userInfoError != nil {
+                    XCTFail("API failed when unexpected error")
+                    requestSemaphore.signal()
+                    return
+                }
+
+                if userInfoResponse as? HTTPURLResponse != nil {
+                    let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                    if userInfoHttpResponse.statusCode != 401 {
+                        XCTFail("API should have returned unauthorised but didnt")
+                    }
+                    requestSemaphore.signal()
+                } else {
+                    XCTFail("API returned invalid response")
+                    requestSemaphore.signal()
+                }
+            }).resume()
+
+            _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        }
+
+        let counter = TestUtils.getRefreshTokenCounter()
+        if (counter != 0) {
+            XCTFail("Refresh counter returned non zero value")
+        }
+    }
 //
-//    func testSessionApiBaseResolvedCorrectlyAgainstZeroLengthPathUrl() {
-//        do {
-//            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com/")
-//        } catch {
-//            XCTFail()
-//        }
-//        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/session/refresh")
-//    }
-//
-//    func testSessionApiBaseResolvedCorrectlyAgainstSomeOtherPathUrl() {
-//        do {
-//            try SuperTokens.initialise(refreshTokenEndpoint: "https://api.example.com/some/other/url")
-//        } catch {
-//            XCTFail()
-//        }
-//        XCTAssertEqual(SuperTokens.refreshTokenEndpoint, "https://api.example.com/some/other/url")
-//    }
-//
-//    // Test that if you are logged out and you call the /userInfo API, you get session expired output and that refresh token API doesnt get called
-//    func testSessionExpiredErrorAndNoRefreshToken() {
-//        startST(validity: 3)
-//
-//        do {
-//            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
-//        } catch {
-//            XCTFail()
-//        }
-//
-//        do {
-//            let userInfoURL = URL(string: self.userInfoAPIURL)
-//            let userInfoRequest = URLRequest(url: userInfoURL!)
-//            let requestSemaphore = DispatchSemaphore(value: 0)
-//
-//            SuperTokensURLSession.dataTask(request: userInfoRequest, completionHandler: {
-//                userInfoData, userInfoResponse, userInfoError in
-//
-//                if userInfoError != nil {
-//                    XCTFail()
-//                    requestSemaphore.signal()
-//                    return
-//                }
-//
-//                if userInfoResponse as? HTTPURLResponse != nil {
-//                    let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-//                    if userInfoHttpResponse.statusCode != self.sessionExpiryCode {
-//                        XCTFail()
-//                    }
-//                    requestSemaphore.signal()
-//                } else {
-//                    XCTFail()
-//                    requestSemaphore.signal()
-//                }
-//            })
-//
-//            _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-//        }
-//
-//        let counter = getRefreshTokenCounter()
-//        if (counter != 0) {
-//            XCTFail()
-//        }
-//    }
-//
-//    // Things should work if anti-csrf is disabled.
-//    func testThingsWorkIfAntiCSRFIsDisabled() {
-//        startST(validity: 3, refreshValidity: 2, disableAntiCSRF: true)
-//
-//        do {
-//            try SuperTokens.initialise(refreshTokenEndpoint: refreshTokenAPIURL, sessionExpiryStatusCode: sessionExpiryCode)
-//        } catch {
-//            XCTFail()
-//        }
-//
-//        do {
-//            let url = URL(string: loginAPIURL)
-//            var request = URLRequest(url: url!)
-//            request.httpMethod = "POST"
-//            let requestSemaphore = DispatchSemaphore(value: 0)
-//
-//            SuperTokensURLSession.dataTask(request: request, completionHandler: {
-//                data, response, error in
-//
-//                if error != nil {
-//                    XCTFail()
-//                    requestSemaphore.signal()
-//                    return
-//                }
-//
-//                if response as? HTTPURLResponse != nil {
-//                    let httpResponse = response as! HTTPURLResponse
-//                    if httpResponse.statusCode != 200 {
-//                        XCTFail()
-//                        requestSemaphore.signal()
-//                    } else {
-//                        let userInfoURL = URL(string: self.userInfoAPIURL)
-//                        let userInfoRequest = URLRequest(url: userInfoURL!)
-//
-//                        sleep(5)
-//
-//                        SuperTokensURLSession.dataTask(request: userInfoRequest, completionHandler: {
-//                            userInfoData, userInfoResponse, userInfoError in
-//
-//                            if userInfoError != nil {
-//                                XCTFail()
-//                                requestSemaphore.signal()
-//                                return
-//                            }
-//
-//                            if userInfoResponse as? HTTPURLResponse != nil {
-//                                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-//                                if userInfoHttpResponse.statusCode != 200 {
-//                                    XCTFail()
-//                                }
-//                                requestSemaphore.signal()
-//                            } else {
-//                                XCTFail()
-//                                requestSemaphore.signal()
-//                            }
-//                        })
-//                    }
-//                } else {
-//                    XCTFail()
-//                    requestSemaphore.signal()
-//                }
-//            })
-//
-//            _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-//        }
-//
-//        let counter = getRefreshTokenCounter()
-//        if (counter != 1) {
-//            XCTFail()
-//        }
-//
-//        // logout
-//        do {
-//            let requestSemaphore = DispatchSemaphore(value: 0)
-//            let url = URL(string: logoutAPIURL)!
-//            var request = URLRequest(url: url)
-//            request.httpMethod = "POST"
-//            SuperTokensURLSession.dataTask(request: request, completionHandler: {
-//                data, response, error in
-//                if error != nil {
-//                    XCTFail("logout Api Error")
-//                    requestSemaphore.signal()
-//                    return
-//                }
-//                if response as? HTTPURLResponse != nil {
-//                    let httpResponse = response as! HTTPURLResponse
-//                    if httpResponse.statusCode != 200 {
-//                        XCTFail("logout Api Error")
-//                        requestSemaphore.signal()
-//                        return
-//                    }
-//                }
-//                requestSemaphore.signal()
-//            })
-//            _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-//            XCTAssertTrue(!SuperTokens.doesSessionExist())
-//        }
-//    }
+    // Things should work if anti-csrf is disabled.
+    func testThingsWorkIfAntiCSRFIsDisabled() {
+        TestUtils.startST(validity: 3, disableAntiCSRF: true)
+
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail()
+        }
+
+        do {
+            let url = URL(string: "\(testAPIBase)/login")
+            var request = URLRequest(url: url!)
+            request.httpMethod = "POST"
+            
+            var json: [String: Any] = ["userId": "supertokens-ios-tests"]
+            let jsonData = try? JSONSerialization.data(withJSONObject: json)
+            request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+            request.httpBody = jsonData
+            
+            let requestSemaphore = DispatchSemaphore(value: 0)
+
+            URLSession.shared.dataTask(with: request, completionHandler: {
+                data, response, error in
+
+                if error != nil {
+                    XCTFail("Login request failed")
+                    requestSemaphore.signal()
+                    return
+                }
+
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail()
+                        requestSemaphore.signal()
+                    } else {
+                        let userInfoURL = URL(string: "\(testAPIBase)/")
+                        let userInfoRequest = URLRequest(url: userInfoURL!)
+
+                        sleep(5)
+
+                        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+                            userInfoData, userInfoResponse, userInfoError in
+
+                            if userInfoError != nil {
+                                XCTFail("API failed")
+                                requestSemaphore.signal()
+                                return
+                            }
+
+                            if userInfoResponse as? HTTPURLResponse != nil {
+                                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                                if userInfoHttpResponse.statusCode != 200 {
+                                    XCTFail("API responded with status \(userInfoHttpResponse.statusCode)")
+                                }
+                                requestSemaphore.signal()
+                            } else {
+                                XCTFail("Invalid API response")
+                                requestSemaphore.signal()
+                            }
+                        }).resume()
+                    }
+                } else {
+                    XCTFail("Login API responded with non 200 status")
+                    requestSemaphore.signal()
+                }
+            }).resume()
+
+            _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        }
+
+        let counter = TestUtils.getRefreshTokenCounter()
+        if (counter != 1) {
+            XCTFail("Refresh counter returned wrong value")
+        }
+
+        // logout
+        do {
+            let requestSemaphore = DispatchSemaphore(value: 0)
+            let url = URL(string: "\(testAPIBase)/logout")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            URLSession.shared.dataTask(with: request, completionHandler: {
+                data, response, error in
+                if error != nil {
+                    XCTFail("logout Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("logout Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+            }).resume()
+            _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+            XCTAssertTrue(!SuperTokens.doesSessionExist())
+        }
+    }
 //
 //    // Custom refresh API headers are going through
 //    func testCustomHeadersForRefreshAPI() {

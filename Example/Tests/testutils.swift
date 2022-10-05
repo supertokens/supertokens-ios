@@ -14,78 +14,150 @@
  */
 
 import XCTest
-import SuperTokensIOS
+@testable import SuperTokensIOS
 
-let testAPIBase = "http://127.0.0.1:8080/"
-let refreshCounterAPIURL = "\(testAPIBase)refreshCounter"
-let afterAPIURL = "\(testAPIBase)after"
+let testAPIBase = "http://127.0.0.1:8080"
 let beforeEachAPIURL = "\(testAPIBase)beforeeach"
-let startSTAPIURL = "\(testAPIBase)startst"
 let refreshDeviceInfoAPIURL = "\(testAPIBase)refreshDeviceInfo"
 
-//internal func afterAPI(successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
-//    let semaphore = DispatchSemaphore(value: 0)
-//    let url = URL(string: afterAPIURL)
-//    var request = URLRequest(url: url!)
-//    request.httpMethod = "POST"
-//    let task = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
-//        defer {
-//            semaphore.signal()
-//        }
-//        
-//        if response as? HTTPURLResponse != nil {
-//            let httpResponse = response as! HTTPURLResponse
-//            if httpResponse.statusCode == 200 {
-//                successCallback()
-//                return;
-//            }
-//        }
-//        failureCallback()
-//    })
-//    task.resume()
-//    _ = semaphore.wait(timeout: .distantFuture)
-//}
-//
-//internal func startST(validity: Int = 1, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false) {
-//    let semaphore = DispatchSemaphore(value: 0)
-//    startSTHelper(validity: validity, refreshValidity: refreshValidity, disableAntiCSRF: disableAntiCSRF, successCallback: {
-//        semaphore.signal()
-//    }) {
-//        semaphore.signal()
-//    }
-//    _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-//}
-//
-//private func startSTHelper(validity: Int = 1, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false, successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
-//    let semaphore = DispatchSemaphore(value: 0)
-//    let url = URL(string: startSTAPIURL)
-//    var request = URLRequest(url: url!)
-//    
-//    var json: [String: Any] = ["accessTokenValidity": validity]
-//    if refreshValidity != nil {
-//        json = ["accessTokenValidity": validity, "refreshTokenValidity": refreshValidity!, "disableAntiCSRF": disableAntiCSRF!]
-//    }
-//    let jsonData = try? JSONSerialization.data(withJSONObject: json)
-//    request.httpMethod = "POST"
-//    request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
-//    request.httpBody = jsonData
-//    let task = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
-//        defer {
-//            semaphore.signal()
-//        }
-//        
-//        if response as? HTTPURLResponse != nil {
-//            let httpResponse = response as! HTTPURLResponse
-//            if httpResponse.statusCode == 200 {
-//                successCallback()
-//                return;
-//            }
-//        }
-//        failureCallback()
-//    })
-//    task.resume()
-//    _ = semaphore.wait(timeout: .distantFuture)
-//}
+class TestUtils {
+    static func afterAllTests(callback: @escaping () -> Void) {
+        let url = URL(string: "\(testAPIBase)/after")
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let task = getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
+            
+            let stopRequest = URLRequest(url: URL(string: "\(testAPIBase)/stopst")!)
+            getTestingUrlSession().dataTask(with: stopRequest, completionHandler: {
+                _, _, _ in
+                
+                callback()
+            }).resume()
+        })
+        task.resume()
+    }
+    
+    static func beforeAllTests(callback: @escaping () -> Void) {
+        let url = URL(string: "\(testAPIBase)/test/startServer")
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        let task = getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
+            
+            callback()
+        })
+        task.resume()
+    }
+    
+    static func beforeEachTest(callback: @escaping () -> Void) {
+        SuperTokens.resetForTests()
+        var beforeeachRequest = URLRequest(url: URL(string: "\(testAPIBase)/beforeeach")!)
+        beforeeachRequest.httpMethod = "POST"
+        getTestingUrlSession().dataTask(with: beforeeachRequest, completionHandler: {
+            _, _, _ in
+            
+            callback()
+        }).resume()
+    }
+    
+    static func getTestingUrlSession() -> URLSession {
+        return URLSession(configuration: URLSessionConfiguration.default)
+    }
+    
+    internal static func startST(validity: Int = 1, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false) {
+        let semaphore = DispatchSemaphore(value: 0)
+        startSTHelper(validity: validity, disableAntiCSRF: disableAntiCSRF, successCallback: {
+            semaphore.signal()
+        }) {
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    //
+    private static func startSTHelper(validity: Int = 1, disableAntiCSRF: Bool? = false, successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
+        let semaphore = DispatchSemaphore(value: 0)
+        let url = URL(string: "\(testAPIBase)/startst")
+        var request = URLRequest(url: url!)
+        
+        var json: [String: Any] = ["accessTokenValidity": validity, "enableAntiCsrf": !disableAntiCSRF!]
+
+        let jsonData = try? JSONSerialization.data(withJSONObject: json)
+        request.httpMethod = "POST"
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        let task = getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
+            defer {
+                semaphore.signal()
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode == 200 {
+                    successCallback()
+                    return;
+                }
+            }
+            failureCallback()
+        })
+        task.resume()
+        _ = semaphore.wait(timeout: .distantFuture)
+    }
+    
+    internal static func getRefreshTokenCounter() -> Int {
+        let refreshCounterSemaphore = DispatchSemaphore(value: 0)
+        var result = -1;
+        getRefreshTokenCounterHelper(successCallback: {
+            counter in
+            result = counter
+            refreshCounterSemaphore.signal()
+        }, failureCallback: {
+            refreshCounterSemaphore.signal()
+        })
+        _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
+        return result;
+    }
+    
+    private static func getRefreshTokenCounterHelper(successCallback: @escaping (Int) -> Void, failureCallback: @escaping () -> Void) {
+        let refreshCounterSempahore = DispatchSemaphore(value: 0)
+        let url = URL(string: "\(testAPIBase)/refreshAttemptedTime")
+        let request = URLRequest(url: url!)
+        let task = getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
+            defer {
+                refreshCounterSempahore.signal()
+            }
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    failureCallback()
+                    return
+                }
+                
+                if data == nil {
+                    failureCallback()
+                    return
+                }
+                
+                do {
+                    let jsonResponse = try JSONSerialization.jsonObject(with: data!, options: []) as! NSDictionary
+                    let counterValue = jsonResponse.value(forKey: "counter") as? Int
+                    if counterValue == nil {
+                        failureCallback()
+                    } else {
+                        successCallback(counterValue!)
+                    }
+                } catch {
+                    failureCallback()
+                }
+            } else {
+                failureCallback()
+            }
+        })
+        task.resume()
+        _ = refreshCounterSempahore.wait(timeout: .distantFuture)
+    }
+}
+
+
 //
 //internal func beforeEachAPI(successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
 //    let semaphore = DispatchSemaphore(value: 0)
@@ -110,19 +182,6 @@ let refreshDeviceInfoAPIURL = "\(testAPIBase)refreshDeviceInfo"
 //    _ = semaphore.wait(timeout: .distantFuture)
 //}
 //
-//internal func getRefreshTokenCounter() -> Int {
-//    let refreshCounterSemaphore = DispatchSemaphore(value: 0)
-//    var result = -1;
-//    getRefreshTokenCounterHelper(successCallback: {
-//        counter in
-//        result = counter
-//        refreshCounterSemaphore.signal()
-//    }, failureCallback: {
-//        refreshCounterSemaphore.signal()
-//    })
-//    _ = refreshCounterSemaphore.wait(timeout: DispatchTime.distantFuture)
-//    return result;
-//}
 //
 //internal func getRefreshTokenCounterUsingST() -> Int {
 //    let refreshCounterSemaphore = DispatchSemaphore(value: 0)
@@ -138,45 +197,6 @@ let refreshDeviceInfoAPIURL = "\(testAPIBase)refreshDeviceInfo"
 //    return result;
 //}
 //
-//private func getRefreshTokenCounterHelper(successCallback: @escaping (Int) -> Void, failureCallback: @escaping () -> Void) {
-//    let refreshCounterSempahore = DispatchSemaphore(value: 0)
-//    let url = URL(string: refreshCounterAPIURL)
-//    let request = URLRequest(url: url!)
-//    let task = URLSession.shared.dataTask(with: request, completionHandler: { data, response, error in
-//        defer {
-//            refreshCounterSempahore.signal()
-//        }
-//        
-//        if response as? HTTPURLResponse != nil {
-//            let httpResponse = response as! HTTPURLResponse
-//            if httpResponse.statusCode != 200 {
-//                failureCallback()
-//                return
-//            }
-//            
-//            if data == nil {
-//                failureCallback()
-//                return
-//            }
-//            
-//            do {
-//                let jsonResponse = try JSONSerialization.jsonObject(with: data!, options: []) as! NSDictionary
-//                let counterValue = jsonResponse.value(forKey: "counter") as? Int
-//                if counterValue == nil {
-//                    failureCallback()
-//                } else {
-//                    successCallback(counterValue!)
-//                }
-//            } catch {
-//                failureCallback()
-//            }
-//        } else {
-//            failureCallback()
-//        }
-//    })
-//    task.resume()
-//    _ = refreshCounterSempahore.wait(timeout: .distantFuture)
-//}
 //
 //private func getRefreshTokenCounterHelperUsingST(successCallback: @escaping (Int) -> Void, failureCallback: @escaping () -> Void) {
 //    let refreshCounterSempahore = DispatchSemaphore(value: 0)
