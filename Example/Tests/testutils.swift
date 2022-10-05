@@ -155,6 +155,19 @@ class TestUtils {
         task.resume()
         _ = refreshCounterSempahore.wait(timeout: .distantFuture)
     }
+    
+    static func getLoginRequest() -> URLRequest {
+        let url = URL(string: "\(testAPIBase)/login")
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        
+        let json: [String: Any] = ["userId": "supertokens-ios-tests"]
+        let jsonData = try? JSONSerialization.data(withJSONObject: json)
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        
+        return request
+    }
 }
 
 

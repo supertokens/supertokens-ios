@@ -28,6 +28,7 @@ const { spawnSync } = require("child_process");
 let noOfTimesRefreshCalledDuringTest = 0;
 let noOfTimesGetSessionCalledDuringTest = 0;
 let noOfTimesRefreshAttemptedDuringTest = 0;
+let customRefreshHeaderValue = "";
 let supertokens_node_version = require("supertokens-node/lib/build/version").version;
 
 let urlencodedParser = bodyParser.urlencoded({ limit: "20mb", extended: true, parameterLimit: 20000 });
@@ -190,6 +191,7 @@ app.post("/beforeeach", async (req, res) => {
     noOfTimesRefreshCalledDuringTest = 0;
     noOfTimesGetSessionCalledDuringTest = 0;
     noOfTimesRefreshAttemptedDuringTest = 0;
+    customRefreshHeaderValue = "";
     await killAllST();
     await setupST();
     res.send();
@@ -324,12 +326,22 @@ app.post(
     }
 );
 
+app.get("/refreshHeader", async (req, res) => {
+    res.status(200).json({
+        value: customRefreshHeaderValue,
+    });
+});
+
 app.post("/auth/session/refresh", async (req, res, next) => {
     noOfTimesRefreshAttemptedDuringTest += 1;
     verifySession()(req, res, err => {
         if (err) {
             next(err);
         } else {
+            if (req.headers["custom-header"] !== undefined) {
+                customRefreshHeaderValue = req.headers["custom-header"];
+            }
+
             if (req.headers["rid"] === undefined) {
                 res.send("refresh failed");
             } else {
