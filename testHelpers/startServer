@@ -1,1 +1,2 @@
-(cd testHelpers/server && TEST_MODE=testing INSTALL_PATH=../../$1 node ./build/index.js)
+# use: ./test/startServer ../../../com-root
+(cd testHelpers/server && TEST_MODE=testing INSTALL_PATH=../../$1 NODE_PORT=$2 node .)

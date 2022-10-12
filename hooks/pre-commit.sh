@@ -1,6 +1,6 @@
 #!/bin/sh
 # get current version----------
-version=`cat SuperTokensSession.podspec | grep -e "s.version          =" -e "s.version="`
+version=`cat SuperTokensIOS.podspec | grep -e "s.version          =" -e "s.version="`
 
 while IFS='"' read -ra ADDR; do
     counter=0
@@ -14,7 +14,7 @@ while IFS='"' read -ra ADDR; do
 done <<< "$version"
 
 # get version from code
-codeversion=`cat SuperTokensSession/Classes/Constants.swift | grep -e "sdkVersion =" -e "sdkVersion="`
+codeversion=`cat SuperTokensIOS/Classes/Version.swift | grep -e "sdkVersion =" -e "sdkVersion="`
 while IFS='"' read -ra ADDR; do
     counter=0
     for i in "${ADDR[@]}"; do
@@ -30,7 +30,7 @@ if [ $version != $codeversion ]
 then
     RED='\033[0;31m'
     NC='\033[0m' # No Color
-    printf "${RED}Version codes in podspec and Constants.swift are not the same${NC}\n"
+    printf "${RED}Version codes in podspec and Version.swift are not the same${NC}\n"
     exit 1
 fi
 
@@ -50,14 +50,8 @@ then
 elif [[ $version == $branch_name* ]]
 then
     continue=1
-elif ! [[ $branch_name =~ ^[0-9].[0-9]$ ]]
-then
+else
     YELLOW='\033[1;33m'
     NC='\033[0m' # No Color
     printf "${YELLOW}Not committing to master or version branches${NC}\n"
-else
-    RED='\033[0;31m'
-    NC='\033[0m' # No Color
-    printf "${RED}Pushing to wrong branch. Stopping commit${NC}\n"
-    exit 1
 fi

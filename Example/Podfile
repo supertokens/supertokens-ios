@@ -1,7 +1,9 @@
 use_frameworks!
 
+platform :ios, '13.0'
+
 target 'SuperTokensSession_Example' do
-  pod 'SuperTokensSession', :path => '../'
+  pod 'SuperTokensIOS', :path => '../'
 
   target 'SuperTokensSession_Tests' do
     inherit! :search_paths

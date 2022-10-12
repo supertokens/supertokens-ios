@@ -44,11 +44,12 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
    cd ./testHelpers/server/
    npm i -d
    npm i git+https://github.com:supertokens/supertokens-node.git
-   TEST_MODE=testing INSTALL_PATH=../../../supertokens-root node ./build/index.js
+   cd ../..
+   ./testHelpers/startServer ../supertokens-root
    ```
 5. Open a new terminal in `supertokens-ios` and run all tests
    ```
-   xcodebuild test -enableCodeCoverage YES -workspace Example/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 11' ONLY_ACTIVE_ARCH=NO | xcpretty
+   xcodebuild test -enableCodeCoverage YES -workspace Example/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=14.4,name=iPhone 12 Pro' ONLY_ACTIVE_ARCH=NO
    ```
    Alternatively, you can also run all tests via XCode. The tests are present in the `Example` project.
 6. If all tests pass the output should be:

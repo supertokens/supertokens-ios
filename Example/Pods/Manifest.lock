@@ -1,16 +1,16 @@
 PODS:
-  - SuperTokensSession (0.1.0)
+  - SuperTokensIOS (1.3.1)
 
 DEPENDENCIES:
-  - SuperTokensSession (from `../`)
+  - SuperTokensIOS (from `../`)
 
 EXTERNAL SOURCES:
-  SuperTokensSession:
+  SuperTokensIOS:
     :path: "../"
 
 SPEC CHECKSUMS:
-  SuperTokensSession: 37bdabf2a9944b48c2d8dda0e3d0a18da56c034e
+  SuperTokensIOS: 68c50be1ba9aeb4f4531b4d2a036739da7729d68
 
-PODFILE CHECKSUM: 100ad34791e50db17c4ed66ad66a832bdbf74c71
+PODFILE CHECKSUM: 52cb61ba81bf95f4657207ef197043f085636ffc
 
-COCOAPODS: 1.9.1
+COCOAPODS: 1.11.3
