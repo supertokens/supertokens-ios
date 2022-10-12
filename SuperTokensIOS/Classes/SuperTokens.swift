@@ -112,6 +112,9 @@ public class SuperTokens {
                     if jsonResponse.status == "GENERAL_ERROR" {
                         completionHandler(SuperTokensError.generalError(message: jsonResponse.message!))
                         executionSemaphore.signal()
+                    } else {
+                        completionHandler(nil)
+                        executionSemaphore.signal()
                     }
                 } else {
                     completionHandler(SuperTokensError.apiError(message: "Invalid sign out response"))
@@ -152,7 +155,7 @@ public class SuperTokens {
         return shouldRetry
     }
     
-    public func getUserId() throws -> String {
+    public static func getUserId() throws -> String {
         guard let frontToken: [String: Any] = FrontToken.getToken(), let userId: String = frontToken["uid"] as? String else {
             throw SuperTokensError.illegalAccess(message: "No session exists")
         }
@@ -160,7 +163,7 @@ public class SuperTokens {
         return userId
     }
     
-    public func getAccessTokenPayloadSecruely() throws -> [String: Any] {
+    public static func getAccessTokenPayloadSecurely() throws -> [String: Any] {
         guard let frontToken: [String: Any] = FrontToken.getToken(), let accessTokenExpiry: Int = frontToken["ate"] as? Int, let userPayload: [String: Any] = frontToken["up"] as? [String: Any] else {
             throw SuperTokensError.illegalAccess(message: "No session exists")
         }
@@ -169,7 +172,7 @@ public class SuperTokens {
             let retry = try SuperTokens.attemptRefreshingSession()
             
             if retry {
-                return try getAccessTokenPayloadSecruely()
+                return try getAccessTokenPayloadSecurely()
             } else {
                 throw SuperTokensError.illegalAccess(message: "Could not refresh session")
             }
