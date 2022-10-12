@@ -30,7 +30,7 @@ while IFS='"' read -ra ADDR; do
     done
 done <<< "$codeversion"
 
-# check if package and package-lock versions are similar.-----------
+# check if podspec and Version.swift versions are similar.-----------
 if ! [[ $version == $codeversion ]]
 then
     RED='\033[0;31m'
