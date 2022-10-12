@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'SuperTokensIOS'
-  s.version          = "1.3.1"
-  s.summary          = 'iOS SuperTokens SDK.'
+  s.version          = "0.0.1"
+  s.summary          = 'SuperTokens SDK for using login and session management functionality in iOS apps'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -18,25 +18,17 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-SuperTokens SDK for iOS written in Swift. This SDK takes care of managing a session on the frontend side.
+SuperTokens SDK for iOS written in Swift. This SDK manages sessions for you and allows you to build login functionality easily.
                        DESC
 
   s.homepage         = 'https://github.com/supertokens/supertokens-ios'
   s.license          = { :type => 'Apache 2.0', :file => 'LICENSE.md' }
   s.author           = { 'rishabhpoddar' => 'rishabh@supertokens.io' }
-  s.source           = { :git => 'https://github.com/supertokens/supertokens-ios.git', :tag => "v#{s.version.to_s}" }
+  s.source           = { :git => 'https://github.com/supertokens/supertokens-ios.git', :tag => "v#{s.version}" }
 
   s.ios.deployment_target = '13.0'
 
   s.source_files = 'SuperTokensIOS/Classes/**/*'
   
   s.swift_versions = "5.0"
-
-  # s.resource_bundles = {
-  #   'SuperTokensSession' => ['SuperTokensSession/Assets/*.png']
-  # }
-
-  # s.public_header_files = 'Pod/Classes/**/*.h'
-  # s.frameworks = 'UIKit', 'MapKit'
-  # s.dependency 'AFNetworking', '~> 2.3'
 end
