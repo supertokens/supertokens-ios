@@ -1,5 +1,11 @@
+# check if we need to merge master into this branch------------
+if [[ $(git log origin/master ^HEAD) ]]; then
+    echo "You need to merge master into this branch. Exiting"
+    exit 1
+fi
+
 # get version------------
-version=`cat SuperTokensSession.podspec | grep -e "s.version          =" -e "s.version="`
+version=`cat SuperTokensIOS.podspec | grep -e "s.version          =" -e "s.version="`
 
 while IFS='"' read -ra ADDR; do
     counter=0
@@ -11,6 +17,27 @@ while IFS='"' read -ra ADDR; do
         counter=$(($counter+1))
     done
 done <<< "$version"
+
+codeversion=`cat SuperTokensIOS/Classes/Version.swift | grep -e "sdkVersion =" -e "sdkVersion="`
+while IFS='"' read -ra ADDR; do
+    counter=0
+    for i in "${ADDR[@]}"; do
+        if [ $counter == 1 ]
+        then
+            codeversion=$i
+        fi
+        counter=$(($counter+1))
+    done
+done <<< "$codeversion"
+
+# check if podspec and Version.swift versions are similar.-----------
+if ! [[ $version == $codeversion ]]
+then
+    RED='\033[0;31m'
+    NC='\033[0m' # No Color
+    printf "${RED}Difference between podspec version and Version.swift. Stopping process${NC}\n"
+    exit 1
+fi
 
 # get current branch name
 branch_name="$(git symbolic-ref HEAD 2>/dev/null)" ||
@@ -26,7 +53,7 @@ then
     exit 1
 fi
 
-# Sync tags with remote
+#Sync tags with remote
 git fetch --prune --prune-tags
 
 # GET Current Commit Hash -------
@@ -58,6 +85,16 @@ then
     NC='\033[0m'
     printf "${RED}The released version of this tag already exists${NC}\n"
     exit 1
+fi
+
+# add an empty commit if the user has not given a commit hash so that we are sure it's built------------
+if [ $# -eq 0 ]
+then
+    # npm run build-docs TODO: Implement
+    git add --all
+    git commit --allow-empty -m"adding dev-v$version tag to this commit to ensure building"
+    git push
+	commit_hash=`git log --pretty=format:'%H' -n 1`
 fi
 
 
