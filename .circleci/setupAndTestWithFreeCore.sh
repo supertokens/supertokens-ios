@@ -50,7 +50,7 @@ npm i git+https://github.com:supertokens/supertokens-node.git#$2
 cd ../../
 ./testHelpers/startServer ../supertokens-root &
 pid=$!
-xcodebuild test -enableCodeCoverage YES -workspace Example/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=14.4,name=iPhone 12 Pro' ONLY_ACTIVE_ARCH=NO
+xcodebuild test -enableCodeCoverage YES -workspace Example/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=16.1,name=iPhone 14 Pro' ONLY_ACTIVE_ARCH=NO
 if [[ $? -ne 0 ]]
 then
     echo "test failed... exiting!"
