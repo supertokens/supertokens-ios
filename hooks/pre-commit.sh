@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # get current version----------
 version=`cat SuperTokensIOS.podspec | grep -e "s.version          =" -e "s.version="`
 
