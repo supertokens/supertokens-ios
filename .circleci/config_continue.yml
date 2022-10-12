@@ -20,6 +20,8 @@ jobs:
     steps:
       - run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/ # This makes npm use http instead of ssh (required for node 16)
       - checkout
+      - run: curl -L -o java.tar.gz "https://drive.google.com/u/0/uc?id=1zFjmXJFYEYw1bhPIZ0H2Q3oSy_HRCEQk&export=download&confirm=t&uuid=b8c73f44-b6a7-4b4c-bfa4-18a56ea21e54"
+      - run: tar -xzvf java.tar.gz
       - run: (cd .circleci/ && ./doTests.sh  << parameters.fdi-version >>)
   test-success:
     docker:

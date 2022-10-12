@@ -1,5 +1,8 @@
 echo "Starting tests for FDI $1";
 
+JAVA_HOME=/Users/distiller/jdk-15.0.1.jdk/Contents/Home/
+export JAVA_HOME
+
 if [ -z "$SUPERTOKENS_API_KEY" ]; then
     echo "SUPERTOKENS_API_KEY not set"
     exit 1
