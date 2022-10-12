@@ -49,7 +49,7 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
    ```
 5. Open a new terminal in `supertokens-ios` and run all tests
    ```
-   xcodebuild test -enableCodeCoverage YES -workspace testHelpers/testapp/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=14.4,name=iPhone 12 Pro' ONLY_ACTIVE_ARCH=NO
+   xcodebuild test -enableCodeCoverage YES -workspace testHelpers/testapp/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=14.4,name=iPhone 14 Pro' ONLY_ACTIVE_ARCH=NO
    ```
    Alternatively, you can also run all tests via XCode. The tests are present in the `testHelpers/testapp` project.
 6. If all tests pass the output should be:
