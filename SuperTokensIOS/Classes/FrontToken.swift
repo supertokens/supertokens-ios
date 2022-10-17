@@ -15,7 +15,7 @@ internal class FrontToken {
     
     private static func getFrontTokenFromStorage() -> String? {
         if tokenInMemory == nil {
-            tokenInMemory = getUserDefaults().string(forKey: userDefaultsKey)
+            tokenInMemory = Utils.getUserDefaults().string(forKey: userDefaultsKey)
         }
         
         return tokenInMemory
@@ -71,7 +71,7 @@ internal class FrontToken {
     }
     
     private static func setFrontTokenToStorage(frontToken: String?) {
-        getUserDefaults().set(frontToken, forKey: userDefaultsKey)
+        Utils.getUserDefaults().set(frontToken, forKey: userDefaultsKey)
         tokenInMemory = frontToken
     }
     
@@ -106,7 +106,7 @@ internal class FrontToken {
     }
     
     private static func removeTokenFromStorage() {
-        getUserDefaults().removeObject(forKey: userDefaultsKey)
+        Utils.getUserDefaults().removeObject(forKey: userDefaultsKey)
         tokenInMemory = nil
     }
     
@@ -120,9 +120,5 @@ internal class FrontToken {
         }
         
         executionSemaphore.wait()
-    }
-    
-    private static func getUserDefaults() -> UserDefaults {
-        return UserDefaults.standard
     }
 }

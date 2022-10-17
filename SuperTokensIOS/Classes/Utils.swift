@@ -15,8 +15,9 @@ class NormalisedInputType {
     var eventHandler: (EventType) -> Void
     var preAPIHook: (APIAction, URLRequest) -> URLRequest
     var postAPIHook: (APIAction, URLRequest, URLResponse?) -> Void
+    var userDefaultsSuiteName: String?
     
-    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, cookieDomain: String?, eventHandler: @escaping (EventType) -> Void, preAPIHook: @escaping (APIAction, URLRequest) -> URLRequest, postAPIHook: @escaping (APIAction, URLRequest, URLResponse?) -> Void) {
+    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, cookieDomain: String?, eventHandler: @escaping (EventType) -> Void, preAPIHook: @escaping (APIAction, URLRequest) -> URLRequest, postAPIHook: @escaping (APIAction, URLRequest, URLResponse?) -> Void, userDefaultsSuiteName: String?) {
         self.apiDomain = apiDomain
         self.apiBasePath = apiBasePath
         self.sessionExpiredStatusCode = sessionExpiredStatusCode
@@ -24,6 +25,8 @@ class NormalisedInputType {
         self.eventHandler = eventHandler
         self.preAPIHook = preAPIHook
         self.postAPIHook = postAPIHook
+        self.userDefaultsSuiteName = userDefaultsSuiteName
+
     }
     
     internal static func sessionScopeHelper(sessionScope: String) throws -> String {
@@ -68,7 +71,7 @@ class NormalisedInputType {
         return noDotNormalised
     }
     
-    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?) throws -> NormalisedInputType {
+    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, cookieDomain: String?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?, userDefaultsSuiteName: String?) throws -> NormalisedInputType {
         let _apiDomain = try NormalisedURLDomain(url: apiDomain)
         var _apiBasePath = try NormalisedURLPath(input: "/auth")
         
@@ -107,7 +110,7 @@ class NormalisedInputType {
             _postApiHook = postAPIHook!
         }
         
-        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, cookieDomain: _cookieDomain, eventHandler: _eventHandler, preAPIHook: _preAPIHook, postAPIHook: _postApiHook)
+        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, cookieDomain: _cookieDomain, eventHandler: _eventHandler, preAPIHook: _preAPIHook, postAPIHook: _postApiHook, userDefaultsSuiteName: userDefaultsSuiteName)
     }
 }
 
@@ -155,6 +158,18 @@ internal class Utils {
         let regex: String = "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
         
         return input.matches(regex: regex)
+    }
+    
+    internal static func getUserDefaults() -> UserDefaults {
+        if let _suiteName: String = SuperTokens.config!.userDefaultsSuiteName {
+            if let _userDefaultsWithSuiteName: UserDefaults = UserDefaults(suiteName: _suiteName) {
+                return _userDefaultsWithSuiteName
+            } else {
+                print("SuperTokens: Could not initialise user defaults with suite name '\(_suiteName)', using default")
+            }
+        }
+        
+        return UserDefaults.standard
     }
 }
 

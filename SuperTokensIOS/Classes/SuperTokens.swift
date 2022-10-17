@@ -44,12 +44,12 @@ public class SuperTokens {
         SuperTokens.isInitCalled = false
     }
     
-    public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, cookieDomain: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
+    public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, cookieDomain: String? = nil, userDefaultsSuiteName: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
         if SuperTokens.isInitCalled {
             return;
         }
         
-        SuperTokens.config = try NormalisedInputType.normaliseInputType(apiDomain: apiDomain, apiBasePath: apiBasePath, sessionExpiredStatusCode: sessionExpiredStatusCode, cookieDomain: cookieDomain, eventHandler: eventHandler, preAPIHook: preAPIHook, postAPIHook: postAPIHook)
+        SuperTokens.config = try NormalisedInputType.normaliseInputType(apiDomain: apiDomain, apiBasePath: apiBasePath, sessionExpiredStatusCode: sessionExpiredStatusCode, cookieDomain: cookieDomain, eventHandler: eventHandler, preAPIHook: preAPIHook, postAPIHook: postAPIHook, userDefaultsSuiteName: userDefaultsSuiteName)
         
         guard let _config: NormalisedInputType = SuperTokens.config else {
             throw SuperTokensError.initError(message: "Error initialising SuperTokens")
