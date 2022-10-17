@@ -28,7 +28,7 @@ internal class IdRefreshToken {
     
     internal static func getToken() -> String? {
         if ( IdRefreshToken.idRefreshInMemory == nil ) {
-            idRefreshInMemory = IdRefreshToken.getUserDefaults().string(forKey: IdRefreshToken.idRefreshUserDefaultsKey)
+            idRefreshInMemory = Utils.getUserDefaults().string(forKey: IdRefreshToken.idRefreshUserDefaultsKey)
         }
         if (IdRefreshToken.idRefreshInMemory != nil) {
             let splitted = IdRefreshToken.idRefreshInMemory!.components(separatedBy: ";");
@@ -52,7 +52,7 @@ internal class IdRefreshToken {
             if expiry < currentTime {
                 IdRefreshToken.removeToken()
             } else {
-                let userDefaults = IdRefreshToken.getUserDefaults()
+                let userDefaults = Utils.getUserDefaults()
                 userDefaults.set(newIdRefreshToken, forKey: IdRefreshToken.idRefreshUserDefaultsKey)
                 userDefaults.synchronize()
                 IdRefreshToken.idRefreshInMemory = newIdRefreshToken
@@ -73,13 +73,9 @@ internal class IdRefreshToken {
     }
     
     internal static func removeToken() {
-        let userDefaults = IdRefreshToken.getUserDefaults()
+        let userDefaults = Utils.getUserDefaults()
         userDefaults.removeObject(forKey: IdRefreshToken.idRefreshUserDefaultsKey)
         userDefaults.synchronize()
         IdRefreshToken.idRefreshInMemory = nil
-    }
-    
-    private static func getUserDefaults() -> UserDefaults {
-        return UserDefaults.standard
     }
 }

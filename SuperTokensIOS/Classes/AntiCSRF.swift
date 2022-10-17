@@ -37,7 +37,7 @@ internal class AntiCSRF {
         }
         
         if AntiCSRF.antiCSRFInfo == nil {
-            let userDefaults = AntiCSRF.getUserDefaults()
+            let userDefaults = Utils.getUserDefaults()
             let antiCSRFToken = userDefaults.string(forKey: AntiCSRF.antiCSRFUserDefaultsKey)
             if ( antiCSRFToken == nil ) {
                 return nil
@@ -58,7 +58,7 @@ internal class AntiCSRF {
             return;
         }
         
-        let userDefaults = AntiCSRF.getUserDefaults()
+        let userDefaults = Utils.getUserDefaults()
         userDefaults.set(antiCSRFToken, forKey: AntiCSRF.antiCSRFUserDefaultsKey)
         userDefaults.synchronize()
         
@@ -66,13 +66,9 @@ internal class AntiCSRF {
     }
     
     internal static func removeToken() {
-        let userDefaults = AntiCSRF.getUserDefaults()
+        let userDefaults = Utils.getUserDefaults()
         userDefaults.removeObject(forKey: AntiCSRF.antiCSRFUserDefaultsKey)
         userDefaults.synchronize()
         AntiCSRF.antiCSRFInfo = nil
-    }
-    
-    private static func getUserDefaults() -> UserDefaults {
-        return UserDefaults.standard
     }
 }
