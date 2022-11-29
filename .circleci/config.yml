@@ -42,6 +42,8 @@ workflows:
   tagged-build:
     jobs:
       - publish:
+          requires:
+            - update-docs
           context:
             - slack-notification
           filters:
@@ -58,8 +60,6 @@ workflows:
             branches:
               ignore: /.*/
       - update-docs:
-          requires:
-              - publish
           context:
               - slack-notification
           filters:
