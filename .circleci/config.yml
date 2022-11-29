@@ -27,13 +27,14 @@ jobs:
       - continuation/continue:
           configuration_path: .circleci/config_continue.yml
   update-docs:
-    docker:
-      - image: rishabhpoddar/supertokens_website_sdk_testing_node_16
+    macos:
+      xcode: 14.1.0
     steps:
-      - run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/ # This makes npm use http instead of ssh (required for node 16)
       - checkout
       - run: cd ../ && git clone git@github.com:supertokens/supertokens-backend-website.git
-      - run: (cd .circleci && ./updateDocsInWebsite.sh)
+      - run: gem install jazzy
+      - run: jazzy --output ./docs --podspec SuperTokensIOS.podspec
+      - run: (cd .circleci && ./updateDocsInWebsite)
       - slack/status
 
 workflows:
@@ -56,10 +57,13 @@ workflows:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
               ignore: /.*/
-      # - update-docs:
-      #     context:
-      #         - slack-notification
-      #     filters:
-      #       branches:
-      #         only:
-      #           - master
+      - update-docs:
+          requires:
+              - publish
+          context:
+              - slack-notification
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
