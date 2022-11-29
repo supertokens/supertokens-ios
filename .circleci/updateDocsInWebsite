@@ -1,0 +1,27 @@
+#!/bin/bash
+# get current version----------
+version=`cat SuperTokensIOS.podspec | grep -e "s.version          =" -e "s.version="`
+
+while IFS='"' read -ra ADDR; do
+    counter=0
+    for i in "${ADDR[@]}"; do
+        if [ $counter == 1 ]
+        then
+            version=$i
+        fi
+        counter=$(($counter+1))
+    done
+done <<< "$version"
+
+# replace path version with X
+IFS='.' read -r -a array <<< "$version"
+versionFolder="${array[0]}"."${array[1]}".X
+
+(cd ../../supertokens-backend-website && mkdir -p ./app/docs/sdk/docs/ios/${versionFolder})
+cp -r ../docs/* ../../supertokens-backend-website/app/docs/sdk/docs/ios/
+cp -r ../docs/* ../../supertokens-backend-website/app/docs/sdk/docs/ios/${versionFolder}
+
+# push to git
+git config --global user.email "$EMAIL"
+git config --global user.name "$NAME"
+(cd ../../supertokens-backend-website && git add --all && git commit -m"updates ios sdk docs" && git pull && git push && ./releaseDev.sh)
