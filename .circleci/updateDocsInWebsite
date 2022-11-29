@@ -1,6 +1,6 @@
 #!/bin/bash
 # get current version----------
-version=`cat SuperTokensIOS.podspec | grep -e "s.version          =" -e "s.version="`
+version=`cat ../SuperTokensIOS.podspec | grep -e "s.version          =" -e "s.version="`
 
 while IFS='"' read -ra ADDR; do
     counter=0
