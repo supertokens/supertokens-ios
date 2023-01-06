@@ -78,7 +78,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 3)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
             XCTFail()
         }
@@ -123,7 +123,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 3, disableAntiCSRF: true)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
             XCTFail()
         }
@@ -214,20 +214,20 @@ class sessionTests: XCTestCase {
         }
     }
 
-    // Custom refresh API headers are going through
+//    // Custom refresh API headers are going through
     func testCustomHeadersForRefreshAPI() {
         TestUtils.startST(validity: 3)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, preAPIHook: {
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie, preAPIHook: {
                 action, request in
-                
+
                 let mutableRequest = (request as NSURLRequest).mutableCopy() as! NSMutableURLRequest
-                
+
                 if action == .REFRESH_SESSION {
                     mutableRequest.addValue("custom-value", forHTTPHeaderField: "custom-header")
                 }
-                
+
                 return mutableRequest.copy() as! URLRequest
             })
         } catch {
@@ -252,7 +252,6 @@ class sessionTests: XCTestCase {
                         XCTFail("http response code is not 200");
                         requestSemaphore.signal()
                     } else {
-                        let idBefore = IdRefreshToken.getToken()
                         sleep(5)
                         let userInfoURL = URL(string: "\(testAPIBase)/")
                         let userInfoRequest = URLRequest(url: userInfoURL!)
@@ -270,10 +269,6 @@ class sessionTests: XCTestCase {
                                 let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
                                 if userInfoHttpResponse.statusCode != 200 {
                                     XCTFail("userInfo API non 200 HTTP status code")
-                                }
-                                let idAfter = IdRefreshToken.getToken()
-                                if idAfter == idBefore {
-                                    XCTFail("id before and after are not the same!")
                                 }
                                 requestSemaphore.signal()
                             } else {
@@ -324,84 +319,14 @@ class sessionTests: XCTestCase {
             _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         }
     }
-//
-    // while logged in, test that APIs that there is proper change in id refresh stored in storage
-    func testIdRefreshChange() {
-        var failureMessage: String? = nil;
-        TestUtils.startST(validity: 3)
-
-        do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
-        } catch {
-            failureMessage = "init failed"
-        }
-
-        let requestSemaphore = DispatchSemaphore(value: 0)
-
-        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
-            data, response, error in
-
-            if error != nil {
-                failureMessage = "login API error"
-                requestSemaphore.signal()
-                return
-            }
-
-            if response as? HTTPURLResponse != nil {
-                let httpResponse = response as! HTTPURLResponse
-                if httpResponse.statusCode != 200 {
-                    failureMessage = "http response code is not 200";
-                    requestSemaphore.signal()
-                } else {
-                    let idBefore = IdRefreshToken.getToken()
-                    sleep(5)
-                    let userInfoURL = URL(string: "\(testAPIBase)/")
-                    let userInfoRequest = URLRequest(url: userInfoURL!)
-
-                    URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
-                        userInfoData, userInfoResponse, userInfoError in
-
-                        if userInfoError != nil {
-                            failureMessage = "userInfo API error"
-                            requestSemaphore.signal()
-                            return
-                        }
-
-                        if userInfoResponse as? HTTPURLResponse != nil {
-                            let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-                            if userInfoHttpResponse.statusCode != 200 {
-                                failureMessage = "userInfo API non 200 HTTP status code"
-                            }
-                            let idAfter = IdRefreshToken.getToken()
-                            if idAfter == idBefore {
-                                failureMessage = "id before and after are not the same!"
-                            }
-                            requestSemaphore.signal()
-                        } else {
-                            failureMessage = "userInfo API response is nil"
-                            requestSemaphore.signal()
-                        }
-                    }).resume()
-                }
-            } else {
-                failureMessage = "http response is nil";
-                requestSemaphore.signal()
-            }
-        }).resume()
-
-        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-
-        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
-
-    }
 
     func testThatInterceptorIsntUsedWithoutCallingInit() {
         TestUtils.startST(validity: 3)
         let semaphore = DispatchSemaphore(value: 0)
-        
+
         URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
             data, response, error in
-            
+
             if error != nil {
                 XCTFail("Login failed")
             } else if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
@@ -409,11 +334,11 @@ class sessionTests: XCTestCase {
                     XCTFail("Login failed")
                 }
             }
-            
+
             semaphore.signal()
         }).resume()
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
-        XCTAssertTrue(IdRefreshToken.getToken() == nil)
+        XCTAssertTrue(FrontToken.getToken() == nil)
     }
 //
     // Calling SuperTokens.initialise more than once works!
@@ -421,9 +346,9 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 5)
         do {
             // First call
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
             // Second Call
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
             XCTFail("Calling init more than once fails the test")
         }
@@ -448,7 +373,7 @@ class sessionTests: XCTestCase {
         }).resume()
         do {
             // Recalling init
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
 
         } catch {
             XCTFail("Calling init more than once fails the test")
@@ -487,7 +412,7 @@ class sessionTests: XCTestCase {
 
         var failed = false
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
             failed = true
         }
@@ -563,7 +488,7 @@ class sessionTests: XCTestCase {
         var results: [Bool] = []
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
             URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
                 data, response, error in
 
@@ -642,7 +567,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 10)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
             failureMessage = "init failed"
         }
@@ -666,9 +591,10 @@ class sessionTests: XCTestCase {
                     if !SuperTokens.doesSessionExist() {
                         failureMessage = "Session may not exist accoring to library.. but it does!"
                     } else {
-                        let idRefreshToken = IdRefreshToken.getToken()
-                        let antiCSRF = AntiCSRF.getToken(associatedIdRefreshToken: idRefreshToken);
-                        if idRefreshToken == nil || antiCSRF == nil {
+                        let frontToken = FrontToken.getToken()
+                        let localSessionState = Utils.getLocalSessionState()
+                        let antiCSRF = AntiCSRF.getToken(associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate);
+                        if frontToken == nil || antiCSRF == nil {
                             failureMessage = "antiCSRF or id refresh token is nil"
                         }
                     }
@@ -703,9 +629,9 @@ class sessionTests: XCTestCase {
                     if SuperTokens.doesSessionExist() {
                         failureMessage = "Session exists accoring to library.. but it should not!"
                     } else {
-                        let idRefreshToken = IdRefreshToken.getToken()
+                        let frontToken = FrontToken.getToken()
                         let antiCSRFToken = UserDefaults.standard.string(forKey: "supertokens-android-anticsrf-key")
-                        if idRefreshToken != nil || antiCSRFToken != nil {
+                        if frontToken != nil || antiCSRFToken != nil {
                             failureMessage = "antiCSRF or id refresh token is not nil"
                         }
                     }
@@ -727,7 +653,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 1)
         var sessionExist:Bool = false
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
             XCTFail("unable to initialize")
         }
@@ -786,7 +712,7 @@ class sessionTests: XCTestCase {
     func testIfNotLoggedAuthApiThrowSessionExpired () {
         TestUtils.startST(validity: 1)
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
                 XCTFail("unable to initialize")
         }
@@ -819,7 +745,7 @@ class sessionTests: XCTestCase {
     func testOtherDomainsWorksWithoutAuthentication () {
         TestUtils.startST(validity: 1)
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase)
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
         } catch {
             XCTFail("unable to initialize")
         }

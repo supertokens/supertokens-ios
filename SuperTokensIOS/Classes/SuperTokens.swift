@@ -43,7 +43,7 @@ public class SuperTokens {
         SuperTokens.isInitCalled = false
     }
     
-    public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, sessionTokenBackendDomain: String? = nil, tokenTransferMethod: SuperTokensTokenTransferMethod?, userDefaultsSuiteName: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
+    public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, sessionTokenBackendDomain: String? = nil, tokenTransferMethod: SuperTokensTokenTransferMethod? = nil, userDefaultsSuiteName: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
         if SuperTokens.isInitCalled {
             return;
         }
@@ -60,7 +60,7 @@ public class SuperTokens {
         SuperTokens.isInitCalled = true
     }
     
-    public static func doesSessionExist() throws -> Bool {
+    public static func doesSessionExist() -> Bool {
         let tokenInfo = FrontToken.getToken()
         
         if tokenInfo == nil {
@@ -88,8 +88,10 @@ public class SuperTokens {
             
             executionSemaphore.wait()
             
+            // Here we dont throw the error and instead return false, because
+            // otherwise users would have to use a try catch just to call doesSessionExist
             if error != nil {
-                throw error!
+                return false
             }
             
             return shouldRetry
@@ -99,14 +101,10 @@ public class SuperTokens {
     }
     
     public static func signOut(completionHandler: @escaping (Error?) -> Void) {
-        do {
-            if !(try doesSessionExist()) {
-                SuperTokens.config!.eventHandler(.SIGN_OUT)
-                completionHandler(nil)
-                return
-            }
-        } catch {
-            completionHandler(error)
+        if !doesSessionExist() {
+            SuperTokens.config!.eventHandler(.SIGN_OUT)
+            completionHandler(nil)
+            return
         }
         
         guard let url: URL = URL(string: SuperTokens.signOutUrl) else {

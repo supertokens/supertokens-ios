@@ -201,7 +201,7 @@ internal class Utils {
     }
     
     internal static func getUserDefaults() -> UserDefaults {
-        if let _suiteName: String = SuperTokens.config!.userDefaultsSuiteName {
+        if let _suiteName: String = SuperTokens.config?.userDefaultsSuiteName {
             if let _userDefaultsWithSuiteName: UserDefaults = UserDefaults(suiteName: _suiteName) {
                 return _userDefaultsWithSuiteName
             } else {
