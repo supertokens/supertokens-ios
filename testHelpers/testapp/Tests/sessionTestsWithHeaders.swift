@@ -59,6 +59,7 @@ class sessionTestsWithHeaders: XCTestCase {
     override func setUp() {
         super.setUp()
         let semaphore = DispatchSemaphore(value: 0)
+        HTTPCookieStorage.shared.removeCookies(since: .distantPast)
         
         TestUtils.beforeEachTest {
             semaphore.signal()
@@ -861,6 +862,285 @@ class sessionTestsWithHeaders: XCTestCase {
                 }).resume()
             }
         }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    
+    func testThatGetAccessTokenWorksCorrectly() {
+        TestUtils.startST()
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken != nil {
+            XCTFail("access token should be nil but isnt")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("access token is nil when it shouldnt be")
+        }
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        SuperTokens.signOut(completionHandler: { _ in
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken != nil {
+            XCTFail("access token should be nil but isnt")
+        }
+    }
+    
+    func testThatDifferentCasingForAuthorizationHeaderWorksFine() {
+        TestUtils.startST()
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        var userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "Authorization")
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            data, response, error in
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
+                }
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
+        }).resume()
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "authorization")
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            data, response, error in
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
+                }
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
+        }).resume()
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    
+    func testThatManuallyAddingAnExpiredAccessTokenWorksNormally() {
+        TestUtils.startST(validity: 3)
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
+        }
+        
+        sleep(5)
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        var userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            data, response, error in
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
+                }
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
+        }).resume()
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        if TestUtils.getRefreshTokenCounter() != 1 {
+            XCTFail("getRefreshTokenCounter returned an invalid count")
+        }
+    }
+    
+    func testThatGetAccessTokenCallsRefreshCorrectly() {
+        TestUtils.startST(validity: 3)
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
+        }
+        
+        sleep(5)
+        
+        let newAccessToken = SuperTokens.getAccessToken()
+        
+        if newAccessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
+        }
+        
+        if TestUtils.getRefreshTokenCounter() != 1 {
+            XCTFail("getRefreshTokenCounter returned invalid count")
+        }
+        
+        if newAccessToken == accessToken {
+            XCTFail("Access token after refresh is same as old access token")
+        }
+    }
+    
+    func testThatOldAccessTokenAfterSignOutWorksFine() {
+        TestUtils.startST()
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
+        }
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        SuperTokens.signOut(completionHandler: {
+            error in
+            
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        var userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            data, response, error in
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
+                }
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
+        }).resume()
+        
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
     }
 //

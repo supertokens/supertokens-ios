@@ -11,11 +11,10 @@ public class SuperTokensURLProtocol: URLProtocol {
     private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
     
     // Refer to comment in makeRequest to know why this is needed
-    private var initCalledFlag = false
+    private var requestForRetry: NSMutableURLRequest? = nil
     
     override public init(request: URLRequest, cachedResponse: CachedURLResponse?, client: URLProtocolClient?) {
         super.init(request: request, cachedResponse: cachedResponse, client: client)
-        initCalledFlag = true
     }
     
     public override class func canInit(with request: URLRequest) -> Bool {
@@ -61,26 +60,32 @@ public class SuperTokensURLProtocol: URLProtocol {
         }
     }
     
-    func makeRequest() {
-        let mutableRequest = (self.request as NSURLRequest).mutableCopy() as! NSMutableURLRequest
-        
-        if initCalledFlag {
-            // This means that makeRequest was called immediately after this protocol
-            // was initialised and we should check if the user has set the authorization
-            // header. If it is false it means that this function was called to retry
-            // the original request and we should not check for a user set authorization header
-            // .value is case insensitive
-            if let originalAuthorizationHeader = self.request.value(forHTTPHeaderField: "Authorization") {
-                let accessToken = Utils.getTokenForHeaderAuth(tokenType: .access)
-                
-                if accessToken != nil && originalAuthorizationHeader == "Bearer \(accessToken!)" {
-                    // Removing headers from a request is not case insensitive
-                    mutableRequest.allHTTPHeaderFields?.removeValue(forKey: "Authorization")
-                    mutableRequest.allHTTPHeaderFields?.removeValue(forKey: "authorization")
-                }
+    private func removeAuthHeaderIfMatchesLocalToken(_mutableRequest: NSMutableURLRequest) -> NSMutableURLRequest {
+        // .value is case insensitive
+        if let originalAuthorizationHeader = self.request.value(forHTTPHeaderField: "Authorization") {
+            let accessToken = Utils.getTokenForHeaderAuth(tokenType: .access)
+            
+            if accessToken != nil && originalAuthorizationHeader == "Bearer \(accessToken!)" {
+                // Removing headers from a request is not case insensitive
+                _mutableRequest.setValue(nil, forHTTPHeaderField: "Authorization")
+                _mutableRequest.setValue(nil, forHTTPHeaderField: "authorization")
             }
-            initCalledFlag = false
         }
+        
+        return _mutableRequest
+    }
+    
+    func makeRequest() {
+        var mutableRequest = (self.request as NSURLRequest).mutableCopy() as! NSMutableURLRequest
+        
+        // When this function is called for retrying we cannot use the global request
+        // because that will not have the modified headers
+        if requestForRetry != nil {
+            mutableRequest = requestForRetry!
+            requestForRetry = nil
+        }
+        
+        mutableRequest = removeAuthHeaderIfMatchesLocalToken(_mutableRequest: mutableRequest)
         
         let preRequestLocalSessionState = Utils.getLocalSessionState()
         
@@ -116,10 +121,12 @@ public class SuperTokensURLProtocol: URLProtocol {
                 )
                 
                 if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {
+                    mutableRequest = self.removeAuthHeaderIfMatchesLocalToken(_mutableRequest: mutableRequest)
                     SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, callback: {
                         unauthResponse in
                         
                         if unauthResponse.status == .RETRY {
+                            self.requestForRetry = mutableRequest
                             self.makeRequest()
                         } else {
                             SuperTokensURLProtocol.clearTokensIfRequired()
@@ -195,7 +202,7 @@ public class SuperTokensURLProtocol: URLProtocol {
             
             // We need a mutable one here because URLRequest does not allow setting headers
             // if the request is passed as a param to a function
-            var mutableRefreshRequest = (refreshRequest as NSURLRequest).mutableCopy() as! NSMutableURLRequest
+            let mutableRefreshRequest = (refreshRequest as NSURLRequest).mutableCopy() as! NSMutableURLRequest
             
             Utils.setAuthorizationHeaderIfRequired(mutableRequest: mutableRefreshRequest, addRefreshToken: true)
             
