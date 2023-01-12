@@ -281,9 +281,7 @@ internal class Utils {
         if let antiCSRF: String = headerFields[SuperTokensConstants.antiCSRFHeaderKey] {
             let localSessionState = Utils.getLocalSessionState()
             
-            if localSessionState.status == .EXISTS {
-                AntiCSRF.setToken(antiCSRFToken: antiCSRF, associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate!)
-            }
+            AntiCSRF.setToken(antiCSRFToken: antiCSRF, associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate)
         }
     }
     
