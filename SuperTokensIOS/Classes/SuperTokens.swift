@@ -218,4 +218,12 @@ public class SuperTokens {
         
         return userPayload
     }
+    
+    public static func getAccessToken() -> String? {
+        if doesSessionExist() {
+            return Utils.getTokenForHeaderAuth(tokenType: .access)
+        }
+        
+        return nil
+    }
 }

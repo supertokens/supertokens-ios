@@ -212,33 +212,26 @@ internal class Utils {
         return UserDefaults.standard
     }
     
-    internal static func storeInStorage(name: String, value: String, expiry: Int) {
-        var expires = "Fri, 31 Dec 9999 23:59:59 GMT";
+    internal static func storeInStorage(name: String, value: String) {
+        let storageKey = "st-storage-item-\(name)"
+        let userDefaults = getUserDefaults()
         
-        if expiry != Int.max {
-            // We should respect the storage expirations set by the backend, even though tokens will also be checked elsewhere.
-            // We check them locally in case of front-token, and on the backend enforces the validity period for access and refresh tokens.
-            // We divide expiry by 1000 because timeIntervalSince1970 uses seconds
-            let expiresDate = Date(timeIntervalSince1970: TimeInterval(expiry / 1000))
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .medium
-            formatter.timeZone = TimeZone(abbreviation: "UTC")
-            
-            expires = formatter.string(from: expiresDate)
+        if value.isEmpty {
+            userDefaults.removeObject(forKey: storageKey)
+            userDefaults.synchronize()
+            return
         }
         
-        let domain = SuperTokens.config!.sessionTokenBackendDomain
-        
-        getUserDefaults().set("\(name)=\(value);expires=\(expires);domain=\("");path=/;samesite=lax", forKey: "st-storage-item-\(name)")
+        userDefaults.set(value, forKey: storageKey)
+        userDefaults.synchronize()
     }
     
     internal static func saveLastAccessTokenUpdate() {
         let now = "\(Date().timeIntervalSince1970 * 1000)";
         
-        storeInStorage(name: SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE, value: now, expiry: Int.max)
+        storeInStorage(name: SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE, value: now)
         
-        storeInStorage(name: "sIRTFrontend", value: "", expiry: 0)
+        storeInStorage(name: "sIRTFrontend", value: "")
     }
     
     internal static func getFromStorage(name: String) -> String? {
@@ -248,17 +241,7 @@ internal class Utils {
             return nil
         }
         
-        var parts = itemInStorage!.components(separatedBy: "\(name)=")
-        
-        if parts.count >= 2 {
-            let last = parts.popLast()
-            
-            if last != nil {
-                return last!.components(separatedBy: ";").first
-            }
-        }
-        
-        return nil
+        return itemInStorage
     }
     
     internal static func getLocalSessionState() -> LocalSessionState {
@@ -275,8 +258,7 @@ internal class Utils {
     internal static func setToken(tokenType: TokenType, value: String) {
         let name = tokenType.getStorageName()
         
-        // We save the tokens with a 100-year expiration time
-        return storeInStorage(name: name, value: value, expiry: Int(Date().timeIntervalSince1970 * 1000) + 3153600000)
+        return storeInStorage(name: name, value: value)
     }
     
     internal static func saveTokenFromHeaders(httpResponse: HTTPURLResponse) {
