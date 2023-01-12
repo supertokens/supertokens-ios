@@ -59,6 +59,7 @@ class sessionTests: XCTestCase {
     override func setUp() {
         super.setUp()
         let semaphore = DispatchSemaphore(value: 0)
+        HTTPCookieStorage.shared.removeCookies(since: .distantPast)
         
         TestUtils.beforeEachTest {
             semaphore.signal()
@@ -862,6 +863,220 @@ class sessionTests: XCTestCase {
             }
         }).resume()
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    
+    func testThatOldSessionsStillWorkAfterRefreshing() {
+        TestUtils.startST(validity: 1)
+        do {
+            try SuperTokens.initialize(
+                apiDomain: testAPIBase,
+                tokenTransferMethod: .cookie
+            )
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let idRefreshCookie = HTTPCookie(properties: [
+            .name: "sIdRefreshToken",
+            .value: "asdf",
+            .domain: "\(testAPIBaseDomain)",
+            .path: "/",
+        ])
+        
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        let userInfoRequest = URLRequest(url: userInfoURL!)
+
+        let datatask = URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            userInfoData, userInfoResponse, userInfoError in
+
+            if userInfoError != nil {
+                XCTFail("API failed when unexpected error")
+                requestSemaphore.signal()
+                return
+            }
+
+            if userInfoResponse as? HTTPURLResponse != nil {
+                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                requestSemaphore.signal()
+            } else {
+                XCTFail("API returned invalid response")
+                requestSemaphore.signal()
+            }
+        })
+        
+        HTTPCookieStorage.shared.cookieAcceptPolicy = .always
+        HTTPCookieStorage.shared.setCookie(idRefreshCookie!)
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        var idRefreshInCookies: HTTPCookie? = nil
+        
+        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
+            idRefreshInCookies = cookie?.first(where: { _cookie in
+                _cookie.name == "sIdRefreshToken"
+            })
+            
+            requestSemaphore.signal()
+        })
+
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        if idRefreshInCookies == nil {
+            XCTFail("sIdRefreshToken not set to cookies correctly")
+        }
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        datatask.resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let counter = TestUtils.getRefreshTokenCounter()
+        if (counter != 1) {
+            XCTFail("Refresh attempted count does not match")
+        }
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
+            idRefreshInCookies = cookie?.first(where: { _cookie in
+                _cookie.name == "sIdRefreshToken"
+            })
+            
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        if idRefreshInCookies != nil {
+            XCTFail("sIdRefreshToken still exists when it shouldnt")
+        }
+    }
+    
+    func testThatRefreshingOldSessionsWorksFineWithExpiredAccessToken() {
+        TestUtils.startST(validity: 1)
+        do {
+            try SuperTokens.initialize(
+                apiDomain: testAPIBase,
+                tokenTransferMethod: .cookie
+            )
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if error != nil {
+                    XCTFail("login Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        requestSemaphore.signal()
+                        XCTFail("login Api Error")
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let idRefreshCookie = HTTPCookie(properties: [
+            .name: "sIdRefreshToken",
+            .value: "asdf",
+            .domain: "\(testAPIBaseDomain)",
+            .path: "/",
+        ])
+        
+        let accessTokenCookie = HTTPCookie(properties: [
+            .name: "sAccessToken",
+            .value: "",
+            .domain: "\(testAPIBaseDomain)",
+            .path: "/",
+            .expires: "0"
+        ])
+        
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        let userInfoRequest = URLRequest(url: userInfoURL!)
+
+        let datatask = URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            userInfoData, userInfoResponse, userInfoError in
+
+            if userInfoError != nil {
+                XCTFail("API failed when unexpected error")
+                requestSemaphore.signal()
+                return
+            }
+
+            if userInfoResponse as? HTTPURLResponse != nil {
+                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
+                requestSemaphore.signal()
+            } else {
+                XCTFail("API returned invalid response")
+                requestSemaphore.signal()
+            }
+        })
+        
+        HTTPCookieStorage.shared.cookieAcceptPolicy = .always
+        HTTPCookieStorage.shared.setCookie(idRefreshCookie!)
+        HTTPCookieStorage.shared.setCookie(accessTokenCookie!)
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        var idRefreshInCookies: HTTPCookie? = nil
+        var accessTokenInCookies: HTTPCookie? = nil
+        
+        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
+            idRefreshInCookies = cookie?.first(where: { _cookie in
+                _cookie.name == "sIdRefreshToken"
+            })
+            
+            accessTokenInCookies = cookie?.first(where: { _cookie in
+                _cookie.name == "sAccessToken"
+            })
+            
+            requestSemaphore.signal()
+        })
+
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        if idRefreshInCookies == nil || accessTokenInCookies == nil {
+            XCTFail("sIdRefreshToken or sAccessToken not set to cookies correctly")
+        }
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        datatask.resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
+            idRefreshInCookies = cookie?.first(where: { _cookie in
+                _cookie.name == "sIdRefreshToken"
+            })
+            
+            requestSemaphore.signal()
+        })
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        if idRefreshInCookies != nil {
+            XCTFail("sIdRefreshToken still exists when it shouldnt")
+        }
     }
 //
     // session should not exist on frontend once session has actually expired completely
