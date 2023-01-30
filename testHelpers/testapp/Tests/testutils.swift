@@ -16,7 +16,8 @@
 import XCTest
 @testable import SuperTokensIOS
 
-let testAPIBase = "http://127.0.0.1:8080"
+let testAPIBaseDomain = "127.0.0.1"
+let testAPIBase = "http://\(testAPIBaseDomain):8080"
 let beforeEachAPIURL = "\(testAPIBase)beforeeach"
 let refreshDeviceInfoAPIURL = "\(testAPIBase)refreshDeviceInfo"
 

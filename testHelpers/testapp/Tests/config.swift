@@ -310,14 +310,27 @@ class ConfigTests: XCTestCase {
             apiDomain: "example.com"
         );
         XCTAssertEqual(SuperTokens.refreshTokenUrl , "https://example.com/auth/session/refresh");
-        XCTAssertEqual(SuperTokens.config!.cookieDomain , nil);
+        XCTAssertEqual(SuperTokens.config!.sessionTokenBackendDomain , nil);
 
         SuperTokens.resetForTests()
         try SuperTokens.initialize(
             apiDomain: "example.com",
-            cookieDomain: "a.b.example.com"
+            sessionTokenBackendDomain: "a.b.example.com"
         );
         XCTAssertEqual(SuperTokens.refreshTokenUrl , "https://example.com/auth/session/refresh");
-        XCTAssertEqual(SuperTokens.config!.cookieDomain , "a.b.example.com");
+        XCTAssertEqual(SuperTokens.config!.sessionTokenBackendDomain , "a.b.example.com");
+        
+        SuperTokens.resetForTests()
+        try SuperTokens.initialize(
+            apiDomain: "example.com"
+        );
+        XCTAssertEqual(SuperTokens.config!.tokenTransferMethod, .header);
+        
+        SuperTokens.resetForTests()
+        try SuperTokens.initialize(
+            apiDomain: "example.com",
+            tokenTransferMethod: .cookie
+        );
+        XCTAssertEqual(SuperTokens.config!.tokenTransferMethod, .cookie);
     }
 }

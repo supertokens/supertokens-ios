@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+/* Copyright (c) 2022, VRAI Labs and/or its affiliates. All rights reserved.
  *
  * This software is licensed under the Apache License, Version 2.0 (the
  * "License") as published by the Apache Software Foundation.
@@ -20,7 +20,7 @@ import XCTest
  - User passed config should be sent as well
  */
 
-class sessionTests: XCTestCase {
+class sessionTestsWithHeaders: XCTestCase {
     let fakeGetApi = "https://www.google.com"
     let refreshCustomHeader = "\(testAPIBase)/refreshHeader"
 
@@ -79,7 +79,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 3)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             XCTFail()
         }
@@ -124,7 +124,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 3, disableAntiCSRF: true)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             XCTFail()
         }
@@ -220,7 +220,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 3)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie, preAPIHook: {
+            try SuperTokens.initialize(apiDomain: testAPIBase, preAPIHook: {
                 action, request in
 
                 let mutableRequest = (request as NSURLRequest).mutableCopy() as! NSMutableURLRequest
@@ -347,9 +347,9 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 5)
         do {
             // First call
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
             // Second Call
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             XCTFail("Calling init more than once fails the test")
         }
@@ -374,7 +374,7 @@ class sessionTests: XCTestCase {
         }).resume()
         do {
             // Recalling init
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
 
         } catch {
             XCTFail("Calling init more than once fails the test")
@@ -413,7 +413,7 @@ class sessionTests: XCTestCase {
 
         var failed = false
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             failed = true
         }
@@ -489,7 +489,7 @@ class sessionTests: XCTestCase {
         var results: [Bool] = []
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
             URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
                 data, response, error in
 
@@ -568,7 +568,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 10)
 
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             failureMessage = "init failed"
         }
@@ -595,8 +595,8 @@ class sessionTests: XCTestCase {
                         let frontToken = FrontToken.getToken()
                         let localSessionState = Utils.getLocalSessionState()
                         let antiCSRF = AntiCSRF.getToken(associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate);
-                        if frontToken == nil || antiCSRF == nil {
-                            failureMessage = "antiCSRF or id refresh token is nil"
+                        if frontToken == nil || antiCSRF != nil {
+                            failureMessage = "Either frontoken was nil or anti csrf was not nil"
                         }
                     }
                 }
@@ -654,7 +654,7 @@ class sessionTests: XCTestCase {
         TestUtils.startST(validity: 1)
         var sessionExist:Bool = false
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             XCTFail("unable to initialize")
         }
@@ -713,7 +713,7 @@ class sessionTests: XCTestCase {
     func testIfNotLoggedAuthApiThrowSessionExpired () {
         TestUtils.startST(validity: 1)
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
                 XCTFail("unable to initialize")
         }
@@ -746,7 +746,7 @@ class sessionTests: XCTestCase {
     func testOtherDomainsWorksWithoutAuthentication () {
         TestUtils.startST(validity: 1)
         do {
-            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             XCTFail("unable to initialize")
         }
@@ -865,306 +865,253 @@ class sessionTests: XCTestCase {
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
     }
     
-    func testThatOldSessionsStillWorkAfterRefreshing() {
-        TestUtils.startST(validity: 1)
+    func testThatGetAccessTokenWorksCorrectly() {
+        TestUtils.startST()
         do {
-            try SuperTokens.initialize(
-                apiDomain: testAPIBase,
-                tokenTransferMethod: .cookie
-            )
+            try SuperTokens.initialize(apiDomain: testAPIBase)
         } catch {
             XCTFail("unable to initialize")
         }
-        
-        var requestSemaphore = DispatchSemaphore(value: 0)
-        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
-            data, response, error in
-                if error != nil {
-                    XCTFail("login Api Error")
-                    requestSemaphore.signal()
-                    return
-                }
-                if response as? HTTPURLResponse != nil {
-                    let httpResponse = response as! HTTPURLResponse
-                    if httpResponse.statusCode != 200 {
-                        requestSemaphore.signal()
-                        XCTFail("login Api Error")
-                        return
-                    }
-                }
-                requestSemaphore.signal()
-        }).resume()
-         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        let idRefreshCookie = HTTPCookie(properties: [
-            .name: "sIdRefreshToken",
-            .value: "asdf",
-            .domain: "\(testAPIBaseDomain)",
-            .path: "/",
-        ])
-        
-        let userInfoURL = URL(string: "\(testAPIBase)/")
-        let userInfoRequest = URLRequest(url: userInfoURL!)
-
-        let datatask = URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
-            userInfoData, userInfoResponse, userInfoError in
-
-            if userInfoError != nil {
-                XCTFail("API failed when unexpected error")
-                requestSemaphore.signal()
-                return
-            }
-
-            if userInfoResponse as? HTTPURLResponse != nil {
-                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-                requestSemaphore.signal()
-            } else {
-                XCTFail("API returned invalid response")
-                requestSemaphore.signal()
-            }
-        })
-        
-        HTTPCookieStorage.shared.cookieAcceptPolicy = .always
-        HTTPCookieStorage.shared.setCookie(idRefreshCookie!)
-        
-        requestSemaphore = DispatchSemaphore(value: 0)
-        var idRefreshInCookies: HTTPCookie? = nil
-        
-        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
-            idRefreshInCookies = cookie?.first(where: { _cookie in
-                _cookie.name == "sIdRefreshToken"
-            })
-            
-            requestSemaphore.signal()
-        })
-
-        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        if idRefreshInCookies == nil {
-            XCTFail("sIdRefreshToken not set to cookies correctly")
-        }
-        
-        requestSemaphore = DispatchSemaphore(value: 0)
-        datatask.resume()
-        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        let counter = TestUtils.getRefreshTokenCounter()
-        if (counter != 1) {
-            XCTFail("Refresh attempted count does not match")
-        }
-        
-        requestSemaphore = DispatchSemaphore(value: 0)
-        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
-            idRefreshInCookies = cookie?.first(where: { _cookie in
-                _cookie.name == "sIdRefreshToken"
-            })
-            
-            requestSemaphore.signal()
-        })
-        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        if idRefreshInCookies != nil {
-            XCTFail("sIdRefreshToken still exists when it shouldnt")
-        }
-    }
-    
-    func testThatRefreshingOldSessionsWorksFineWithExpiredAccessToken() {
-        TestUtils.startST(validity: 1)
-        do {
-            try SuperTokens.initialize(
-                apiDomain: testAPIBase,
-                tokenTransferMethod: .cookie
-            )
-        } catch {
-            XCTFail("unable to initialize")
-        }
-        
-        var requestSemaphore = DispatchSemaphore(value: 0)
-        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
-            data, response, error in
-                if error != nil {
-                    XCTFail("login Api Error")
-                    requestSemaphore.signal()
-                    return
-                }
-                if response as? HTTPURLResponse != nil {
-                    let httpResponse = response as! HTTPURLResponse
-                    if httpResponse.statusCode != 200 {
-                        requestSemaphore.signal()
-                        XCTFail("login Api Error")
-                        return
-                    }
-                }
-                requestSemaphore.signal()
-        }).resume()
-         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        let idRefreshCookie = HTTPCookie(properties: [
-            .name: "sIdRefreshToken",
-            .value: "asdf",
-            .domain: "\(testAPIBaseDomain)",
-            .path: "/",
-        ])
-        
-        let accessTokenCookie = HTTPCookie(properties: [
-            .name: "sAccessToken",
-            .value: "",
-            .domain: "\(testAPIBaseDomain)",
-            .path: "/",
-            .expires: "0"
-        ])
-        
-        let userInfoURL = URL(string: "\(testAPIBase)/")
-        let userInfoRequest = URLRequest(url: userInfoURL!)
-
-        let datatask = URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
-            userInfoData, userInfoResponse, userInfoError in
-
-            if userInfoError != nil {
-                XCTFail("API failed when unexpected error")
-                requestSemaphore.signal()
-                return
-            }
-
-            if userInfoResponse as? HTTPURLResponse != nil {
-                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-                requestSemaphore.signal()
-            } else {
-                XCTFail("API returned invalid response")
-                requestSemaphore.signal()
-            }
-        })
-        
-        HTTPCookieStorage.shared.cookieAcceptPolicy = .always
-        HTTPCookieStorage.shared.setCookie(idRefreshCookie!)
-        HTTPCookieStorage.shared.setCookie(accessTokenCookie!)
-        
-        requestSemaphore = DispatchSemaphore(value: 0)
-        var idRefreshInCookies: HTTPCookie? = nil
-        var accessTokenInCookies: HTTPCookie? = nil
-        
-        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
-            idRefreshInCookies = cookie?.first(where: { _cookie in
-                _cookie.name == "sIdRefreshToken"
-            })
-            
-            accessTokenInCookies = cookie?.first(where: { _cookie in
-                _cookie.name == "sAccessToken"
-            })
-            
-            requestSemaphore.signal()
-        })
-
-        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        if idRefreshInCookies == nil || accessTokenInCookies == nil {
-            XCTFail("sIdRefreshToken or sAccessToken not set to cookies correctly")
-        }
-        
-        requestSemaphore = DispatchSemaphore(value: 0)
-        datatask.resume()
-        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
-            idRefreshInCookies = cookie?.first(where: { _cookie in
-                _cookie.name == "sIdRefreshToken"
-            })
-            
-            requestSemaphore.signal()
-        })
-        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
-        
-        if idRefreshInCookies != nil {
-            XCTFail("sIdRefreshToken still exists when it shouldnt")
-        }
-    }
-    
-    func testThatOldSessionsStillWorkAfterMovingToHeaders() {
-        TestUtils.startST(validity: 1)
-        do {
-            try SuperTokens.initialize(
-                apiDomain: testAPIBase,
-                tokenTransferMethod: .cookie
-            )
-        } catch {
-            XCTFail("unable to initialize")
-        }
-        
-        var requestSemaphore = DispatchSemaphore(value: 0)
-        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
-            data, response, error in
-                if error != nil {
-                    XCTFail("login Api Error")
-                    requestSemaphore.signal()
-                    return
-                }
-                if response as? HTTPURLResponse != nil {
-                    let httpResponse = response as! HTTPURLResponse
-                    if httpResponse.statusCode != 200 {
-                        requestSemaphore.signal()
-                        XCTFail("login Api Error")
-                        return
-                    }
-                }
-                requestSemaphore.signal()
-        }).resume()
-         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         var accessToken = SuperTokens.getAccessToken()
         
         if accessToken != nil {
-            XCTFail("Access token is not nil when it should be")
+            XCTFail("access token should be nil but isnt")
         }
         
-        let idRefreshCookie = HTTPCookie(properties: [
-            .name: "sIdRefreshToken",
-            .value: "asdf",
-            .domain: "\(testAPIBaseDomain)",
-            .path: "/",
-        ])
-        
-        let userInfoURL = URL(string: "\(testAPIBase)/")
-        let userInfoRequest = URLRequest(url: userInfoURL!)
-
-        let datatask = URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
-            userInfoData, userInfoResponse, userInfoError in
-
-            if userInfoError != nil {
-                XCTFail("API failed when unexpected error")
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
                 requestSemaphore.signal()
-                return
-            }
-
-            if userInfoResponse as? HTTPURLResponse != nil {
-                let userInfoHttpResponse = userInfoResponse as! HTTPURLResponse
-                requestSemaphore.signal()
-            } else {
-                XCTFail("API returned invalid response")
-                requestSemaphore.signal()
-            }
-        })
-        
-        HTTPCookieStorage.shared.cookieAcceptPolicy = .always
-        HTTPCookieStorage.shared.setCookie(idRefreshCookie!)
-        
-        SuperTokens.config?.tokenTransferMethod = .header
-        
-        requestSemaphore = DispatchSemaphore(value: 0)
-        datatask.resume()
+        }).resume()
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
-        var idRefreshInCookies: HTTPCookie? = nil
-        HTTPCookieStorage.shared.getCookiesFor(datatask, completionHandler: { cookie in
-            idRefreshInCookies = cookie?.first(where: { _cookie in
-                _cookie.name == "sIdRefreshToken"
-            })
-            
+        accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("access token is nil when it shouldnt be")
+        }
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        SuperTokens.signOut(completionHandler: { _ in
             requestSemaphore.signal()
         })
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
-        if idRefreshInCookies != nil {
-            XCTFail("sIdRefreshToken still exists when it shouldnt")
+        accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken != nil {
+            XCTFail("access token should be nil but isnt")
+        }
+    }
+    
+    func testThatDifferentCasingForAuthorizationHeaderWorksFine() {
+        TestUtils.startST()
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        var userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "Authorization")
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            data, response, error in
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
+                }
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
+        }).resume()
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "authorization")
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            data, response, error in
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
+                }
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
+        }).resume()
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    }
+    
+    func testThatManuallyAddingAnExpiredAccessTokenWorksNormally() {
+        TestUtils.startST(validity: 3)
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
+        }
+        
+        sleep(5)
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        var userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
+            data, response, error in
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
+                }
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
+        }).resume()
+        
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        if TestUtils.getRefreshTokenCounter() != 1 {
+            XCTFail("getRefreshTokenCounter returned an invalid count")
+        }
+    }
+    
+    func testThatGetAccessTokenCallsRefreshCorrectly() {
+        TestUtils.startST(validity: 3)
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
+        }
+        
+        sleep(5)
+        
+        let newAccessToken = SuperTokens.getAccessToken()
+        
+        if newAccessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
+        }
+        
+        if TestUtils.getRefreshTokenCounter() != 1 {
+            XCTFail("getRefreshTokenCounter returned invalid count")
+        }
+        
+        if newAccessToken == accessToken {
+            XCTFail("Access token after refresh is same as old access token")
+        }
+    }
+    
+    func testThatOldAccessTokenAfterSignOutWorksFine() {
+        TestUtils.startST()
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = SuperTokens.getAccessToken()
+        
+        if accessToken == nil {
+            XCTFail("Access token is nil when it shouldnt be")
         }
         
         requestSemaphore = DispatchSemaphore(value: 0)
@@ -1176,30 +1123,25 @@ class sessionTests: XCTestCase {
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
         requestSemaphore = DispatchSemaphore(value: 0)
-        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+        let userInfoURL = URL(string: "\(testAPIBase)/")
+        var userInfoRequest = URLRequest(url: userInfoURL!)
+        userInfoRequest.addValue("Bearer \(accessToken!)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: userInfoRequest, completionHandler: {
             data, response, error in
-                if error != nil {
-                    XCTFail("login Api Error")
-                    requestSemaphore.signal()
-                    return
+            
+            if let userInfoResponse: HTTPURLResponse = response as? HTTPURLResponse {
+                if userInfoResponse.statusCode != 200 {
+                    XCTFail("User info get API failed")
                 }
-                if response as? HTTPURLResponse != nil {
-                    let httpResponse = response as! HTTPURLResponse
-                    if httpResponse.statusCode != 200 {
-                        requestSemaphore.signal()
-                        XCTFail("login Api Error")
-                        return
-                    }
-                }
-                requestSemaphore.signal()
+            } else {
+                XCTFail("API returned invalid response")
+            }
+            
+            requestSemaphore.signal()
         }).resume()
-         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
         
-        accessToken = SuperTokens.getAccessToken()
-        
-        if accessToken == nil {
-            XCTFail("Access token is nil when it shouldnt be")
-        }
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
     }
 //
     // session should not exist on frontend once session has actually expired completely
