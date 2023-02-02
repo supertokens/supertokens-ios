@@ -62,7 +62,7 @@ public class SuperTokensURLProtocol: URLProtocol {
     
     private func removeAuthHeaderIfMatchesLocalToken(_mutableRequest: NSMutableURLRequest) -> NSMutableURLRequest {
         // .value is case insensitive
-        if let originalAuthorizationHeader = self.request.value(forHTTPHeaderField: "Authorization") {
+        if let originalAuthorizationHeader = _mutableRequest.value(forHTTPHeaderField: "Authorization") {
             let accessToken = Utils.getTokenForHeaderAuth(tokenType: .access)
             
             if accessToken != nil && originalAuthorizationHeader == "Bearer \(accessToken!)" {
