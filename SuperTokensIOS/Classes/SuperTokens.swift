@@ -41,6 +41,9 @@ public class SuperTokens {
         FrontToken.removeToken()
         AntiCSRF.removeToken()
         SuperTokens.isInitCalled = false
+        Utils.setToken(tokenType: .access, value: "")
+        Utils.setToken(tokenType: .refresh, value: "")
+        FrontToken.setItem(frontToken: "remove")
     }
     
     public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, sessionTokenBackendDomain: String? = nil, tokenTransferMethod: SuperTokensTokenTransferMethod? = nil, userDefaultsSuiteName: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
