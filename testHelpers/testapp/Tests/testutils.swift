@@ -64,7 +64,7 @@ class TestUtils {
         return URLSession(configuration: URLSessionConfiguration.default)
     }
     
-    internal static func startST(validity: Int = 1, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false) {
+    internal static func startST(validity: Int = 3, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false) {
         let semaphore = DispatchSemaphore(value: 0)
         startSTHelper(validity: validity, disableAntiCSRF: disableAntiCSRF, successCallback: {
             semaphore.signal()
@@ -168,6 +168,71 @@ class TestUtils {
         request.httpBody = jsonData
         
         return request
+    }
+    
+    static func getLoginRequest_2_18() -> URLRequest {
+        let url = URL(string: "\(testAPIBase)/login-2.18")
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        
+        let json: [String: Any] = [
+            "userId": "supertokens-ios-tests",
+            "payload": [
+                "asdf": 1
+            ]
+        ]
+        let jsonData = try? JSONSerialization.data(withJSONObject: json)
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpBody = jsonData
+        
+        return request
+    }
+    
+    static func getFeatureFlags() throws -> NSDictionary {
+        let url = URL(string: "\(testAPIBase)/featureFlags")
+        let request = URLRequest(url: url!)
+        let requestSemaphore = DispatchSemaphore(value: 0)
+        
+        var resultError: Error? = nil
+        var flags: NSDictionary = [:]
+        
+        getTestingUrlSession().dataTask(with: request, completionHandler: {
+            data, response, e in
+            
+            if e != nil {
+                resultError = e
+            } else {
+                do {
+                    let jsonResponse = try JSONSerialization.jsonObject(with: data!, options: []) as! NSDictionary
+                    flags = jsonResponse
+                } catch {
+                    resultError = error
+                }
+            }
+            
+            requestSemaphore.signal()
+            
+        }).resume()
+        
+        _ = requestSemaphore.wait(timeout: .distantFuture)
+        
+        if resultError != nil {
+            throw resultError!
+        }
+        
+        return flags
+    }
+    
+    static func checkIfV3AccessTokenIsSupported() throws -> Bool {
+        var flags = try! getFeatureFlags()
+        var v3Flag = flags["v3AccessToken"]
+        
+        if let _v3Flag: Bool = v3Flag as? Bool, _v3Flag {
+            return true
+        }
+        
+        return false
     }
 }
 
