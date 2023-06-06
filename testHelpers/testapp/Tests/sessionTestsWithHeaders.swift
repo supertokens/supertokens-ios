@@ -1143,6 +1143,56 @@ class sessionTestsWithHeaders: XCTestCase {
         
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
     }
+    
+    func testThatAccessAndRefreshAreClearedIfFrontTokenIsRemoved() {
+        TestUtils.startST()
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessToken = Utils.getTokenForHeaderAuth(tokenType: .access)
+        let refreshToken = Utils.getTokenForHeaderAuth(tokenType: .refresh)
+        XCTAssert(accessToken != nil)
+        XCTAssert(refreshToken != nil)
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLogoutAltRequest(), completionHandler: {
+            data, response, err in
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    XCTFail("logout Api Error")
+                    requestSemaphore.signal()
+                    return
+                }
+            }
+            requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        let accessTokenAfter = Utils.getTokenForHeaderAuth(tokenType: .access)
+        let refreshTokenAfter = Utils.getTokenForHeaderAuth(tokenType: .refresh)
+        XCTAssert(accessTokenAfter == nil)
+        XCTAssert(refreshTokenAfter == nil)
+    }
 //
     // session should not exist on frontend once session has actually expired completely
 //    func testThatSessionDoesNotExistAfterExpiry() {
