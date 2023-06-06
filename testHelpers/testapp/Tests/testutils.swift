@@ -170,6 +170,15 @@ class TestUtils {
         return request
     }
     
+    static func getLogoutAltRequest() -> URLRequest {
+        let url = URL(string: "\(testAPIBase)/logout-alt")
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        return request
+    }
+    
     static func getLoginRequest_2_18() -> URLRequest {
         let url = URL(string: "\(testAPIBase)/login-2.18")
         var request = URLRequest(url: url!)

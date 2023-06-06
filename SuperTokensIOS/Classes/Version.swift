@@ -9,5 +9,5 @@ import Foundation
 
 internal class Version {
     static let supported_fdi: [String] = ["1.16"]
-    static let sdkVersion = "0.2.1"
+    static let sdkVersion = "0.2.2"
 }
