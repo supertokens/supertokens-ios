@@ -866,7 +866,7 @@ class sessionTests: XCTestCase {
     }
     
     func testThatOldSessionsStillWorkAfterRefreshing() {
-        TestUtils.startST(validity: 1)
+        TestUtils.startST()
         do {
             try SuperTokens.initialize(
                 apiDomain: testAPIBase,
