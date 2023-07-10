@@ -1193,6 +1193,50 @@ class sessionTestsWithHeaders: XCTestCase {
         XCTAssert(accessTokenAfter == nil)
         XCTAssert(refreshTokenAfter == nil)
     }
+    
+    func testThatAuthHeaderIsNotIgnoredEvenIfItMatchesTheStoredAccessToken() {
+        TestUtils.startST()
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase)
+        } catch {
+            XCTFail("unable to initialize")
+        }
+        
+        var requestSemaphore = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: {
+            data, response, error in
+                if response as? HTTPURLResponse != nil {
+                    let httpResponse = response as! HTTPURLResponse
+                    if httpResponse.statusCode != 200 {
+                        XCTFail("login Api Error")
+                        requestSemaphore.signal()
+                        return
+                    }
+                }
+                requestSemaphore.signal()
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+        
+        sleep(5)
+        Utils.setToken(tokenType: .access, value: "myOwnHeHe")
+        
+        requestSemaphore = DispatchSemaphore(value: 0)
+        var request = URLRequest(url: URL(string: "\(testAPIBase)/base-custom-auth")!)
+        request.setValue("Bearer myOwnHeHe", forHTTPHeaderField: "Authorization")
+        URLSession.shared.dataTask(with: request, completionHandler: {
+            data, response, error in
+            
+            if response as? HTTPURLResponse != nil {
+                let httpResponse = response as! HTTPURLResponse
+                if httpResponse.statusCode != 200 {
+                    XCTFail("Api Error")
+                }
+                
+                requestSemaphore.signal()
+            }
+        }).resume()
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    }
 //
     // session should not exist on frontend once session has actually expired completely
 //    func testThatSessionDoesNotExistAfterExpiry() {
