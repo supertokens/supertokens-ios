@@ -32,6 +32,14 @@ let customRefreshHeaderValue = "";
 let supertokens_node_version = require("supertokens-node/lib/build/version").version;
 let Querier = require("supertokens-node/lib/build/querier").Querier;
 let NormalisedURLPath = require("supertokens-node/lib/build/normalisedURLPath").default;
+let Multitenancy, MultitenancyRaw, multitenancySupported;
+try {
+    MultitenancyRaw = require("supertokens-node/lib/build/recipe/multitenancy/recipe").default;
+    Multitenancy = require("supertokens-node/lib/build/recipe/multitenancy");
+    multitenancySupported = true;
+} catch {
+    multitenancySupported = false;
+}
 
 let urlencodedParser = bodyParser.urlencoded({ limit: "20mb", extended: true, parameterLimit: 20000 });
 let jsonParser = bodyParser.json({ limit: "20mb" });
@@ -200,7 +208,14 @@ app.use(middleware());
 
 app.post("/login", async (req, res) => {
     let userId = req.body.userId;
-    let session = await Session.createNewSession(req, res, userId);
+    
+    let session;
+    if (multitenancySupported) {
+        session = await Session.createNewSession(req, res, "public", userId);
+    } else {
+        session = await Session.createNewSession(req, res, userId);
+    }
+
     res.send(session.getUserId());
 });
 
@@ -222,6 +237,11 @@ app.post("/startst", async (req, res) => {
     if (enableAntiCsrf !== undefined) {
         SuperTokensRaw.reset();
         SessionRecipeRaw.reset();
+
+        if (multitenancySupported) {
+            MultitenancyRaw.reset();
+        }
+
         SuperTokens.init(getConfig(enableAntiCsrf, enableJWT));
     }
     let pid = await startST();

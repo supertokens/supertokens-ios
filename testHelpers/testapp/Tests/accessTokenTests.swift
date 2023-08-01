@@ -115,6 +115,15 @@ class accessTokenTests: XCTestCase {
                     "antiCsrfToken",
                     "iss"
                 ]
+                
+                if payload.contains(where: {
+                    key, _ in
+                    
+                    return key == "tId"
+                }) {
+                    expectedKeys.append("tId")
+                }
+                
                 XCTAssert(payload.count == expectedKeys.count)
                 for (key, _) in payload {
                     XCTAssert(expectedKeys.contains(key))
@@ -181,6 +190,15 @@ class accessTokenTests: XCTestCase {
                     "antiCsrfToken",
                     "asdf"
                 ]
+                
+                if v3Payload.contains(where: {
+                    key, _ in
+                    
+                    return key == "tId"
+                }) {
+                    expectedKeys.append("tId")
+                }
+                
                 XCTAssert(v3Payload.count == expectedKeys.count)
                 for (key, _) in v3Payload {
                     XCTAssert(expectedKeys.contains(key))
