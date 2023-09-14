@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2023-07-31
+
+- Fixes an issue where session tokens from network responses would not be consumed if they were not in lowercase (Credit: [mattanimation](https://github.com/mattanimation))
+- Adds Swift Package Manager support (Credit: [mattanimation](https://github.com/mattanimation))
+
 ## [0.2.4] - 2023-07-31
 
 - Updates supported FDI versions to include
