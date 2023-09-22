@@ -124,6 +124,14 @@ class accessTokenTests: XCTestCase {
                     expectedKeys.append("tId")
                 }
                 
+                if payload.contains(where: {
+                    key, _ in
+                    
+                    return key == "rsub"
+                }) {
+                    expectedKeys.append("rsub")
+                }
+                
                 XCTAssert(payload.count == expectedKeys.count)
                 for (key, _) in payload {
                     XCTAssert(expectedKeys.contains(key))
@@ -197,6 +205,14 @@ class accessTokenTests: XCTestCase {
                     return key == "tId"
                 }) {
                     expectedKeys.append("tId")
+                }
+                
+                if v3Payload.contains(where: {
+                    key, _ in
+                    
+                    return key == "rsub"
+                }) {
+                    expectedKeys.append("rsub")
                 }
                 
                 XCTAssert(v3Payload.count == expectedKeys.count)
