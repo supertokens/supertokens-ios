@@ -51,6 +51,7 @@ app.use(cookieParser());
 
 let lastSetEnableAntiCSRF = false;
 let lastSetEnableJWT = false;
+let accountLinkingSupported = maxVersion(supertokens_node_version, "15.0") === supertokens_node_version;
 
 function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
     if (maxVersion(supertokens_node_version, "14.0") === supertokens_node_version && enableJWT) {
@@ -211,7 +212,7 @@ app.post("/login", async (req, res) => {
     
     let session;
     if (multitenancySupported) {
-        session = await Session.createNewSession(req, res, "public", userId);
+        session = await Session.createNewSession(req, res, "public", accountLinkingSupported ? SuperTokens.convertToRecipeUserId(userId) : userId);
     } else {
         session = await Session.createNewSession(req, res, userId);
     }
