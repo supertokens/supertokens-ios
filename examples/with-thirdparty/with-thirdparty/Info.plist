@@ -3,18 +3,18 @@
 <plist version="1.0">
 <dict>
 	<key>GIDServerClientID</key>
-	<string>580674050145-shkfcshav895dsoj61vuf6s5iml27glr.apps.googleusercontent.com</string>
+	<string>GOOGLE_WEB_CLIENT_ID</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.580674050145-6gf19vu5ao64kcofa2mj60j9ip7cc8c2</string>
+				<string>GOOGLE_IOS_URL_SCHEME</string>
 			</array>
 		</dict>
 	</array>
 	<key>GIDClientID</key>
-	<string>580674050145-6gf19vu5ao64kcofa2mj60j9ip7cc8c2.apps.googleusercontent.com</string>
+	<string>GOOGLE_IOS_CLIENT_ID</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

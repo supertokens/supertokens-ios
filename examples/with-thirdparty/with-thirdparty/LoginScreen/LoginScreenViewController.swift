@@ -15,7 +15,6 @@ class LoginScreenViewController: UIViewController {
     }
     
     @IBAction func onGoogleCliked() {
-        print("Google")
         GIDSignIn.sharedInstance.signIn(withPresenting: self) { signInResult, error in
             guard error == nil else { return }
 
@@ -67,7 +66,7 @@ class LoginScreenViewController: UIViewController {
         let configuration = OIDServiceConfiguration(authorizationEndpoint: authorizationEndpoint, tokenEndpoint: tokenEndpoint)
         
         let request = OIDAuthorizationRequest.init(configuration: configuration,
-          clientId: "eee1670bbc37d98c1d30",
+          clientId: "GITHUB_CLIENT_ID",
           scopes: ["user"],
           redirectURL: URL(string: "com.supertokens.supertokensexample://oauthredirect")!,
           responseType: OIDResponseTypeCode,

@@ -10,7 +10,7 @@ export const SuperTokensConfig: TypeInput = {
     },
     appInfo: {
         appName: "SuperTokens Demo App",
-        apiDomain: "http://192.168.29.87:3001",
+        apiDomain: "http://192.168.1.102:3001",
         websiteDomain: "http://localhost:3000", // this value does not matter for the android app
     },
     // recipeList contains all the modules that you want to
@@ -27,8 +27,8 @@ export const SuperTokensConfig: TypeInput = {
                             clients: [
                                 {
                                     clientId:
-                                        "580674050145-shkfcshav895dsoj61vuf6s5iml27glr.apps.googleusercontent.com",
-                                    clientSecret: "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",
+                                        "GOOGLE_WEB_CLIENT_ID",
+                                    clientSecret: "GOOGLE_WEB_CLIENT_SECRET",
                                 },
                             ],
                         },
@@ -38,12 +38,26 @@ export const SuperTokensConfig: TypeInput = {
                             thirdPartyId: "github",
                             clients: [
                                 {
-                                    clientId: "eee1670bbc37d98c1d30",
-                                    clientSecret: "9b0c5134a89ba98a813adb72e56d9765dd36c966",
+                                    clientId: "GITHUB_CLIENT_ID",
+                                    clientSecret: "GITHUB_CLIENT_SECRET",
                                 },
                             ],
                         },
                     },
+                    {
+                        config: {
+                            thirdPartyId: "apple",
+                            clients: [{
+                                clientId: "APPLE_CLIENT_ID",
+                                additionalConfig: {
+                                    keyId: "APPLE_KEY_ID",
+                                    privateKey:
+                                        "APPLE_PRIVATE_KEY",
+                                    teamId: "APPLE_TEAM_ID",
+                                }
+                            }]
+                        },
+                    }
                 ],
             },
         }),
