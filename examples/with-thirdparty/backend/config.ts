@@ -10,7 +10,7 @@ export const SuperTokensConfig: TypeInput = {
     },
     appInfo: {
         appName: "SuperTokens Demo App",
-        apiDomain: "http://192.168.1.102:3001",
+        apiDomain: "http://192.168.29.87:3001",
         websiteDomain: "http://localhost:3000", // this value does not matter for the android app
     },
     // recipeList contains all the modules that you want to
