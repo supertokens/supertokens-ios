@@ -1,11 +1,3 @@
-- Add supertokens
-- Add google sign in
-    - Update info plist, also add web client id
-- Call sign in
-    - Get id token
-    - Call ST API
-- URL Protocol for github login
-
 # SuperTokens Example App
 
 ## Add dependencies
