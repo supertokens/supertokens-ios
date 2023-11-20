@@ -89,7 +89,7 @@ class LoginScreenViewController: UIViewController {
                     "thirdPartyId": "github",
                     "redirectURIInfo": [
                         // For native flows we do not have a redirect uri
-                        "redirectURIOnProviderDashboard": "",
+                        "redirectURIOnProviderDashboard": "com.supertokens.supertokensexample://oauthredirect",
                         "redirectURIQueryParams": [
                             "code": authCode
                         ],
