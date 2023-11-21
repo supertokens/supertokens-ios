@@ -8,8 +8,10 @@
 import UIKit
 import GoogleSignIn
 import AppAuth
+import AuthenticationServices
 
-class LoginScreenViewController: UIViewController {
+class LoginScreenViewController: UIViewController, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    
     override func viewDidLoad() {
         super.viewDidLoad()
     }
@@ -119,5 +121,69 @@ class LoginScreenViewController: UIViewController {
                 print("Github login failed")
             }
         })
+    }
+    
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        return self.view.window!
+
+    }
+    
+    @IBAction func onAppleClicked() {
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
+        request.requestedScopes = [.email]
+        
+        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
+        authorizationController.delegate = self
+        authorizationController.presentationContextProvider = self
+        authorizationController.performRequests()
+    }
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        guard case let appleIDCredential as ASAuthorizationAppleIDCredential = authorization.credential, let authCodeResponse: Data = appleIDCredential.authorizationCode else {
+            print("Apple returned an unexpected response")
+            return
+        }
+        
+        let authCode = String(decoding: authCodeResponse, as: UTF8.self)
+        
+        let url = URL(string: Constants.apiDomain + "/auth/signinup")
+        var request = URLRequest(url: url!)
+        request.httpMethod = "POST"
+        
+        let data = try! JSONSerialization.data(withJSONObject: [
+            "thirdPartyId": "apple",
+            "redirectURIInfo": [
+                // For native flows we do not have a redirect uri
+                "redirectURIOnProviderDashboard": "",
+                "redirectURIQueryParams": [
+                    "code": authCode
+                ],
+            ],
+        ])
+        request.httpBody = data
+        request.setValue("Application/json", forHTTPHeaderField: "Content-Type")
+        
+        URLSession.shared.dataTask(with: request) {
+            data, response, error in
+            
+            if error != nil {
+                print("Apple login failed: \(error!.localizedDescription)")
+            }
+            
+            if let _response: URLResponse = response, let httpResponse: HTTPURLResponse = _response as? HTTPURLResponse {
+                if httpResponse.statusCode == 200 {
+                    DispatchQueue.main.async { [weak self] in
+                        self?.navigationController?.pushViewController(HomeScreenViewController(nibName: "HomeView", bundle: nil), animated: true)
+                    }
+                } else {
+                    print("SuperTokens API failed with code: \(httpResponse.statusCode)")
+                }
+            }
+        }.resume()
+    }
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        print("Apple login failed: \(error.localizedDescription)")
     }
 }

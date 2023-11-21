@@ -35,6 +35,14 @@
                         <action selector="onGithubClicked" destination="-1" eventType="touchUpInside" id="Kqd-7T-jGw"/>
                     </connections>
                 </button>
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="H2q-wu-yPk">
+                    <rect key="frame" x="108.00000000000001" y="482" width="177.33333333333337" height="35"/>
+                    <state key="normal" title="Button"/>
+                    <buttonConfiguration key="configuration" style="filled" title="Continue with Apple"/>
+                    <connections>
+                        <action selector="onAppleClicked" destination="-1" eventType="touchUpInside" id="6nF-x7-jcV"/>
+                    </connections>
+                </button>
             </subviews>
             <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
             <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -43,6 +51,8 @@
                 <constraint firstItem="JQl-ue-ADz" firstAttribute="top" secondItem="kNW-UC-IRU" secondAttribute="bottom" constant="12" id="Mbw-RY-D2T"/>
                 <constraint firstItem="kNW-UC-IRU" firstAttribute="centerY" secondItem="iN0-l3-epB" secondAttribute="centerY" constant="-20" id="ayv-ki-YVU"/>
                 <constraint firstItem="kNW-UC-IRU" firstAttribute="centerX" secondItem="iN0-l3-epB" secondAttribute="centerX" id="uAk-MN-rb7"/>
+                <constraint firstItem="H2q-wu-yPk" firstAttribute="centerX" secondItem="iN0-l3-epB" secondAttribute="centerX" id="una-Ps-vEM"/>
+                <constraint firstItem="H2q-wu-yPk" firstAttribute="top" secondItem="JQl-ue-ADz" secondAttribute="bottom" constant="12" id="xpV-aq-NuZ"/>
             </constraints>
             <point key="canvasLocation" x="41" y="21"/>
         </view>
