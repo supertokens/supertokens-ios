@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'SuperTokensIOS'
-  s.version          = "0.2.6"
+  s.version          = "0.2.7"
   s.summary          = 'SuperTokens SDK for using login and session management functionality in iOS apps'
 
 # This description is used to generate tags and improve search results.
