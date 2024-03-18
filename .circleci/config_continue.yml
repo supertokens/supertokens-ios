@@ -20,7 +20,7 @@ jobs:
     steps:
       - run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/ # This makes npm use http instead of ssh (required for node 16)
       - checkout
-      - run: cd ../ && curl -L -o java.tar.gz "https://github.com/supertokens/jre/raw/master/jre-15.0.1-mac.zip"
+      - run: cd ../ && curl -L -o java.tar.gz "https://drive.usercontent.google.com/download?id=1zFjmXJFYEYw1bhPIZ0H2Q3oSy_HRCEQk&export=download&authuser=0&confirm=t&uuid=9563b3be-1e99-4293-a38c-001ea7cb2c37&at=APZUnTVgTPkWenZvgghQeFST-Yxk%3A1710776389213"
       - run: cd ../ && tar -xzvf java.tar.gz
       - run: (cd .circleci/ && ./doTests.sh  << parameters.fdi-version >>)
   test-success:
