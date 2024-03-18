@@ -41,6 +41,13 @@ try {
     multitenancySupported = false;
 }
 
+let UserMetaDataRecipeRaw;
+try {
+    UserMetaDataRecipeRaw = require("supertokens-node/lib/build/recipe/usermetadata/recipe").default;
+} catch {
+    // Ignored
+}
+
 let urlencodedParser = bodyParser.urlencoded({ limit: "20mb", extended: true, parameterLimit: 20000 });
 let jsonParser = bodyParser.json({ limit: "20mb" });
 
@@ -242,6 +249,9 @@ app.post("/startst", async (req, res) => {
         if (multitenancySupported) {
             MultitenancyRaw.reset();
         }
+        if (UserMetaDataRecipeRaw !== undefined) {
+            UserMetaDataRecipeRaw.reset();
+        }
 
         SuperTokens.init(getConfig(enableAntiCsrf, enableJWT));
     }
@@ -266,6 +276,12 @@ app.post("/reinitialiseBackendConfig", async (req, res) => {
 
     SuperTokensRaw.reset();
     SessionRecipeRaw.reset();
+    if (multitenancySupported) {
+        MultitenancyRaw.reset();
+    }
+    if (UserMetaDataRecipeRaw !== undefined) {
+        UserMetaDataRecipeRaw.reset();
+    }
     SuperTokens.init(getConfig(lastSetEnableAntiCSRF, currentEnableJWT, jwtPropertyName));
 
     res.send("");
