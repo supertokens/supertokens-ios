@@ -21,6 +21,9 @@ class ConfigTests: XCTestCase {
         );
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost:3000", apiDomain: "localhost:3000", cookieDomain: nil));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://localhost:3000", apiDomain: "https://localhost:3000", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://localhost:3000", apiDomain: "https://localhost:3001", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://localhost:3000", apiDomain: "http://localhost:3001", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost:3000", apiDomain: "localhost:3001", cookieDomain: nil));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://localhost:3000", apiDomain: "http://localhost:3000", cookieDomain: nil));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost:3000", apiDomain: "https://localhost:3000", cookieDomain: nil));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost", apiDomain: "https://localhost", cookieDomain: nil));
@@ -31,19 +34,27 @@ class ConfigTests: XCTestCase {
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "127.0.0.1:3000", apiDomain: "https://127.0.0.1:3000", cookieDomain: nil));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://127.0.0.1:3000", apiDomain: "https://127.0.0.1:3000", cookieDomain: nil));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://127.0.0.1", apiDomain: "https://127.0.0.1", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://localhost.org", apiDomain: "localhost.org", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://localhost.org", apiDomain: "http://localhost.org", cookieDomain: nil));
 
         // true cases with cookieDomain
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "api.example.com", apiDomain: "", cookieDomain: "api.example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://api.example.com", apiDomain: "", cookieDomain: "http://api.example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "api.example.com", apiDomain: "", cookieDomain: ".example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "api.example.com", apiDomain: "", cookieDomain: "example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com", apiDomain: "", cookieDomain: "http://api.example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com", apiDomain: "", cookieDomain: "https://api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: ".sub.api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: "sub.api.example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: ".api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: "api.example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: ".example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: "example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: ".example.com:3000"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: ".example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: "https://sub.api.example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com:3000", apiDomain: "", cookieDomain: ".api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com:3000", apiDomain: "", cookieDomain: "api.example.com"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost:3000", apiDomain: "", cookieDomain: "localhost:3000"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://localhost:3000", apiDomain: "", cookieDomain: ".localhost:3000"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost", apiDomain: "", cookieDomain: "localhost"));
@@ -59,27 +70,46 @@ class ConfigTests: XCTestCase {
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub1.api.example.co.uk:3000", apiDomain: "", cookieDomain: ".api.example.co.uk"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.co.uk:3000", apiDomain: "", cookieDomain: ".api.example.co.uk"));
         XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.co.uk:3000", apiDomain: "", cookieDomain: "api.example.co.uk"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com", apiDomain: "", cookieDomain: "example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: ".sub.api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: "sub.api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: "api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com", apiDomain: "", cookieDomain: "example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: "example.com:3000"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com", apiDomain: "", cookieDomain: "api.example.com"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost:3000", apiDomain: "localhost:8080", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost:3001", apiDomain: "localhost", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com:3002", apiDomain: "https://api.example.com:3001", cookieDomain: nil));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://localhost.org", apiDomain: "localhost.org:2000", cookieDomain: nil));        
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://localhost.org", apiDomain: "localhost", cookieDomain: "localhost.org"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost", apiDomain: "localhost", cookieDomain: "localhost.org"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost", apiDomain: "", cookieDomain: "localhost:8080"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://localhost:80", apiDomain: "", cookieDomain: "localhost:8080"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "localhost:3000", apiDomain: "", cookieDomain: "localhost:8080"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: ".example.com:3001"));
+        XCTAssertTrue(try Utils.shouldDoInterception(toCheckURL: "http://127.0.0.1:3000", apiDomain: "", cookieDomain: "https://127.0.0.1:3010"));
 
         // false cases with api
-        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "localhost:3001", apiDomain: "localhost:3000", cookieDomain: nil)));
         XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "localhost:3001", apiDomain: "example.com", cookieDomain: nil)));
-        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "localhost:3001", apiDomain: "localhost", cookieDomain: nil)));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "localhost", apiDomain: "localhost.org", cookieDomain: nil)));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "google.com", apiDomain: "localhost.org", cookieDomain: nil)));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "http://google.com", apiDomain: "localhost.org", cookieDomain: nil)));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://google.com", apiDomain: "localhost.org", cookieDomain: nil)));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://google.com:8080", apiDomain: "localhost.org", cookieDomain: nil)));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com", apiDomain: "https://a.api.example.com:3000", cookieDomain: nil)));
         XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://example.com", apiDomain: "https://api.example.com", cookieDomain: nil)));
         XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com", apiDomain: "https://a.api.example.com", cookieDomain: nil)));
         XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com", apiDomain: "https://example.com", cookieDomain: nil)));
         XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://example.com:3001", apiDomain: "https://api.example.com:3001", cookieDomain: nil)));
-        XCTAssertTrue(
-            !(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com:3002", apiDomain: "https://api.example.com:3001", cookieDomain: nil))
-            );
 
         // false cases with cookieDomain
-        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: ".example.com:3001")));
-        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: "example.com")));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "localhost", apiDomain: "", cookieDomain: "localhost.org")));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "google.com", apiDomain: "", cookieDomain: "localhost.org")));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "http://google.com", apiDomain: "", cookieDomain: "localhost.org")));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://google.com", apiDomain: "", cookieDomain: "localhost.org")));
+        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://google.com:8080", apiDomain: "", cookieDomain: "localhost.org")));
         XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://api.example.com:3000", apiDomain: "", cookieDomain: ".a.api.example.com")));
         XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.com:3000", apiDomain: "", cookieDomain: "localhost")));
-        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "http://127.0.0.1:3000", apiDomain: "", cookieDomain: "https://127.0.0.1:3010")));
-        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.co.uk:3000", apiDomain: "", cookieDomain: "api.example.co.uk")));
-        XCTAssertTrue(!(try Utils.shouldDoInterception(toCheckURL: "https://sub.api.example.co.uk", apiDomain: "", cookieDomain: "api.example.co.uk")));
 
         // errors in input
         do {
