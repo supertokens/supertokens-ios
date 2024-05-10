@@ -155,7 +155,7 @@ internal class Utils {
             throw SDKFailableError.failableError
         }
 
-        var domain = hostname
+        let domain = hostname
         var apiDomainAndInputDomainMatch = false
         if !apiDomain.isEmpty {
             let normalizedApiDomain = try NormalisedURLDomain.normaliseUrlDomainOrThrowError(input: apiDomain)
