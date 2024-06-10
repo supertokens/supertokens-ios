@@ -1260,4 +1260,191 @@ class sessionTests: XCTestCase {
 //
 //        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
 //    }
+
+    func testBreakOutOfSessionRefreshLoopAfterDefaultMaxRetryAttempts() {
+        TestUtils.startST()
+
+        var failureMessage: String? = nil;
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase, tokenTransferMethod: .cookie)
+        } catch {
+            failureMessage = "supertokens init failed"
+        }
+
+        let requestSemaphore = DispatchSemaphore(value: 0)
+
+        // Step 1: Login request
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: { data, response, error in
+            if error != nil {
+                failureMessage = "login API error"
+                requestSemaphore.signal()
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "Login response code is not 200";
+                    requestSemaphore.signal()
+                } else {
+                    let throw401URL = URL(string: "\(testAPIBase)/throw-401")!
+                    var throw401Request = URLRequest(url: throw401URL)
+                    throw401Request.httpMethod = "GET"
+
+                    URLSession.shared.dataTask(with: throw401Request, completionHandler: { data, response, error in
+                        if let error = error {
+                            
+                            if (error as NSError).code != 4 {
+                                failureMessage = "Expected the error code to be 4 (maxRetryAttemptsReachedForSessionRefresh)"
+                                requestSemaphore.signal()
+                                return;
+                            }
+                        
+                           
+                           let count = TestUtils.getRefreshTokenCounter()
+                           if count != 10 {
+                               failureMessage = "Expected refresh to be called 10 times but it was called " + String(count) + " times"
+                           }
+                           requestSemaphore.signal()
+                       } else {
+                           failureMessage = "Expected /throw-401 request to throw error"
+                           requestSemaphore.signal()
+                       }
+                    }).resume()
+                }
+            } else {
+                failureMessage = "Login response is nil"
+                requestSemaphore.signal()
+            }
+        }).resume()
+
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    
+
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
+    }
+    
+    func testBreakOutOfSessionRefreshLoopAfterConfiguredMaxRetryAttempts() {
+        TestUtils.startST()
+
+        var failureMessage: String? = nil;
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase, maxRetryAttemptsForSessionRefresh: 5, tokenTransferMethod: .cookie)
+        } catch {
+            failureMessage = "supertokens init failed"
+        }
+
+        let requestSemaphore = DispatchSemaphore(value: 0)
+
+        // Step 1: Login request
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: { data, response, error in
+            if error != nil {
+                failureMessage = "login API error"
+                requestSemaphore.signal()
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "Login response code is not 200";
+                    requestSemaphore.signal()
+                } else {
+                    let throw401URL = URL(string: "\(testAPIBase)/throw-401")!
+                    var throw401Request = URLRequest(url: throw401URL)
+                    throw401Request.httpMethod = "GET"
+
+                    URLSession.shared.dataTask(with: throw401Request, completionHandler: { data, response, error in
+                        if let error = error {
+                            
+                            if (error as NSError).code != 4 {
+                                failureMessage = "Expected the error code to be 4 (maxRetryAttemptsReachedForSessionRefresh)"
+                                requestSemaphore.signal()
+                                return;
+                            }
+                        
+                           
+                           let count = TestUtils.getRefreshTokenCounter()
+                           if count != 5 {
+                               failureMessage = "Expected refresh to be called 5 times but it was called " + String(count) + " times"
+                           }
+                           requestSemaphore.signal()
+                       } else {
+                           failureMessage = "Expected /throw-401 request to throw error"
+                           requestSemaphore.signal()
+                       }
+                    }).resume()
+                }
+            } else {
+                failureMessage = "Login response is nil"
+                requestSemaphore.signal()
+            }
+        }).resume()
+
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    
+
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
+    }
+
+    func testShouldNotDoSessionRefreshIfMaxRetryAttemptsForSessionRefreshIsZero() {
+        TestUtils.startST()
+
+        var failureMessage: String? = nil;
+        do {
+            try SuperTokens.initialize(apiDomain: testAPIBase, maxRetryAttemptsForSessionRefresh: 0, tokenTransferMethod: .cookie)
+        } catch {
+            failureMessage = "supertokens init failed"
+        }
+
+        let requestSemaphore = DispatchSemaphore(value: 0)
+
+        // Step 1: Login request
+        URLSession.shared.dataTask(with: TestUtils.getLoginRequest(), completionHandler: { data, response, error in
+            if error != nil {
+                failureMessage = "login API error"
+                requestSemaphore.signal()
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode != 200 {
+                    failureMessage = "Login response code is not 200";
+                    requestSemaphore.signal()
+                } else {
+                    let throw401URL = URL(string: "\(testAPIBase)/throw-401")!
+                    var throw401Request = URLRequest(url: throw401URL)
+                    throw401Request.httpMethod = "GET"
+
+                    URLSession.shared.dataTask(with: throw401Request, completionHandler: { data, response, error in
+                        if let error = error {
+                            
+                            if (error as NSError).code != 4 {
+                                failureMessage = "Expected the error code to be 4 (maxRetryAttemptsReachedForSessionRefresh)"
+                                requestSemaphore.signal()
+                                return;
+                            }
+                        
+                           
+                           let count = TestUtils.getRefreshTokenCounter()
+                           if count != 0 {
+                               failureMessage = "Expected refresh to be called 0 times but it was called " + String(count) + " times"
+                           }
+                           requestSemaphore.signal()
+                       } else {
+                           failureMessage = "Expected /throw-401 request to throw error"
+                           requestSemaphore.signal()
+                       }
+                    }).resume()
+                }
+            } else {
+                failureMessage = "Login response is nil"
+                requestSemaphore.signal()
+            }
+        }).resume()
+
+        _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
+    
+
+        XCTAssertTrue(failureMessage == nil, failureMessage ?? "")
+    }
+
 }

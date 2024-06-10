@@ -9,6 +9,7 @@ import Foundation
 
 public class SuperTokensURLProtocol: URLProtocol {
     private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
+    private var sessionRefreshAttempts = 0
     
     // Refer to comment in makeRequest to know why this is needed
     private var requestForRetry: NSMutableURLRequest? = nil
@@ -122,9 +123,23 @@ public class SuperTokensURLProtocol: URLProtocol {
                 )
                 
                 if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {
+                    /**
+                    * An API may return a 401 error response even with a valid session, causing a session refresh loop in the interceptor.
+                    * To prevent this infinite loop, we break out of the loop after retrying the original request a specified number of times.
+                    * The maximum number of retry attempts is defined by maxRetryAttemptsForSessionRefresh config variable.
+                    */
+                    if self.sessionRefreshAttempts >= SuperTokens.config!.maxRetryAttemptsForSessionRefresh {
+                        let errorMessage = "Error: Received 401 response from \(String(describing: apiRequest.url)). After refreshing the session and retrying the request \(SuperTokens.config!.maxRetryAttemptsForSessionRefresh ) times, we still received 401 responses. Maximum session refresh limit reached. Breaking out of the refresh loop. Please investigate your API. Consider increasing maxRetryAttemptsForSessionRefresh in the config if needed."
+                        print(errorMessage)
+                        self.resolveToUser(data: nil, response: nil, error: SuperTokensError.maxRetryAttemptsReachedForSessionRefresh(message: errorMessage))
+                        return
+                    }
+
                     mutableRequest = self.removeAuthHeaderIfMatchesLocalToken(_mutableRequest: mutableRequest)
                     SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, callback: {
                         unauthResponse in
+                        
+                        self.sessionRefreshAttempts += 1;
                         
                         if unauthResponse.status == .RETRY {
                             self.requestForRetry = mutableRequest

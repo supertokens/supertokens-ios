@@ -20,6 +20,7 @@ public enum SuperTokensError: Error {
     case apiError(message: String)
     case generalError(message: String)
     case illegalAccess(message: String)
+    case maxRetryAttemptsReachedForSessionRefresh(message: String)
 }
 
 internal enum SDKFailableError: Error {

@@ -43,6 +43,13 @@ class NormalisedInputType {
     var apiDomain: String
     var apiBasePath: String
     var sessionExpiredStatusCode: Int
+    /**
+     * This specifies the maximum number of times the interceptor will attempt to refresh
+     * the session  when a 401 Unauthorized response is received. If the number of retries
+     * exceeds this limit, no further attempts will be made to refresh the session, and
+     * and an error will be thrown.
+     */
+    var maxRetryAttemptsForSessionRefresh: Int
     var sessionTokenBackendDomain: String?
     var eventHandler: (EventType) -> Void
     var preAPIHook: (APIAction, URLRequest) -> URLRequest
@@ -50,10 +57,11 @@ class NormalisedInputType {
     var userDefaultsSuiteName: String?
     var tokenTransferMethod: SuperTokensTokenTransferMethod
     
-    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod, eventHandler: @escaping (EventType) -> Void, preAPIHook: @escaping (APIAction, URLRequest) -> URLRequest, postAPIHook: @escaping (APIAction, URLRequest, URLResponse?) -> Void, userDefaultsSuiteName: String?) {
+    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, maxRetryAttemptsForSessionRefresh: Int, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod, eventHandler: @escaping (EventType) -> Void, preAPIHook: @escaping (APIAction, URLRequest) -> URLRequest, postAPIHook: @escaping (APIAction, URLRequest, URLResponse?) -> Void, userDefaultsSuiteName: String?) {
         self.apiDomain = apiDomain
         self.apiBasePath = apiBasePath
         self.sessionExpiredStatusCode = sessionExpiredStatusCode
+        self.maxRetryAttemptsForSessionRefresh = maxRetryAttemptsForSessionRefresh
         self.sessionTokenBackendDomain = sessionTokenBackendDomain
         self.eventHandler = eventHandler
         self.preAPIHook = preAPIHook
@@ -98,7 +106,7 @@ class NormalisedInputType {
         return noDotNormalised
     }
     
-    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?, userDefaultsSuiteName: String?) throws -> NormalisedInputType {
+    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, maxRetryAttemptsForSessionRefresh: Int? = nil, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?, userDefaultsSuiteName: String?) throws -> NormalisedInputType {
         let _apiDomain = try NormalisedURLDomain(url: apiDomain)
         var _apiBasePath = try NormalisedURLPath(input: "/auth")
         
@@ -109,6 +117,11 @@ class NormalisedInputType {
         var _sessionExpiredStatusCode: Int = 401
         if sessionExpiredStatusCode != nil {
             _sessionExpiredStatusCode = sessionExpiredStatusCode!
+        }
+        
+        var _maxRetryAttemptsForSessionRefresh: Int = 10
+        if maxRetryAttemptsForSessionRefresh != nil {
+            _maxRetryAttemptsForSessionRefresh = maxRetryAttemptsForSessionRefresh!
         }
         
         var _sessionTokenBackendDomain: String? = nil
@@ -144,7 +157,7 @@ class NormalisedInputType {
         }
         
         
-        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, sessionTokenBackendDomain: _sessionTokenBackendDomain, tokenTransferMethod: _tokenTransferMethod, eventHandler: _eventHandler, preAPIHook: _preAPIHook, postAPIHook: _postApiHook, userDefaultsSuiteName: userDefaultsSuiteName)
+        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, maxRetryAttemptsForSessionRefresh: _maxRetryAttemptsForSessionRefresh, sessionTokenBackendDomain: _sessionTokenBackendDomain, tokenTransferMethod: _tokenTransferMethod, eventHandler: _eventHandler, preAPIHook: _preAPIHook, postAPIHook: _postApiHook, userDefaultsSuiteName: userDefaultsSuiteName)
     }
 }
 
