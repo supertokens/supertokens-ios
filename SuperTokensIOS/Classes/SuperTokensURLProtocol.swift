@@ -144,9 +144,7 @@ public class SuperTokensURLProtocol: URLProtocol {
                         if unauthResponse.status == .RETRY {
                             self.requestForRetry = mutableRequest
                             self.makeRequest()
-                        } else {
-                            SuperTokensURLProtocol.clearTokensIfRequired()
-                            
+                        } else {                            
                             if unauthResponse.error != nil {
                                 self.resolveToUser(data: nil, response: nil, error: unauthResponse.error)
                             } else {
@@ -154,13 +152,10 @@ public class SuperTokensURLProtocol: URLProtocol {
                             }
                         }
                     })
-                } else {
-                    SuperTokensURLProtocol.clearTokensIfRequired()
-                    
+                } else {                    
                     self.resolveToUser(data: data, response: response, error: error)
                 }
             } else {
-                SuperTokensURLProtocol.clearTokensIfRequired()
                 self.resolveToUser(data: data, response: response, error: error)
             }
         }).resume()
@@ -249,8 +244,6 @@ public class SuperTokensURLProtocol: URLProtocol {
                         frontTokenheaderFromResponse: frontTokenInHeaders == nil ? "remove" : frontTokenInHeaders!
                     )
                     
-                    SuperTokensURLProtocol.clearTokensIfRequired()
-                    
                     if httpResponse.statusCode >= 300 {
                         semaphore.signal()
                         callback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.apiError(message: "Refresh API returned with status code: \(httpResponse.statusCode)")))
@@ -276,7 +269,6 @@ public class SuperTokensURLProtocol: URLProtocol {
                     SuperTokens.config!.eventHandler(.REFRESH_SESSION)
                     callback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.RETRY))
                 } else {
-                    SuperTokensURLProtocol.clearTokensIfRequired()
                     semaphore.signal()
                     callback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: error))
                 }
@@ -288,14 +280,5 @@ public class SuperTokensURLProtocol: URLProtocol {
     
     public override func stopLoading() {
         // Do nothing, this is required to be implemented
-    }
-    
-    static func clearTokensIfRequired() {
-        let preRequestLocalSessionState = Utils.getLocalSessionState()
-        
-        if preRequestLocalSessionState.status == .NOT_EXISTS {
-            AntiCSRF.removeToken()
-            FrontToken.removeToken()
-        }
     }
 }
