@@ -99,6 +99,7 @@ internal class FrontToken {
     }
     
     static func removeToken() {
+        AntiCSRF.removeToken()
         let executionSemaphore = DispatchSemaphore(value: 0)
         
         readWriteDispatchQueue.async(flags: .barrier) {
