@@ -17,6 +17,7 @@ let fs = require("fs");
 
 module.exports.executeCommand = async function(cmd) {
     return new Promise((resolve, reject) => {
+        console.log("Executing command: " + cmd);
         exec(cmd, (err, stdout, stderr) => {
             if (err) {
                 reject({err, stdout, stderr});
@@ -123,6 +124,7 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
             try {
                 helloResp = await fetch(`http://${host}:${port}/hello`);
                 if (helloResp.status === 200) {
+                    console.log("Started ST, it's saying: " + await helloResp.text());
                     resolve();
                     returned = true;
                     return;
