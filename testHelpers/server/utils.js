@@ -130,7 +130,21 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                 returned = true;
                 return;
             } else {
-                setTimeout(() => resolve(nonIntersection[0]), 1000);
+                while(Date.now() - startTime < 12000) {
+                    try {
+                        const helloResp = await fetch(`http://${host}:${port}/hello`);
+                        console.log(helloResp.status, await helloResp.text());
+                        if (helloResp.status === 200) {
+                            resolve(nonIntersection[0]);
+                            returned = true;
+                            return;
+                        }
+                    } catch (err) {
+                        console.log(err)
+                    }
+                    setTimeout(() => resolve(nonIntersection[0]), 1000);
+                }
+                resolve(nonIntersection[0]);
                 returned = true;
                 return;
             }
