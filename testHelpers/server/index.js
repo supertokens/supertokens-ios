@@ -588,7 +588,7 @@ app.use("*", async (req, res, next) => {
 app.use(errorHandler());
 
 app.use(async (err, req, res, next) => {
-    console.log({err, headersSent: res.headersSent });
+    console.log({err, headersSent: res.headersSent, stack: new Error().stack });
     if (!res.headersSent) {
         try {
             res.send(500).send(err);
