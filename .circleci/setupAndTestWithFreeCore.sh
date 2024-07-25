@@ -47,7 +47,7 @@ echo $SUPERTOKENS_API_KEY > apiPassword
 cd ../project/testHelpers/server/
 npm i -d --force
 npm i git+https://github.com:supertokens/supertokens-node.git#$2
-TEST_MODE=testing INSTALL_PATH=../../../supertokens-root node . &
+DEBUG=com.supertokens TEST_MODE=testing INSTALL_PATH=../../../supertokens-root node . &
 pid=$!
 cd ../../
 xcodebuild test -enableCodeCoverage YES -workspace testHelpers/testapp/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=16.1,name=iPhone 14 Pro' ONLY_ACTIVE_ARCH=NO
