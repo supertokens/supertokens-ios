@@ -125,21 +125,14 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
             }
             let nonIntersection = pidsAfter.filter(x => !pidsBefore.includes(x));
             if (nonIntersection.length !== 1) {
-                if (!returned) {
-                    returned = true;
-                    reject("something went wrong while starting ST");
-                }
+                reject("something went wrong while starting ST");
+                return;
             } else {
-                if (!returned) {
-                    returned = true;
-                    resolve(nonIntersection[0]);
-                }
+                setTimeout(() => resolve(nonIntersection[0]), 1000);
+                return;
             }
         }
-        if (!returned) {
-            returned = true;
-            reject("could not start ST process");
-        }
+        reject("could not start ST process");
     });
 };
 
