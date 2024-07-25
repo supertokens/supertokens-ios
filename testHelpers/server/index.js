@@ -588,9 +588,13 @@ app.use("*", async (req, res, next) => {
 app.use(errorHandler());
 
 app.use(async (err, req, res, next) => {
-    console.log({err, res});
+    console.log({err, headersSent: res.headersSent });
     if (!res.headersSent) {
-        res.send(500).send(err);
+        try {
+            res.send(500).send(err);
+        } catch (err) {
+            console.log({responseSettingError: err});
+        }
     }
 });
 
