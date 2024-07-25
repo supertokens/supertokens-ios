@@ -109,11 +109,11 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                     " test_mode"
             )
             .catch(({err, stdout, stderr}) => {
-                console.log("Starting ST failed when executing java command");
-                console.log(err);
-                console.log(stdout);
-                console.log(stderr);
                 if (!returned) {
+                    console.log("Starting ST failed: java command returned early w/ non-zero exit code");
+                    console.log(err);
+                    console.log(stdout);
+                    console.log(stderr);
                     returned = true;
                     reject(err);
                 }
@@ -129,7 +129,8 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                     returned = true;
                     return;
                 }
-            } catch {
+            } catch (ex) {
+                console.log("Waiting for ST to start, caught exception: " + ex);
                 // We expect (and ignore) network errors here
             }
             await new Promise(r => setTimeout(r, 100));
