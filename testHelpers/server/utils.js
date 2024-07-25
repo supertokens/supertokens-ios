@@ -127,19 +127,22 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                 returned = true;
                 return;
             } else {
+                let helloResp;
                 while(Date.now() - startTime < 12000) {
                     try {
-                        const helloResp = await fetch(`http://${host}:${port}/hello`);
+                        helloResp = await fetch(`http://${host}:${port}/hello`);
                         if (helloResp.status === 200) {
                             resolve(nonIntersection[0]);
                             returned = true;
                             return;
                         }
-                    } catch (err) {
-                        await new Promise(r => setTimeout(r, 100));
+                    } catch {
+                        // We expect (and ignore) network errors here
                     }
+                    await new Promise(r => setTimeout(r, 100));
                 }
-                resolve(nonIntersection[0]);
+                console.log(helloResp);
+                reject("something went wrong while starting ST");
                 returned = true;
                 return;
             }
