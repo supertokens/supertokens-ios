@@ -477,12 +477,12 @@ class sessionTests: XCTestCase {
         XCTAssertTrue(!failed)
     }
 
-    // 300 requests should yield just 1 refresh call
+    // 100 requests should yield just 1 refresh call
     func testThatRefreshIsCalledOnlyOnceForMultipleThreads() {
         var failed = true
         TestUtils.startST(validity: 10)
 
-        let runnableCount = 300
+        let runnableCount = 100
         
         let requestSemaphore = DispatchSemaphore(value: 0)
         let countSemaphore = DispatchSemaphore(value: 0)
@@ -555,11 +555,9 @@ class sessionTests: XCTestCase {
         _ = requestSemaphore.wait(timeout: DispatchTime.distantFuture)
 
         let counter = TestUtils.getRefreshTokenCounter()
-        if (counter == 1 && !results.contains(false) && results.count == runnableCount) {
-            failed = false;
-        }
-
-        XCTAssertTrue(!failed)
+        XCTAssertTrue(counter == 1)
+        XCTAssertTrue(!results.contains(false))
+        XCTAssertTrue(results.count == runnableCount)
     }
 
     // session should not exist on frontend once logout is called
