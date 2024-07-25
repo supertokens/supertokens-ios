@@ -215,6 +215,7 @@ app.use(
         credentials: true
     })
 );
+app.disable('etag');
 
 app.use(middleware());
 
