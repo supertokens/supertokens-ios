@@ -589,14 +589,8 @@ app.use("*", async (req, res, next) => {
 app.use(errorHandler());
 
 app.use(async (err, req, res, next) => {
-    console.log({err, headersSent: res.headersSent, stack: new Error().stack });
-    if (!res.headersSent) {
-        try {
-            res.send(500).send(err);
-        } catch (err) {
-            console.log({responseSettingError: err});
-        }
-    }
+    console.log({err, stack: new Error().stack });
+    res.status(500).send(err);
 });
 
 let server = http.createServer(app);
