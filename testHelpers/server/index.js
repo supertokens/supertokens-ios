@@ -56,8 +56,8 @@ let app = express();
 app.use(urlencodedParser);
 app.use(jsonParser);
 app.use(cookieParser());
-app.use(morgan("dev", { immediate: true }));
-app.use(morgan("dev"));
+app.use(morgan(`${PORT} :date[iso] - :method :url`, { immediate: true }));
+app.use(morgan(`${PORT} :date[iso] - :method :url :status :response-time ms - :res[content-length]`));
 
 let lastSetEnableAntiCSRF = false;
 let lastSetEnableJWT = false;
@@ -255,6 +255,7 @@ app.post("/startst", async (req, res) => {
         if (UserMetaDataRecipeRaw !== undefined) {
             UserMetaDataRecipeRaw.reset();
         }
+        console.log({multitenancySupported, MultitenancyRaw, UserMetaDataRecipeRaw});
 
         SuperTokens.init(getConfig(enableAntiCsrf, enableJWT));
     }
