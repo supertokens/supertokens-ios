@@ -588,8 +588,10 @@ app.use("*", async (req, res, next) => {
 app.use(errorHandler());
 
 app.use(async (err, req, res, next) => {
-    console.log({err, req, res});
-    res.send(500).send(err);
+    console.log({err, res});
+    if (!res.headersSent) {
+        res.send(500).send(err);
+    }
 });
 
 let server = http.createServer(app);
