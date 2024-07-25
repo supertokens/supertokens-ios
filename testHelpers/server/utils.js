@@ -17,7 +17,7 @@ let fs = require("fs");
 
 module.exports.executeCommand = async function(cmd) {
     return new Promise((resolve, reject) => {
-        console.log({cmd});
+        console.log({cmd, stack: new Error().stack});
         exec(cmd, (err, stdout, stderr) => {
             console.log({cmd, stdout, stderr});
             if (err) {
