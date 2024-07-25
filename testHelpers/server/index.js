@@ -56,6 +56,7 @@ let app = express();
 app.use(urlencodedParser);
 app.use(jsonParser);
 app.use(cookieParser());
+app.use(morgan("dev", { immediate: true }));
 app.use(morgan("dev"));
 
 let lastSetEnableAntiCSRF = false;
