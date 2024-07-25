@@ -261,6 +261,7 @@ app.post("/startst", async (req, res) => {
 
         SuperTokens.init(getConfig(enableAntiCsrf, enableJWT));
     }
+    await startST();
     res.send("");
 });
 
