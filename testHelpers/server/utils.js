@@ -17,9 +17,7 @@ let fs = require("fs");
 
 module.exports.executeCommand = async function(cmd) {
     return new Promise((resolve, reject) => {
-        console.log({cmd, stack: new Error().stack});
         exec(cmd, (err, stdout, stderr) => {
-            console.log({cmd, stdout, stderr});
             if (err) {
                 reject(err);
                 return;
@@ -124,7 +122,6 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                 continue;
             }
             let nonIntersection = pidsAfter.filter(x => !pidsBefore.includes(x));
-            console.log({nonIntersection});
             if (nonIntersection.length !== 1) {
                 reject("something went wrong while starting ST");
                 returned = true;
@@ -133,16 +130,14 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                 while(Date.now() - startTime < 12000) {
                     try {
                         const helloResp = await fetch(`http://${host}:${port}/hello`);
-                        console.log(helloResp.status, await helloResp.text());
                         if (helloResp.status === 200) {
                             resolve(nonIntersection[0]);
                             returned = true;
                             return;
                         }
                     } catch (err) {
-                        console.log(err)
+                        await new Promise(r => setTimeout(r, 100));
                     }
-                    setTimeout(() => resolve(nonIntersection[0]), 1000);
                 }
                 resolve(nonIntersection[0]);
                 returned = true;
