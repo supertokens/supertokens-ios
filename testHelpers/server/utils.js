@@ -19,7 +19,7 @@ module.exports.executeCommand = async function(cmd) {
     return new Promise((resolve, reject) => {
         exec(cmd, (err, stdout, stderr) => {
             if (err) {
-                reject(err);
+                reject({err, stdout, stderr});
                 return;
             }
             resolve({ stdout, stderr });
@@ -96,7 +96,6 @@ module.exports.killAllST = async function() {
 module.exports.startST = async function(host = "localhost", port = 9000) {
     return new Promise(async (resolve, reject) => {
         let installationPath = process.env.INSTALL_PATH;
-        let pidsBefore = await getListOfPids();
         let returned = false;
         module.exports
             .executeCommand(
@@ -108,46 +107,33 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                     port +
                     " test_mode"
             )
-            .catch(err => {
+            .catch(({err, stdout, stderr}) => {
+                console.log("Starting ST failed when executing java command");
+                console.log(err);
+                console.log(stdout);
+                console.log(stderr);
                 if (!returned) {
                     returned = true;
                     reject(err);
                 }
             });
         let startTime = Date.now();
+        let helloResp;
         while (Date.now() - startTime < 10000) {
-            let pidsAfter = await getListOfPids();
-            if (pidsAfter.length <= pidsBefore.length) {
-                await new Promise(r => setTimeout(r, 100));
-                continue;
-            }
-            let nonIntersection = pidsAfter.filter(x => !pidsBefore.includes(x));
-            if (nonIntersection.length !== 1) {
-                reject("something went wrong while starting ST");
-                returned = true;
-                return;
-            } else {
-                let helloResp;
-                while(Date.now() - startTime < 12000) {
-                    try {
-                        helloResp = await fetch(`http://${host}:${port}/hello`);
-                        if (helloResp.status === 200) {
-                            resolve(nonIntersection[0]);
-                            returned = true;
-                            return;
-                        }
-                    } catch {
-                        // We expect (and ignore) network errors here
-                    }
-                    await new Promise(r => setTimeout(r, 100));
+            try {
+                helloResp = await fetch(`http://${host}:${port}/hello`);
+                if (helloResp.status === 200) {
+                    resolve();
+                    returned = true;
+                    return;
                 }
-                console.log(helloResp);
-                reject("something went wrong while starting ST");
-                returned = true;
-                return;
+            } catch {
+                // We expect (and ignore) network errors here
             }
+            await new Promise(r => setTimeout(r, 100));
         }
-        reject("could not start ST process");
+        console.log(helloResp);
+        reject("Starting ST process timed out");
     });
 };
 

@@ -261,8 +261,7 @@ app.post("/startst", async (req, res) => {
 
         SuperTokens.init(getConfig(enableAntiCsrf, enableJWT));
     }
-    let pid = await startST();
-    res.send(pid + "");
+    res.send("");
 });
 
 app.get("/featureFlags", async (req, res) => {
