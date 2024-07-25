@@ -56,8 +56,8 @@ let app = express();
 app.use(urlencodedParser);
 app.use(jsonParser);
 app.use(cookieParser());
-app.use(morgan(`${PORT} :date[iso] - :method :url`, { immediate: true }));
-app.use(morgan(`${PORT} :date[iso] - :method :url :status :response-time ms - :res[content-length]`));
+app.use(morgan(`:date[iso] - :method :url`, { immediate: true }));
+app.use(morgan(`:date[iso] - :method :url :status :response-time ms - :res[content-length]`));
 
 let lastSetEnableAntiCSRF = false;
 let lastSetEnableJWT = false;
