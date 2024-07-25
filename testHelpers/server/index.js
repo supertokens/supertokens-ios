@@ -25,6 +25,7 @@ let { startST, stopST, killAllST, setupST, cleanST, setKeyValueInConfig, maxVers
 let { middleware, errorHandler } = require("supertokens-node/framework/express");
 let { verifySession } = require("supertokens-node/recipe/session/framework/express");
 const { spawnSync } = require("child_process");
+const morgan = require("morgan");
 let noOfTimesRefreshCalledDuringTest = 0;
 let noOfTimesGetSessionCalledDuringTest = 0;
 let noOfTimesRefreshAttemptedDuringTest = 0;
@@ -55,6 +56,7 @@ let app = express();
 app.use(urlencodedParser);
 app.use(jsonParser);
 app.use(cookieParser());
+app.use(morgan("dev"));
 
 let lastSetEnableAntiCSRF = false;
 let lastSetEnableJWT = false;
