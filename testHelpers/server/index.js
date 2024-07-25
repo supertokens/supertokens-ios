@@ -38,7 +38,8 @@ try {
     MultitenancyRaw = require("supertokens-node/lib/build/recipe/multitenancy/recipe").default;
     Multitenancy = require("supertokens-node/lib/build/recipe/multitenancy");
     multitenancySupported = true;
-} catch {
+} catch (ex) {
+    console.log({ex});
     multitenancySupported = false;
 }
 
