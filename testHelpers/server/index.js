@@ -36,7 +36,7 @@ let NormalisedURLPath = require("supertokens-node/lib/build/normalisedURLPath").
 let Multitenancy, MultitenancyRaw, multitenancySupported;
 try {
     MultitenancyRaw = require("supertokens-node/lib/build/recipe/multitenancy/recipe").default;
-    Multitenancy = require("supertokens-node/lib/build/recipe/multitenancy");
+    Multitenancy = require("supertokens-node/lib/build/recipe/multitenancy/index");
     multitenancySupported = true;
 } catch (ex) {
     console.log({ex});
