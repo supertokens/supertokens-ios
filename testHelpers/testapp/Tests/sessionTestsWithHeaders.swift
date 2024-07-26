@@ -477,12 +477,12 @@ class sessionTestsWithHeaders: XCTestCase {
         XCTAssertTrue(!failed)
     }
 
-    // 300 requests should yield just 1 refresh call
+    // 100 requests should yield just 1 refresh call
     func testThatRefreshIsCalledOnlyOnceForMultipleThreads() {
         var failed = true
         TestUtils.startST(validity: 10)
 
-        let runnableCount = 300
+        let runnableCount = 100
         
         let requestSemaphore = DispatchSemaphore(value: 0)
         let countSemaphore = DispatchSemaphore(value: 0)

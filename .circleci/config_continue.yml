@@ -8,9 +8,17 @@ jobs:
     docker:
       - image: rishabhpoddar/supertokens_website_sdk_testing_node_16
     steps:
-      - run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/ # This makes npm use http instead of ssh (required for node 16)
-      - checkout
-      - run: (cd .circleci/ && ./markDevTagAsTestNotPassed.sh)
+      - run: echo "Testing branch << pipeline.git.branch >>"
+      - when:
+          condition:
+            not:
+              matches:
+                pattern: "^test-cicd/.*$"
+                value: << pipeline.git.branch >>
+          steps:
+            - run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/ # This makes npm use http instead of ssh (required for node 16)
+            - checkout
+            - run: (cd .circleci/ && ./markDevTagAsTestNotPassed.sh)
   test-unit:
     macos:
       xcode: 14.1.0
@@ -26,6 +34,9 @@ jobs:
       - run: cd ../ && curl -L -o java.tar.gz "https://drive.usercontent.google.com/download?id=1zFjmXJFYEYw1bhPIZ0H2Q3oSy_HRCEQk&export=download&authuser=0&confirm=t&uuid=9563b3be-1e99-4293-a38c-001ea7cb2c37&at=APZUnTVgTPkWenZvgghQeFST-Yxk%3A1710776389213"
       - run: cd ../ && tar -xzvf java.tar.gz
       - run: (cd .circleci/ && ./doTests.sh  << parameters.fdi-version >>)
+      - store_artifacts:
+          path: ../supertokens-root/logs
+          destination: logfiles
   test-success:
     docker:
       - image: rishabhpoddar/supertokens_website_sdk_testing_node_16
@@ -44,7 +55,7 @@ workflows:
             tags:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: /.*/
+              only: /test-cicd\/.*/
       - test-unit:
           requires:
             - test-dev-tag-as-not-passed
@@ -54,7 +65,7 @@ workflows:
             tags:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: /.*/
+              only: /test-cicd\/.*/
           matrix:
             parameters:
               fdi-version: placeholder

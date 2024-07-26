@@ -25,6 +25,7 @@ let { startST, stopST, killAllST, setupST, cleanST, setKeyValueInConfig, maxVers
 let { middleware, errorHandler } = require("supertokens-node/framework/express");
 let { verifySession } = require("supertokens-node/recipe/session/framework/express");
 const { spawnSync } = require("child_process");
+const morgan = require("morgan");
 let noOfTimesRefreshCalledDuringTest = 0;
 let noOfTimesGetSessionCalledDuringTest = 0;
 let noOfTimesRefreshAttemptedDuringTest = 0;
@@ -35,9 +36,10 @@ let NormalisedURLPath = require("supertokens-node/lib/build/normalisedURLPath").
 let Multitenancy, MultitenancyRaw, multitenancySupported;
 try {
     MultitenancyRaw = require("supertokens-node/lib/build/recipe/multitenancy/recipe").default;
-    Multitenancy = require("supertokens-node/lib/build/recipe/multitenancy");
+    Multitenancy = require("supertokens-node/lib/build/recipe/multitenancy/index");
     multitenancySupported = true;
-} catch {
+} catch (ex) {
+    console.log({ex});
     multitenancySupported = false;
 }
 
@@ -55,6 +57,8 @@ let app = express();
 app.use(urlencodedParser);
 app.use(jsonParser);
 app.use(cookieParser());
+app.use(morgan(`:date[iso] - :method :url`, { immediate: true }));
+app.use(morgan(`:date[iso] - :method :url :status :response-time ms - :res[content-length]`));
 
 let lastSetEnableAntiCSRF = false;
 let lastSetEnableJWT = false;
@@ -211,6 +215,7 @@ app.use(
         credentials: true
     })
 );
+app.disable('etag');
 
 app.use(middleware());
 
@@ -252,11 +257,12 @@ app.post("/startst", async (req, res) => {
         if (UserMetaDataRecipeRaw !== undefined) {
             UserMetaDataRecipeRaw.reset();
         }
+        console.log({multitenancySupported, MultitenancyRaw, UserMetaDataRecipeRaw});
 
         SuperTokens.init(getConfig(enableAntiCsrf, enableJWT));
     }
-    let pid = await startST();
-    res.send(pid + "");
+    await startST();
+    res.send("");
 });
 
 app.get("/featureFlags", async (req, res) => {
@@ -583,7 +589,8 @@ app.use("*", async (req, res, next) => {
 app.use(errorHandler());
 
 app.use(async (err, req, res, next) => {
-    res.send(500).send(err);
+    console.log({err, stack: new Error().stack });
+    res.status(500).send(err);
 });
 
 let server = http.createServer(app);

@@ -68,9 +68,9 @@ class TestUtils {
         let semaphore = DispatchSemaphore(value: 0)
         startSTHelper(validity: validity, disableAntiCSRF: disableAntiCSRF, successCallback: {
             semaphore.signal()
-        }) {
+        }, failureCallback: {
             semaphore.signal()
-        }
+        })
         _ = semaphore.wait(timeout: DispatchTime.distantFuture)
     }
     //
