@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "harness": "TEST_MODE=testing node index.js",
+    "test:integration:harness": "TEST_MODE=testing node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -13,6 +15,7 @@
     "cors": "^2.8.5",
     "express": "4.17.1",
     "morgan": "^1.10.0",
-    "supertokens-node": "github:supertokens/supertokens-node#16.0"
+    "supertokens-node": "github:supertokens/supertokens-node#16.0",
+    "testcontainers": "^11.14.0"
   }
 }

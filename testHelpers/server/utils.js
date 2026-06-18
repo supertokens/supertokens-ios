@@ -13,7 +13,11 @@
  * under the License.
  */
 const { exec } = require("child_process");
-let fs = require("fs");
+
+let network;
+let postgresContainer;
+let coreContainer;
+let currentCoreConfig;
 
 module.exports.executeCommand = async function(cmd) {
     return new Promise((resolve, reject) => {
@@ -29,139 +33,123 @@ module.exports.executeCommand = async function(cmd) {
 };
 
 module.exports.setupST = async function() {
-    let installationPath = process.env.INSTALL_PATH;
-    try {
-        await module.exports.executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
-    } catch (ignored) {}
-    await module.exports.executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
+    await module.exports.cleanST();
+    await ensurePostgresContainer();
 };
 
 module.exports.setKeyValueInConfig = async function(key, value) {
-    return new Promise((resolve, reject) => {
-        let installationPath = process.env.INSTALL_PATH;
-        fs.readFile(installationPath + "/config.yaml", "utf8", function(err, data) {
-            if (err) {
-                reject(err);
-                return;
-            }
-            let oldStr = new RegExp("((#\\s)?)" + key + "(:|((:\\s).+))\n");
-            let newStr = key + ": " + value + "\n";
-            let result = data.replace(oldStr, newStr);
-            fs.writeFile(installationPath + "/config.yaml", result, "utf8", function(err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
-    });
+    currentCoreConfig = {
+        ...(currentCoreConfig || defaultCoreConfig()),
+        [key]: value
+    };
 };
 
 module.exports.cleanST = async function() {
-    let installationPath = process.env.INSTALL_PATH;
     try {
-        await module.exports.executeCommand("cd " + installationPath + " && rm licenseKey");
-    } catch (ignored) {}
-    await module.exports.executeCommand("cd " + installationPath + " && rm config.yaml");
-    await module.exports.executeCommand("cd " + installationPath + " && rm -rf .webserver-temp-*");
-    await module.exports.executeCommand("cd " + installationPath + " && rm -rf .started");
+        await stopCoreContainer();
+    } finally {
+        try {
+            if (postgresContainer) {
+                await postgresContainer.stop();
+                postgresContainer = undefined;
+            }
+        } finally {
+            if (network) {
+                await network.stop();
+                network = undefined;
+            }
+            currentCoreConfig = undefined;
+        }
+    }
 };
 
 module.exports.stopST = async function(pid) {
-    let pidsBefore = await getListOfPids();
-    if (pidsBefore.length === 0) {
-        return;
-    }
-    await module.exports.executeCommand("kill " + pid);
-    let startTime = Date.now();
-    while (Date.now() - startTime < 10000) {
-        let pidsAfter = await getListOfPids();
-        if (pidsAfter.includes(pid)) {
-            await new Promise(r => setTimeout(r, 100));
-            continue;
-        } else {
-            return;
-        }
-    }
-    throw new Error("error while stopping ST with PID: " + pid);
+    await stopCoreContainer();
 };
 
 module.exports.killAllST = async function() {
-    let pids = await getListOfPids();
-    for (let i = 0; i < pids.length; i++) {
-        await module.exports.stopST(pids[i]);
-    }
+    await stopCoreContainer();
 };
 
-module.exports.startST = async function(host = "localhost", port = 9000) {
-    return new Promise(async (resolve, reject) => {
-        let installationPath = process.env.INSTALL_PATH;
-        let returned = false;
-        module.exports
-            .executeCommand(
-                "cd " +
-                    installationPath +
-                    ` && java -Djava.security.egd=file:/dev/urandom -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV host=` +
-                    host +
-                    " port=" +
-                    port +
-                    " test_mode"
-            )
-            .catch(({err, stdout, stderr}) => {
-                if (!returned) {
-                    console.log("Starting ST failed: java command returned early w/ non-zero exit code");
-                    console.log(err);
-                    console.log(stdout);
-                    console.log(stderr);
-                    returned = true;
-                    reject(err);
-                }
-            });
-        let startTime = Date.now();
-        let helloResp;
-        while (Date.now() - startTime < 10000) {
-            try {
-                helloResp = await fetch(`http://${host}:${port}/hello`);
-                if (helloResp.status === 200) {
-                    console.log("Started ST, it's saying: " + await helloResp.text());
-                    resolve();
-                    returned = true;
-                    return;
-                }
-            } catch (ex) {
-                console.log("Waiting for ST to start, caught exception: " + ex);
-                // We expect (and ignore) network errors here
-            }
-            await new Promise(r => setTimeout(r, 100));
-        }
-        console.log(helloResp);
-        reject("Starting ST process timed out");
-    });
+module.exports.startST = async function(host = "localhost", port = 9000, coreConfig = {}) {
+    await ensurePostgresContainer();
+    await stopCoreContainer();
+
+    currentCoreConfig = {
+        ...defaultCoreConfig(),
+        ...(currentCoreConfig || {}),
+        ...coreConfig
+    };
+
+    const { GenericContainer, Wait } = await import("testcontainers");
+    const image = process.env.SUPERTOKENS_CORE_IMAGE || "supertokens/supertokens-postgresql";
+    const coreEnvironment = {
+        POSTGRESQL_CONNECTION_URI: "postgresql://supertokens:somepassword@postgres:5432/supertokens",
+        DISABLE_TELEMETRY: "true",
+        ...toCoreEnvironment(currentCoreConfig)
+    };
+
+    coreContainer = await new GenericContainer(image)
+        .withNetwork(network)
+        .withEnvironment(coreEnvironment)
+        .withExposedPorts(3567)
+        .withWaitStrategy(Wait.forHttp("/hello", 3567))
+        .start();
+
+    const connectionURI = `http://${coreContainer.getHost()}:${coreContainer.getMappedPort(3567)}`;
+    const helloResp = await fetch(`${connectionURI}/hello`);
+    console.log("Started ST, it's saying: " + await helloResp.text());
+    return connectionURI;
 };
 
-async function getListOfPids() {
-    let installationPath = process.env.INSTALL_PATH;
-    try {
-        (await module.exports.executeCommand("cd " + installationPath + " && ls .started/")).stdout;
-    } catch (err) {
-        return [];
+async function ensurePostgresContainer() {
+    if (postgresContainer) {
+        return;
     }
-    let currList = (await module.exports.executeCommand("cd " + installationPath + " && ls .started/")).stdout;
-    currList = currList.split("\n");
-    let result = [];
-    for (let i = 0; i < currList.length; i++) {
-        let item = currList[i];
-        if (item === "") {
-            continue;
-        }
-        try {
-            let pid = (await module.exports.executeCommand("cd " + installationPath + " && cat .started/" + item))
-                .stdout;
-            result.push(pid);
-        } catch (err) {}
+
+    const { GenericContainer, Network, Wait } = await import("testcontainers");
+    network = await new Network().start();
+    postgresContainer = await new GenericContainer(process.env.POSTGRES_IMAGE || "postgres:14")
+        .withNetwork(network)
+        .withNetworkAliases("postgres")
+        .withEnvironment({
+            POSTGRES_USER: "supertokens",
+            POSTGRES_PASSWORD: "somepassword",
+            POSTGRES_DB: "supertokens"
+        })
+        .withExposedPorts(5432)
+        .withWaitStrategy(Wait.forLogMessage("database system is ready to accept connections"))
+        .start();
+}
+
+async function stopCoreContainer() {
+    if (!coreContainer) {
+        return;
     }
-    return result;
+    await coreContainer.stop();
+    coreContainer = undefined;
+}
+
+function defaultCoreConfig() {
+    return {
+        access_token_validity: 1
+    };
+}
+
+function toCoreEnvironment(config) {
+    const env = {};
+
+    if (config.access_token_validity !== undefined) {
+        env.ACCESS_TOKEN_VALIDITY = String(config.access_token_validity);
+    }
+    if (config.refresh_token_validity !== undefined) {
+        env.REFRESH_TOKEN_VALIDITY = String(config.refresh_token_validity);
+    }
+    if (config.access_token_signing_key_update_interval !== undefined) {
+        env.ACCESS_TOKEN_DYNAMIC_SIGNING_KEY_UPDATE_INTERVAL = String(config.access_token_signing_key_update_interval);
+    }
+
+    return env;
 }
 
 module.exports.maxVersion = function(version1, version2) {

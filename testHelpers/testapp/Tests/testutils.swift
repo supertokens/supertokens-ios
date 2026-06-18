@@ -17,7 +17,7 @@ import XCTest
 @testable import SuperTokensIOS
 
 let testAPIBaseDomain = "127.0.0.1"
-let testAPIBase = "http://\(testAPIBaseDomain):8080"
+let testAPIBase = (ProcessInfo.processInfo.environment["TEST_BACKEND_URL"] ?? "http://\(testAPIBaseDomain):8080").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 let beforeEachAPIURL = "\(testAPIBase)beforeeach"
 let refreshDeviceInfoAPIURL = "\(testAPIBase)refreshDeviceInfo"
 
