@@ -28,7 +28,7 @@ internal class AntiCSRF {
     }
     
     private static var antiCSRFInfo: AntiCSRFInfo? = nil
-    private static let antiCSRFUserDefaultsKey = "supertokens-ios-anticsrf-key"
+    private static let antiCSRFUserDefaultsKey = SDKStorage.antiCSRFKey
     
     internal static func getToken(associatedAccessTokenUpdate: String?) -> String? {
         if associatedAccessTokenUpdate == nil {
@@ -37,8 +37,7 @@ internal class AntiCSRF {
         }
         
         if AntiCSRF.antiCSRFInfo == nil {
-            let userDefaults = Utils.getUserDefaults()
-            let antiCSRFToken = userDefaults.string(forKey: AntiCSRF.antiCSRFUserDefaultsKey)
+            let antiCSRFToken = SDKStorage.get(AntiCSRF.antiCSRFUserDefaultsKey)
             if ( antiCSRFToken == nil ) {
                 return nil
             }
@@ -52,23 +51,29 @@ internal class AntiCSRF {
         return AntiCSRF.antiCSRFInfo!.antiCSRF
     }
     
-    internal static func setToken(antiCSRFToken: String, associatedAccessTokenUpdate: String? = nil) {
+    @discardableResult
+    internal static func setToken(antiCSRFToken: String, associatedAccessTokenUpdate: String? = nil) -> Bool {
         if associatedAccessTokenUpdate == nil {
             AntiCSRF.antiCSRFInfo = nil
-            return;
+            return true;
         }
         
-        let userDefaults = Utils.getUserDefaults()
-        userDefaults.set(antiCSRFToken, forKey: AntiCSRF.antiCSRFUserDefaultsKey)
-        userDefaults.synchronize()
+        guard SDKStorage.set(AntiCSRF.antiCSRFUserDefaultsKey, value: antiCSRFToken) else {
+            AntiCSRF.antiCSRFInfo = nil
+            SDKStorage.clearSessionStorage()
+            return false
+        }
         
         AntiCSRF.antiCSRFInfo = AntiCSRFInfo(antiCSRFToken: antiCSRFToken, associatedAccessTokenUpdate: associatedAccessTokenUpdate!)
+        return true
     }
     
     internal static func removeToken() {
-        let userDefaults = Utils.getUserDefaults()
-        userDefaults.removeObject(forKey: AntiCSRF.antiCSRFUserDefaultsKey)
-        userDefaults.synchronize()
+        _ = SDKStorage.remove(AntiCSRF.antiCSRFUserDefaultsKey)
+        AntiCSRF.antiCSRFInfo = nil
+    }
+
+    internal static func clearInMemoryCache() {
         AntiCSRF.antiCSRFInfo = nil
     }
 }

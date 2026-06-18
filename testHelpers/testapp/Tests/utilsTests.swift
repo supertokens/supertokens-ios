@@ -16,6 +16,29 @@
 import XCTest
 @testable import SuperTokensIOS
 
+private class FakeTokenStorage: TokenStorage {
+    var values: [String: String] = [:]
+    var failSetKeys: Set<String> = []
+
+    func get(_ name: String) -> String? {
+        return values[name]
+    }
+
+    func set(_ name: String, value: String) -> Bool {
+        if failSetKeys.contains(name) {
+            return false
+        }
+
+        values[name] = value
+        return true
+    }
+
+    func remove(_ name: String) -> Bool {
+        values.removeValue(forKey: name)
+        return true
+    }
+}
+
 class utilsTest: XCTestCase {
     let fakeGetApi = "https://www.google.com"
     
@@ -34,6 +57,8 @@ class utilsTest: XCTestCase {
     // MARK: Runs after each test
     override func tearDown() {
         URLProtocol.unregisterClass(SuperTokensURLProtocol.self)
+        SDKStorage.configure(keychainAccessGroup: nil)
+        SDKStorage.clearSessionStorage()
         super.tearDown()
     }
     
@@ -103,5 +128,64 @@ class utilsTest: XCTestCase {
         
         XCTAssert(accessToken == "access-token")
         XCTAssert(refreshToken == "refresh-token")
+    }
+
+    func testLegacyGenericStorageMigratesToKeychainOnRead() {
+        let storage = FakeTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        let key = SDKStorage.genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME)
+        Utils.getUserDefaults().set("legacy-access-token", forKey: key)
+
+        XCTAssertEqual(Utils.getTokenForHeaderAuth(tokenType: .access), "legacy-access-token")
+        XCTAssertEqual(storage.values[key], "legacy-access-token")
+        XCTAssertNil(Utils.getUserDefaults().string(forKey: key))
+    }
+
+    func testLegacyGenericStorageIsKeptIfMigrationWriteFails() {
+        let storage = FakeTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        let key = SDKStorage.genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME)
+        storage.failSetKeys.insert(key)
+        Utils.getUserDefaults().set("legacy-access-token", forKey: key)
+
+        XCTAssertNil(Utils.getTokenForHeaderAuth(tokenType: .access))
+        XCTAssertEqual(Utils.getUserDefaults().string(forKey: key), "legacy-access-token")
+    }
+
+    func testFrontTokenIsWrittenToTokenStorage() {
+        let storage = FakeTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        let frontToken = Data("{\"uid\":\"user-id\",\"ate\":9999999999999,\"up\":{}}".utf8).base64EncodedString()
+
+        XCTAssertTrue(FrontToken.setItem(frontToken: frontToken))
+        XCTAssertEqual(storage.values[SDKStorage.frontTokenKey], frontToken)
+        XCTAssertEqual(FrontToken.getToken()?["uid"] as? String, "user-id")
+    }
+
+    func testAntiCSRFTokenIsWrittenToTokenStorage() {
+        let storage = FakeTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+
+        XCTAssertTrue(AntiCSRF.setToken(antiCSRFToken: "csrf-token", associatedAccessTokenUpdate: "update-id"))
+        XCTAssertEqual(storage.values[SDKStorage.antiCSRFKey], "csrf-token")
+        XCTAssertEqual(AntiCSRF.getToken(associatedAccessTokenUpdate: "update-id"), "csrf-token")
+    }
+
+    func testFailedHeaderTokenWriteClearsPartiallyWrittenSessionStorage() {
+        let storage = FakeTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        let accessTokenKey = SDKStorage.genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME)
+        let refreshTokenKey = SDKStorage.genericKey(SuperTokensConstants.REFRESH_TOKEN_NAME)
+        storage.failSetKeys.insert(accessTokenKey)
+        let httpResponse = HTTPURLResponse(url: URL(string: fakeGetApi)!, statusCode: 200, httpVersion: nil, headerFields: [
+            "st-refresh-token": "refresh-token",
+            "st-access-token": "access-token"
+        ])!
+
+        Utils.saveTokenFromHeaders(httpResponse: httpResponse)
+
+        XCTAssertNil(storage.values[refreshTokenKey])
+        XCTAssertNil(Utils.getTokenForHeaderAuth(tokenType: .refresh))
+        XCTAssertNil(Utils.getTokenForHeaderAuth(tokenType: .access))
     }
 }

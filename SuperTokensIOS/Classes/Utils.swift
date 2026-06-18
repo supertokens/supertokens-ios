@@ -55,9 +55,10 @@ class NormalisedInputType {
     var preAPIHook: (APIAction, URLRequest) -> URLRequest
     var postAPIHook: (APIAction, URLRequest, URLResponse?) -> Void
     var userDefaultsSuiteName: String?
+    var keychainAccessGroup: String?
     var tokenTransferMethod: SuperTokensTokenTransferMethod
     
-    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, maxRetryAttemptsForSessionRefresh: Int, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod, eventHandler: @escaping (EventType) -> Void, preAPIHook: @escaping (APIAction, URLRequest) -> URLRequest, postAPIHook: @escaping (APIAction, URLRequest, URLResponse?) -> Void, userDefaultsSuiteName: String?) {
+    init(apiDomain: String, apiBasePath: String, sessionExpiredStatusCode: Int, maxRetryAttemptsForSessionRefresh: Int, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod, eventHandler: @escaping (EventType) -> Void, preAPIHook: @escaping (APIAction, URLRequest) -> URLRequest, postAPIHook: @escaping (APIAction, URLRequest, URLResponse?) -> Void, userDefaultsSuiteName: String?, keychainAccessGroup: String?) {
         self.apiDomain = apiDomain
         self.apiBasePath = apiBasePath
         self.sessionExpiredStatusCode = sessionExpiredStatusCode
@@ -67,6 +68,7 @@ class NormalisedInputType {
         self.preAPIHook = preAPIHook
         self.postAPIHook = postAPIHook
         self.userDefaultsSuiteName = userDefaultsSuiteName
+        self.keychainAccessGroup = keychainAccessGroup
         self.tokenTransferMethod = tokenTransferMethod
     }
     
@@ -106,7 +108,7 @@ class NormalisedInputType {
         return noDotNormalised
     }
     
-    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, maxRetryAttemptsForSessionRefresh: Int? = nil, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?, userDefaultsSuiteName: String?) throws -> NormalisedInputType {
+    internal static func normaliseInputType(apiDomain: String, apiBasePath: String?, sessionExpiredStatusCode: Int?, maxRetryAttemptsForSessionRefresh: Int? = nil, sessionTokenBackendDomain: String?, tokenTransferMethod: SuperTokensTokenTransferMethod?, eventHandler: ((EventType) -> Void)?, preAPIHook: ((APIAction, URLRequest) -> URLRequest)?, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)?, userDefaultsSuiteName: String?, keychainAccessGroup: String?) throws -> NormalisedInputType {
         let _apiDomain = try NormalisedURLDomain(url: apiDomain)
         var _apiBasePath = try NormalisedURLPath(input: "/auth")
         
@@ -157,7 +159,7 @@ class NormalisedInputType {
         }
         
         
-        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, maxRetryAttemptsForSessionRefresh: _maxRetryAttemptsForSessionRefresh, sessionTokenBackendDomain: _sessionTokenBackendDomain, tokenTransferMethod: _tokenTransferMethod, eventHandler: _eventHandler, preAPIHook: _preAPIHook, postAPIHook: _postApiHook, userDefaultsSuiteName: userDefaultsSuiteName)
+        return NormalisedInputType(apiDomain: _apiDomain.getAsStringDangerous(), apiBasePath: _apiBasePath.getAsStringDangerous(), sessionExpiredStatusCode: _sessionExpiredStatusCode, maxRetryAttemptsForSessionRefresh: _maxRetryAttemptsForSessionRefresh, sessionTokenBackendDomain: _sessionTokenBackendDomain, tokenTransferMethod: _tokenTransferMethod, eventHandler: _eventHandler, preAPIHook: _preAPIHook, postAPIHook: _postApiHook, userDefaultsSuiteName: userDefaultsSuiteName, keychainAccessGroup: keychainAccessGroup)
     }
 }
 
@@ -220,30 +222,22 @@ internal class Utils {
         return UserDefaults.standard
     }
     
-    internal static func storeInStorage(name: String, value: String) {
-        let storageKey = "st-storage-item-\(name)"
-        let userDefaults = getUserDefaults()
-        
-        if value.isEmpty {
-            userDefaults.removeObject(forKey: storageKey)
-            userDefaults.synchronize()
-            return
-        }
-        
-        userDefaults.set(value, forKey: storageKey)
-        userDefaults.synchronize()
+    internal static func storeInStorage(name: String, value: String) -> Bool {
+        return SDKStorage.set(SDKStorage.genericKey(name), value: value)
     }
     
-    internal static func saveLastAccessTokenUpdate() {
+    internal static func saveLastAccessTokenUpdate() -> Bool {
         let now = "\(Date().timeIntervalSince1970 * 1000)";
         
-        storeInStorage(name: SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE, value: now)
+        if !storeInStorage(name: SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE, value: now) {
+            return false
+        }
         
-        storeInStorage(name: "sIRTFrontend", value: "")
+        return storeInStorage(name: "sIRTFrontend", value: "")
     }
     
     internal static func getFromStorage(name: String) -> String? {
-        let itemInStorage = getUserDefaults().string(forKey: "st-storage-item-\(name)")
+        let itemInStorage = SDKStorage.get(SDKStorage.genericKey(name))
         
         if itemInStorage == nil {
             return nil
@@ -263,7 +257,8 @@ internal class Utils {
         }
     }
     
-    internal static func setToken(tokenType: TokenType, value: String) {
+    @discardableResult
+    internal static func setToken(tokenType: TokenType, value: String) -> Bool {
         let name = tokenType.getStorageName()
         
         return storeInStorage(name: name, value: value)
@@ -277,21 +272,33 @@ internal class Utils {
         headerFields.lowerCaseKeys()
         
         if let refreshToken: String = headerFields[SuperTokensConstants.refreshTokenHeaderKey] {
-            Utils.setToken(tokenType: .refresh, value: refreshToken)
+            guard Utils.setToken(tokenType: .refresh, value: refreshToken) else {
+                SDKStorage.clearSessionStorage()
+                return
+            }
         }
         
         if let accessToken: String = headerFields[SuperTokensConstants.accessTokenHeaderKey] {
-            Utils.setToken(tokenType: .access, value: accessToken)
+            guard Utils.setToken(tokenType: .access, value: accessToken) else {
+                SDKStorage.clearSessionStorage()
+                return
+            }
         }
         
         if let frontToken: String = headerFields[SuperTokensConstants.frontTokenHeaderKey] {
-            FrontToken.setItem(frontToken: frontToken)
+            guard FrontToken.setItem(frontToken: frontToken) else {
+                SDKStorage.clearSessionStorage()
+                return
+            }
         }
         
         if let antiCSRF: String = headerFields[SuperTokensConstants.antiCSRFHeaderKey] {
             let localSessionState = Utils.getLocalSessionState()
             
-            AntiCSRF.setToken(antiCSRFToken: antiCSRF, associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate)
+            guard AntiCSRF.setToken(antiCSRFToken: antiCSRF, associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate) else {
+                SDKStorage.clearSessionStorage()
+                return
+            }
         }
     }
     
