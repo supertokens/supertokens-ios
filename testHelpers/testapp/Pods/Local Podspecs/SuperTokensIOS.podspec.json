@@ -1,6 +1,6 @@
 {
   "name": "SuperTokensIOS",
-  "version": "0.0.1",
+  "version": "0.4.3",
   "summary": "SuperTokens SDK for using login and session management functionality in iOS apps",
   "description": "SuperTokens SDK for iOS written in Swift. This SDK manages sessions for you and allows you to build login functionality easily.",
   "homepage": "https://github.com/supertokens/supertokens-ios",
@@ -13,7 +13,7 @@
   },
   "source": {
     "git": "https://github.com/supertokens/supertokens-ios.git",
-    "tag": "v0.0.1"
+    "tag": "v0.4.3"
   },
   "platforms": {
     "ios": "13.0"

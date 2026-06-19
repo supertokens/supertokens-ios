@@ -38,9 +38,9 @@ public class SuperTokens {
     
     
     internal static func resetForTests() {
-        FrontToken.removeToken()
-        AntiCSRF.removeToken()
-        SDKStorage.clearSessionStorage()
+        _ = FrontToken.removeToken()
+        _ = AntiCSRF.removeToken()
+        _ = SDKStorage.clearSessionStorage()
         SuperTokens.isInitCalled = false
     }
     
@@ -58,7 +58,13 @@ public class SuperTokens {
         SuperTokens.refreshTokenUrl = _config.apiDomain + _config.apiBasePath + "/session/refresh"
         SuperTokens.signOutUrl = _config.apiDomain + _config.apiBasePath + "/signout"
         SuperTokens.rid = "session"
-        SDKStorage.configure(keychainAccessGroup: _config.keychainAccessGroup)
+        if _config.userDefaultsSuiteName != nil && _config.keychainAccessGroup == nil {
+            print("SuperTokens: userDefaultsSuiteName only migrates legacy UserDefaults values. Use keychainAccessGroup to share sessions with app extensions after migration.")
+        }
+
+        guard SDKStorage.configure(userDefaultsSuiteName: _config.userDefaultsSuiteName, keychainAccessGroup: _config.keychainAccessGroup, apiDomain: _config.apiDomain, apiBasePath: _config.apiBasePath) else {
+            throw SuperTokensError.initError(message: "Could not access Keychain with the configured access group")
+        }
         SuperTokens.isInitCalled = true
     }
     
@@ -128,6 +134,12 @@ public class SuperTokens {
         
         customSession.dataTask(with: signOutRequest, completionHandler: {
             data, response, error in
+
+            if let error = error {
+                completionHandler(error)
+                executionSemaphore.signal()
+                return
+            }
             
             if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {

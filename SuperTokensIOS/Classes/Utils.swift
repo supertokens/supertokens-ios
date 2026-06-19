@@ -264,9 +264,10 @@ internal class Utils {
         return storeInStorage(name: name, value: value)
     }
     
-    internal static func saveTokenFromHeaders(httpResponse: HTTPURLResponse) {
+    @discardableResult
+    internal static func saveTokenFromHeaders(httpResponse: HTTPURLResponse) -> Bool {
         guard var headerFields: [String: String] = httpResponse.allHeaderFields as? [String: String] else {
-            return
+            return true
         }
 
         headerFields.lowerCaseKeys()
@@ -274,21 +275,21 @@ internal class Utils {
         if let refreshToken: String = headerFields[SuperTokensConstants.refreshTokenHeaderKey] {
             guard Utils.setToken(tokenType: .refresh, value: refreshToken) else {
                 SDKStorage.clearSessionStorage()
-                return
+                return false
             }
         }
         
         if let accessToken: String = headerFields[SuperTokensConstants.accessTokenHeaderKey] {
             guard Utils.setToken(tokenType: .access, value: accessToken) else {
                 SDKStorage.clearSessionStorage()
-                return
+                return false
             }
         }
         
         if let frontToken: String = headerFields[SuperTokensConstants.frontTokenHeaderKey] {
             guard FrontToken.setItem(frontToken: frontToken) else {
                 SDKStorage.clearSessionStorage()
-                return
+                return false
             }
         }
         
@@ -297,9 +298,11 @@ internal class Utils {
             
             guard AntiCSRF.setToken(antiCSRFToken: antiCSRF, associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate) else {
                 SDKStorage.clearSessionStorage()
-                return
+                return false
             }
         }
+
+        return true
     }
     
     internal static func getTokenForHeaderAuth(tokenType: TokenType) -> String? {

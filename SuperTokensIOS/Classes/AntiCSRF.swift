@@ -68,9 +68,14 @@ internal class AntiCSRF {
         return true
     }
     
-    internal static func removeToken() {
-        _ = SDKStorage.remove(AntiCSRF.antiCSRFUserDefaultsKey)
-        AntiCSRF.antiCSRFInfo = nil
+    @discardableResult
+    internal static func removeToken() -> Bool {
+        let didRemove = SDKStorage.remove(AntiCSRF.antiCSRFUserDefaultsKey)
+        if didRemove {
+            AntiCSRF.antiCSRFInfo = nil
+        }
+
+        return didRemove
     }
 
     internal static func clearInMemoryCache() {

@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Session tokens are now stored in Keychain instead of UserDefaults. Existing UserDefaults values migrate on first read and are removed after a successful Keychain write.
+- Local integration tests now use a Docker/testcontainers harness instead of a local `supertokens-root` process.
+
+### Added
+
+- Added `keychainAccessGroup` to `SuperTokens.initialize(...)` for sharing sessions across app targets with Keychain Sharing entitlements.
+
+### Migration
+
+- Keep passing `userDefaultsSuiteName` during upgrade if you used it previously; it is still used to find and remove legacy UserDefaults values.
+- For app extensions or multiple targets, enable Keychain Sharing for each target and pass the same `keychainAccessGroup`. `userDefaultsSuiteName` no longer shares active session tokens after migration.
+- Keychain write failures fail closed: the SDK treats the local session as missing and clears partial session state.
+
 ## [0.4.3] - 2025-03-26
 
 ### Changes

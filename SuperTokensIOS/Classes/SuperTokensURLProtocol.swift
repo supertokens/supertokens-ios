@@ -115,7 +115,11 @@ public class SuperTokensURLProtocol: URLProtocol {
             data, response, error in
             
             if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
-                Utils.saveTokenFromHeaders(httpResponse: httpResponse)
+                guard Utils.saveTokenFromHeaders(httpResponse: httpResponse) else {
+                    self.resolveToUser(data: nil, response: nil, error: SuperTokensError.generalError(message: "Could not update session storage"))
+                    return
+                }
+
                 Utils.fireSessionUpdateEventsIfNecessary(
                     wasLoggedIn: preRequestLocalSessionState.status == .EXISTS,
                     status: httpResponse.statusCode,
@@ -228,7 +232,11 @@ public class SuperTokensURLProtocol: URLProtocol {
                 if response as? HTTPURLResponse != nil {
                     let httpResponse = response as! HTTPURLResponse
                     
-                    Utils.saveTokenFromHeaders(httpResponse: httpResponse)
+                    guard Utils.saveTokenFromHeaders(httpResponse: httpResponse) else {
+                        semaphore.signal()
+                        callback(UnauthorisedResponse(status: UnauthorisedResponse.UnauthorisedStatus.API_ERROR, error: SuperTokensError.generalError(message: "Could not update session storage")))
+                        return
+                    }
                     
                     let isUnauthorised = httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode
                     

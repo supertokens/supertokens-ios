@@ -12,25 +12,13 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-const { exec } = require("child_process");
-
 let network;
 let postgresContainer;
 let coreContainer;
 let currentCoreConfig;
-
-module.exports.executeCommand = async function(cmd) {
-    return new Promise((resolve, reject) => {
-        console.log("Executing command: " + cmd);
-        exec(cmd, (err, stdout, stderr) => {
-            if (err) {
-                reject({err, stdout, stderr});
-                return;
-            }
-            resolve({ stdout, stderr });
-        });
-    });
-};
+const DEFAULT_SUPERTOKENS_CORE_IMAGE = "supertokens/supertokens-postgresql:11.3.5";
+const DEFAULT_POSTGRES_IMAGE = "postgres:14.19-alpine";
+const CONTAINER_STARTUP_TIMEOUT_MS = Number(process.env.TESTCONTAINERS_STARTUP_TIMEOUT_MS || 300000);
 
 module.exports.setupST = async function() {
     await module.exports.cleanST();
@@ -71,7 +59,7 @@ module.exports.killAllST = async function() {
     await stopCoreContainer();
 };
 
-module.exports.startST = async function(host = "localhost", port = 9000, coreConfig = {}) {
+module.exports.startST = async function(coreConfig = {}) {
     await ensurePostgresContainer();
     await stopCoreContainer();
 
@@ -82,7 +70,7 @@ module.exports.startST = async function(host = "localhost", port = 9000, coreCon
     };
 
     const { GenericContainer, Wait } = await import("testcontainers");
-    const image = process.env.SUPERTOKENS_CORE_IMAGE || "supertokens/supertokens-postgresql";
+    const image = process.env.SUPERTOKENS_CORE_IMAGE || DEFAULT_SUPERTOKENS_CORE_IMAGE;
     const coreEnvironment = {
         POSTGRESQL_CONNECTION_URI: "postgresql://supertokens:somepassword@postgres:5432/supertokens",
         DISABLE_TELEMETRY: "true",
@@ -93,12 +81,13 @@ module.exports.startST = async function(host = "localhost", port = 9000, coreCon
         .withNetwork(network)
         .withEnvironment(coreEnvironment)
         .withExposedPorts(3567)
-        .withWaitStrategy(Wait.forHttp("/hello", 3567))
+        .withWaitStrategy(Wait.forHttp("/hello", 3567, { abortOnContainerExit: true }).forStatusCode(200))
+        .withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS)
         .start();
 
     const connectionURI = `http://${coreContainer.getHost()}:${coreContainer.getMappedPort(3567)}`;
     const helloResp = await fetch(`${connectionURI}/hello`);
-    console.log("Started ST, it's saying: " + await helloResp.text());
+    console.log(`Started ST from ${image}, it's saying: ${await helloResp.text()}`);
     return connectionURI;
 };
 
@@ -109,7 +98,7 @@ async function ensurePostgresContainer() {
 
     const { GenericContainer, Network, Wait } = await import("testcontainers");
     network = await new Network().start();
-    postgresContainer = await new GenericContainer(process.env.POSTGRES_IMAGE || "postgres:14")
+    postgresContainer = await new GenericContainer(process.env.POSTGRES_IMAGE || DEFAULT_POSTGRES_IMAGE)
         .withNetwork(network)
         .withNetworkAliases("postgres")
         .withEnvironment({
@@ -118,7 +107,8 @@ async function ensurePostgresContainer() {
             POSTGRES_DB: "supertokens"
         })
         .withExposedPorts(5432)
-        .withWaitStrategy(Wait.forLogMessage("database system is ready to accept connections"))
+        .withWaitStrategy(Wait.forLogMessage("database system is ready to accept connections", 2))
+        .withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS)
         .start();
 }
 

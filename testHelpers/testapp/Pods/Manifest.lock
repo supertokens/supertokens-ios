@@ -1,5 +1,5 @@
 PODS:
-  - SuperTokensIOS (0.0.1)
+  - SuperTokensIOS (0.4.3)
 
 DEPENDENCIES:
   - SuperTokensIOS (from `../../`)
@@ -9,8 +9,8 @@ EXTERNAL SOURCES:
     :path: "../../"
 
 SPEC CHECKSUMS:
-  SuperTokensIOS: b95ce1a69bab8c77e8588a708071817caddcc33d
+  SuperTokensIOS: 51863c95871e2fbf7aabf6b40adc5638fa626bc4
 
 PODFILE CHECKSUM: 38e350f7611d275dd34e93bb4479be1460d06e86
 
-COCOAPODS: 1.11.3
+COCOAPODS: 1.16.2

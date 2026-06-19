@@ -82,6 +82,7 @@ internal class FrontToken {
     
     private static func setFrontToken(frontToken: String?) -> Bool {
         let oldToken = getFrontTokenFromStorage()
+        var shouldFirePayloadUpdated = false
         
         if oldToken != nil && frontToken != nil {
             let oldTokenPayload: [String: Any] = parseFrontToken(frontTokenDecoded: oldToken!)["up"] as! [String : Any]
@@ -91,35 +92,53 @@ internal class FrontToken {
             let newPayloadString = String(data: try! JSONSerialization.data(withJSONObject: newPayload), encoding: .utf8)!
             
             if oldPayloadString != newPayloadString {
-                SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+                shouldFirePayloadUpdated = true
             }
         }
         
-        return setFrontTokenToStorage(frontToken: frontToken)
+        guard setFrontTokenToStorage(frontToken: frontToken) else {
+            return false
+        }
+
+        if shouldFirePayloadUpdated {
+            SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+        }
+
+        return true
     }
     
-    private static func removeTokenFromStorage() {
-        _ = SDKStorage.remove(userDefaultsKey)
-        tokenInMemory = nil
+    private static func removeTokenFromStorage() -> Bool {
+        let didRemove = SDKStorage.remove(userDefaultsKey)
+        if didRemove {
+            tokenInMemory = nil
+        }
+
+        return didRemove
     }
     
     static func clearInMemoryCache() {
         tokenInMemory = nil
     }
     
-    static func removeToken() {
-        AntiCSRF.removeToken()
+    @discardableResult
+    static func removeToken() -> Bool {
+        let antiCSRFRemoved = AntiCSRF.removeToken()
         let executionSemaphore = DispatchSemaphore(value: 0)
+        var didRemove = false
         
         readWriteDispatchQueue.async(flags: .barrier) {
-            removeTokenFromStorage()
-            Utils.setToken(tokenType: .access, value: "")
-            Utils.setToken(tokenType: .refresh, value: "")
+            let frontTokenRemoved = removeTokenFromStorage()
+            let accessTokenRemoved = Utils.setToken(tokenType: .access, value: "")
+            let refreshTokenRemoved = Utils.setToken(tokenType: .refresh, value: "")
+            let lastAccessTokenUpdateRemoved = SDKStorage.remove(SDKStorage.genericKey(SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE))
+            let refreshAttemptInfoRemoved = SDKStorage.remove(SDKStorage.genericKey("sIRTFrontend"))
+            didRemove = antiCSRFRemoved && frontTokenRemoved && accessTokenRemoved && refreshTokenRemoved && lastAccessTokenUpdateRemoved && refreshAttemptInfoRemoved
             tokenInfoSemaphore.signal()
             executionSemaphore.signal()
         }
         
         executionSemaphore.wait()
+        return didRemove
     }
     
     @discardableResult
@@ -136,8 +155,7 @@ internal class FrontToken {
         }
         
         if frontToken == "remove" {
-            FrontToken.removeToken()
-            return true
+            return FrontToken.removeToken()
         }
         
         guard FrontToken.setFrontToken(frontToken: frontToken) else {

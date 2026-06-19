@@ -58,6 +58,7 @@ class sessionTests: XCTestCase {
     // MARK: Runs before each test
     override func setUp() {
         super.setUp()
+        continueAfterFailure = false
         let semaphore = DispatchSemaphore(value: 0)
         HTTPCookieStorage.shared.removeCookies(since: .distantPast)
         

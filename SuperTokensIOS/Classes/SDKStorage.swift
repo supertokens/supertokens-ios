@@ -7,13 +7,43 @@ internal protocol TokenStorage {
     func remove(_ name: String) -> Bool
 }
 
+internal protocol KeychainClient {
+    func get(_ query: [String: Any]) -> (status: OSStatus, data: Data?)
+    func set(_ query: [String: Any]) -> OSStatus
+    func update(_ query: [String: Any], attributes: [String: Any]) -> OSStatus
+    func remove(_ query: [String: Any]) -> OSStatus
+}
+
+internal class SystemKeychainClient: KeychainClient {
+    func get(_ query: [String: Any]) -> (status: OSStatus, data: Data?) {
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        return (status, result as? Data)
+    }
+
+    func set(_ query: [String: Any]) -> OSStatus {
+        return SecItemAdd(query as CFDictionary, nil)
+    }
+
+    func update(_ query: [String: Any], attributes: [String: Any]) -> OSStatus {
+        return SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+    }
+
+    func remove(_ query: [String: Any]) -> OSStatus {
+        return SecItemDelete(query as CFDictionary)
+    }
+}
+
 internal class KeychainTokenStorage: TokenStorage {
     private let service: String
     private let accessGroup: String?
+    private let keychain: KeychainClient
+    private(set) var lastErrorStatus: OSStatus?
 
-    init(service: String = "io.supertokens.session", accessGroup: String? = nil) {
+    init(service: String = "io.supertokens.session", accessGroup: String? = nil, keychain: KeychainClient = SystemKeychainClient()) {
         self.service = service
         self.accessGroup = accessGroup
+        self.keychain = keychain
     }
 
     func get(_ name: String) -> String? {
@@ -21,12 +51,13 @@ internal class KeychainTokenStorage: TokenStorage {
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else {
+        let result = keychain.get(query)
+        guard result.status == errSecSuccess, let data = result.data else {
+            recordErrorStatus(result.status)
             return nil
         }
 
+        lastErrorStatus = nil
         return String(data: data, encoding: .utf8)
     }
 
@@ -37,27 +68,62 @@ internal class KeychainTokenStorage: TokenStorage {
 
         let query = baseQuery(name)
         let update: [String: Any] = [kSecValueData as String: data]
-        let updateStatus = SecItemUpdate(query as CFDictionary, update as CFDictionary)
+        let updateStatus = keychain.update(query, attributes: update)
 
         if updateStatus == errSecSuccess {
+            lastErrorStatus = nil
             return true
         }
 
         if updateStatus != errSecItemNotFound {
+            recordErrorStatus(updateStatus)
             return false
         }
 
         var addQuery = query
         addQuery[kSecValueData as String] = data
-        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
 
-        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-        return addStatus == errSecSuccess
+        let addStatus = keychain.set(addQuery)
+        if addStatus == errSecSuccess {
+            lastErrorStatus = nil
+            return true
+        }
+
+        if addStatus == errSecDuplicateItem {
+            let retryStatus = keychain.update(query, attributes: update)
+            if retryStatus == errSecSuccess {
+                lastErrorStatus = nil
+                return true
+            }
+
+            recordErrorStatus(retryStatus)
+            return false
+        }
+
+        recordErrorStatus(addStatus)
+        return false
     }
 
     func remove(_ name: String) -> Bool {
-        let status = SecItemDelete(baseQuery(name) as CFDictionary)
-        return status == errSecSuccess || status == errSecItemNotFound
+        let status = keychain.remove(baseQuery(name))
+        let didRemove = status == errSecSuccess || status == errSecItemNotFound
+        if didRemove {
+            lastErrorStatus = nil
+        } else {
+            recordErrorStatus(status)
+        }
+
+        return didRemove
+    }
+
+    func canStoreTokens() -> Bool {
+        let probeKey = "__supertokens_keychain_probe_\(UUID().uuidString)"
+        guard set(probeKey, value: "probe") else {
+            return false
+        }
+
+        return remove(probeKey)
     }
 
     private func baseQuery(_ name: String) -> [String: Any] {
@@ -73,16 +139,36 @@ internal class KeychainTokenStorage: TokenStorage {
 
         return query
     }
+
+    private func recordErrorStatus(_ status: OSStatus) {
+        if status != errSecItemNotFound {
+            lastErrorStatus = status
+            print("SuperTokens: Keychain operation failed with OSStatus \(status)")
+        }
+    }
 }
 
 internal class SDKStorage {
     internal static let frontTokenKey = "supertokens-ios-fronttoken-key"
     internal static let antiCSRFKey = "supertokens-ios-anticsrf-key"
+    private static let defaultKeychainService = "io.supertokens.session"
     private static let storageKeyPrefix = "st-storage-item-"
     private static var tokenStorage: TokenStorage = KeychainTokenStorage()
 
-    internal static func configure(keychainAccessGroup: String?) {
-        tokenStorage = KeychainTokenStorage(accessGroup: keychainAccessGroup)
+    @discardableResult
+    internal static func configure(userDefaultsSuiteName: String?, keychainAccessGroup: String?, apiDomain: String? = nil, apiBasePath: String? = nil) -> Bool {
+        // userDefaultsSuiteName is only for legacy UserDefaults migration; active sharing uses keychainAccessGroup.
+        let keychainStorage = KeychainTokenStorage(
+            service: keychainService(apiDomain: apiDomain, apiBasePath: apiBasePath),
+            accessGroup: keychainAccessGroup
+        )
+        tokenStorage = keychainStorage
+
+        if keychainAccessGroup != nil {
+            return keychainStorage.canStoreTokens()
+        }
+
+        return true
     }
 
     internal static func setTokenStorageForTests(_ storage: TokenStorage) {
@@ -91,6 +177,14 @@ internal class SDKStorage {
 
     internal static func genericKey(_ name: String) -> String {
         return "\(storageKeyPrefix)\(name)"
+    }
+
+    internal static func keychainService(apiDomain: String?, apiBasePath: String?) -> String {
+        guard let apiDomain = apiDomain, let apiBasePath = apiBasePath else {
+            return defaultKeychainService
+        }
+
+        return "\(defaultKeychainService).\(apiDomain)\(apiBasePath)"
     }
 
     internal static func get(_ key: String) -> String? {
@@ -132,13 +226,20 @@ internal class SDKStorage {
         return keychainRemoved
     }
 
-    internal static func clearSessionStorage() {
+    @discardableResult
+    internal static func clearSessionStorage() -> Bool {
+        var didClear = true
+
         for key in sessionKeys() {
-            _ = remove(key)
+            didClear = remove(key) && didClear
         }
 
-        FrontToken.clearInMemoryCache()
-        AntiCSRF.clearInMemoryCache()
+        if didClear {
+            FrontToken.clearInMemoryCache()
+            AntiCSRF.clearInMemoryCache()
+        }
+
+        return didClear
     }
 
     private static func sessionKeys() -> [String] {
