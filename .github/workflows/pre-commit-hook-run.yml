@@ -14,5 +14,5 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v5
-            - run: git init && git add --all && git -c user.name='test' -c user.email='test@example.com' commit -m 'init for pr action'
+            - run: git init && git add --all && git -c user.name='test' -c user.email='test@example.com' commit --allow-empty -m 'init for pr action'
             - run: ./hooks/pre-commit.sh
