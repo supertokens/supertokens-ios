@@ -32,19 +32,22 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
 2. You can start modifying the code.
 
 ## Testing
-1. Start Docker.
-2. Start the test harness:
+1. Prepare a SuperTokens Core test environment:
    ```
-   cd ./testHelpers/server/
+   cd ../supertokens-root
+   ./utils/setupTestEnv --local
+   ```
+2. Start the test harness from `supertokens-ios`:
+   ```
+   cd ./testHelpers/server
    npm ci
-   npm run harness
+   TEST_MODE=testing INSTALL_PATH=/path/to/supertokens-root npm run harness
    ```
-   The harness starts SuperTokens Core and Postgres via testcontainers. Optional environment variables:
+   The harness starts SuperTokens Core from the prepared `supertokens-root` checkout. Optional environment variables:
    - `NODE_PORT`: harness port, defaults to `8080`
    - `NODE_HOST`: harness bind host, defaults to `127.0.0.1`
+   - `SUPERTOKENS_CORE_PORT`: Core port started by the harness, defaults to `9000`
    - `TEST_BACKEND_URL`: URL used by iOS tests, for example `http://127.0.0.1:8081`
-   - `SUPERTOKENS_CORE_IMAGE`: SuperTokens Core image, defaults to `supertokens/supertokens-postgresql:11.3.5`
-   - `POSTGRES_IMAGE`: Postgres image, defaults to `postgres:14.19-alpine`
    - `TEST_HARNESS_AUTH_TOKEN`: optional token for harness control endpoints
 3. Open a new terminal in `supertokens-ios` and run all tests
    ```

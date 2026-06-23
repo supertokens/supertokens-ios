@@ -12,134 +12,208 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-let network;
-let postgresContainer;
-let coreContainer;
-let currentCoreConfig;
-const DEFAULT_SUPERTOKENS_CORE_IMAGE = "supertokens/supertokens-postgresql:11.3.5";
-const DEFAULT_POSTGRES_IMAGE = "postgres:14.19-alpine";
-const CONTAINER_STARTUP_TIMEOUT_MS = Number(process.env.TESTCONTAINERS_STARTUP_TIMEOUT_MS || 300000);
+const { exec } = require("child_process");
+const fs = require("fs");
+
+module.exports.executeCommand = async function(cmd) {
+    return new Promise((resolve, reject) => {
+        console.log("Executing command: " + cmd);
+        exec(cmd, (err, stdout, stderr) => {
+            if (err) {
+                reject({err, stdout, stderr});
+                return;
+            }
+            resolve({ stdout, stderr });
+        });
+    });
+};
 
 module.exports.setupST = async function() {
-    await module.exports.cleanST();
-    await ensurePostgresContainer();
+    const installationPath = shellQuote(getInstallationPath());
+
+    try {
+        await module.exports.executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
+    } catch (ignored) {}
+
+    await module.exports.executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
 };
 
 module.exports.setKeyValueInConfig = async function(key, value) {
-    currentCoreConfig = {
-        ...(currentCoreConfig || defaultCoreConfig()),
-        [key]: value
-    };
+    return new Promise((resolve, reject) => {
+        const installationPath = getInstallationPath();
+
+        fs.readFile(installationPath + "/config.yaml", "utf8", function(err, data) {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            const oldStr = new RegExp("((#\\s)?)" + key + "(:|((:\\s).+))\n");
+            const newStr = key + ": " + value + "\n";
+            const result = data.replace(oldStr, newStr);
+
+            fs.writeFile(installationPath + "/config.yaml", result, "utf8", function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
 };
 
 module.exports.cleanST = async function() {
-    try {
-        await stopCoreContainer();
-    } finally {
-        try {
-            if (postgresContainer) {
-                await postgresContainer.stop();
-                postgresContainer = undefined;
-            }
-        } finally {
-            if (network) {
-                await network.stop();
-                network = undefined;
-            }
-            currentCoreConfig = undefined;
-        }
-    }
+    const installationPath = shellQuote(getInstallationPath());
+
+    await module.exports.killAllST();
+    await module.exports.executeCommand("cd " + installationPath + " && rm -f licenseKey");
+    await module.exports.executeCommand("cd " + installationPath + " && rm -f config.yaml");
+    await module.exports.executeCommand("cd " + installationPath + " && rm -rf .webserver-temp-*");
+    await module.exports.executeCommand("cd " + installationPath + " && rm -rf .started");
 };
 
 module.exports.stopST = async function(pid) {
-    await stopCoreContainer();
+    let pidsBefore = await getListOfPids();
+    if (pidsBefore.length === 0) {
+        return;
+    }
+
+    if (pid === undefined || pid === null || pid === "") {
+        await module.exports.killAllST();
+        return;
+    }
+
+    await module.exports.executeCommand("kill " + pid);
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < 10000) {
+        const pidsAfter = await getListOfPids();
+        if (pidsAfter.includes(String(pid))) {
+            await new Promise(r => setTimeout(r, 100));
+        } else {
+            return;
+        }
+    }
+
+    throw new Error("error while stopping ST with PID: " + pid);
 };
 
 module.exports.killAllST = async function() {
-    await stopCoreContainer();
+    const pids = await getListOfPids();
+
+    for (let i = 0; i < pids.length; i++) {
+        await module.exports.stopST(pids[i]);
+    }
 };
 
-module.exports.startST = async function(coreConfig = {}) {
-    await ensurePostgresContainer();
-    await stopCoreContainer();
+module.exports.startST = async function(coreConfig = {}, host = "127.0.0.1", port = Number(process.env.SUPERTOKENS_CORE_PORT || 9000)) {
+    for (const [key, value] of Object.entries(coreConfig)) {
+        if (value !== undefined) {
+            await module.exports.setKeyValueInConfig(key, value);
+        }
+    }
 
-    currentCoreConfig = {
-        ...defaultCoreConfig(),
-        ...(currentCoreConfig || {}),
-        ...coreConfig
-    };
+    return new Promise(async (resolve, reject) => {
+        const installationPath = shellQuote(getInstallationPath());
+        let returned = false;
 
-    const { GenericContainer, Wait } = await import("testcontainers");
-    const image = process.env.SUPERTOKENS_CORE_IMAGE || DEFAULT_SUPERTOKENS_CORE_IMAGE;
-    const coreEnvironment = {
-        POSTGRESQL_CONNECTION_URI: "postgresql://supertokens:somepassword@postgres:5432/supertokens",
-        DISABLE_TELEMETRY: "true",
-        ...toCoreEnvironment(currentCoreConfig)
-    };
+        module.exports
+            .executeCommand(
+                "cd " +
+                    installationPath +
+                    " && " +
+                    getJavaCommand() +
+                    ` -Djava.security.egd=file:/dev/urandom -classpath "./core/*:./plugin-interface/*:./ee/*" io.supertokens.Main ./ DEV host=` +
+                    host +
+                    " port=" +
+                    port +
+                    " test_mode"
+            )
+            .catch(({err, stdout, stderr}) => {
+                if (!returned) {
+                    console.log("Starting ST failed: java command returned early w/ non-zero exit code");
+                    console.log(err);
+                    console.log(stdout);
+                    console.log(stderr);
+                    returned = true;
+                    reject(err);
+                }
+            });
 
-    coreContainer = await new GenericContainer(image)
-        .withNetwork(network)
-        .withEnvironment(coreEnvironment)
-        .withExposedPorts(3567)
-        .withWaitStrategy(Wait.forHttp("/hello", 3567, { abortOnContainerExit: true }).forStatusCode(200))
-        .withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS)
-        .start();
+        const startTime = Date.now();
+        let helloResp;
 
-    const connectionURI = `http://${coreContainer.getHost()}:${coreContainer.getMappedPort(3567)}`;
-    const helloResp = await fetch(`${connectionURI}/hello`);
-    console.log(`Started ST from ${image}, it's saying: ${await helloResp.text()}`);
-    return connectionURI;
+        while (Date.now() - startTime < 300000) {
+            try {
+                helloResp = await fetch(`http://${host}:${port}/hello`);
+                if (helloResp.status === 200) {
+                    console.log("Started ST, it's saying: " + await helloResp.text());
+                    returned = true;
+                    resolve(`http://${host}:${port}`);
+                    return;
+                }
+            } catch (ex) {
+                console.log("Waiting for ST to start, caught exception: " + ex);
+            }
+
+            await new Promise(r => setTimeout(r, 100));
+        }
+
+        console.log(helloResp);
+        returned = true;
+        reject("Starting ST process timed out");
+    });
 };
 
-async function ensurePostgresContainer() {
-    if (postgresContainer) {
-        return;
+async function getListOfPids() {
+    const installationPath = shellQuote(getInstallationPath());
+
+    try {
+        await module.exports.executeCommand("cd " + installationPath + " && ls .started/");
+    } catch (err) {
+        return [];
     }
 
-    const { GenericContainer, Network, Wait } = await import("testcontainers");
-    network = await new Network().start();
-    postgresContainer = await new GenericContainer(process.env.POSTGRES_IMAGE || DEFAULT_POSTGRES_IMAGE)
-        .withNetwork(network)
-        .withNetworkAliases("postgres")
-        .withEnvironment({
-            POSTGRES_USER: "supertokens",
-            POSTGRES_PASSWORD: "somepassword",
-            POSTGRES_DB: "supertokens"
-        })
-        .withExposedPorts(5432)
-        .withWaitStrategy(Wait.forLogMessage("database system is ready to accept connections", 2))
-        .withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS)
-        .start();
+    let currList = (await module.exports.executeCommand("cd " + installationPath + " && ls .started/")).stdout;
+    currList = currList.split("\n");
+    const result = [];
+
+    for (let i = 0; i < currList.length; i++) {
+        const item = currList[i];
+        if (item === "") {
+            continue;
+        }
+
+        try {
+            const pid = (await module.exports.executeCommand("cd " + installationPath + " && cat .started/" + item))
+                .stdout
+                .trim();
+            result.push(pid);
+        } catch (err) {}
+    }
+
+    return result;
 }
 
-async function stopCoreContainer() {
-    if (!coreContainer) {
-        return;
+function getInstallationPath() {
+    if (process.env.INSTALL_PATH === undefined || process.env.INSTALL_PATH === "") {
+        throw new Error("INSTALL_PATH must point to a prepared supertokens-root test environment");
     }
-    await coreContainer.stop();
-    coreContainer = undefined;
+
+    return process.env.INSTALL_PATH;
 }
 
-function defaultCoreConfig() {
-    return {
-        access_token_validity: 1
-    };
+function shellQuote(value) {
+    return "'" + String(value).replace(/'/g, "'\\''") + "'";
 }
 
-function toCoreEnvironment(config) {
-    const env = {};
-
-    if (config.access_token_validity !== undefined) {
-        env.ACCESS_TOKEN_VALIDITY = String(config.access_token_validity);
-    }
-    if (config.refresh_token_validity !== undefined) {
-        env.REFRESH_TOKEN_VALIDITY = String(config.refresh_token_validity);
-    }
-    if (config.access_token_signing_key_update_interval !== undefined) {
-        env.ACCESS_TOKEN_DYNAMIC_SIGNING_KEY_UPDATE_INTERVAL = String(config.access_token_signing_key_update_interval);
+function getJavaCommand() {
+    if (process.env.JAVA_HOME !== undefined && process.env.JAVA_HOME !== "") {
+        return shellQuote(process.env.JAVA_HOME + "/bin/java");
     }
 
-    return env;
+    return "java";
 }
 
 module.exports.maxVersion = function(version1, version2) {

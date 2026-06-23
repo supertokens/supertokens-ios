@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Session tokens are now stored in Keychain instead of UserDefaults. Existing UserDefaults values migrate on first read and are removed after a successful Keychain write.
-- Local integration tests now use a Docker/testcontainers harness instead of a local `supertokens-root` process.
+- Integration test setup now fails fast when the `supertokens-root` Core harness is not ready.
 
 ### Added
 

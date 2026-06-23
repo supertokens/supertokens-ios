@@ -1,2 +1,2 @@
-# use: ./testHelpers/startServer [port]
-(cd testHelpers/server && NODE_PORT=${1:-8080} npm run harness)
+# use: ./testHelpers/startServer <supertokens-root-path> [port]
+(cd testHelpers/server && TEST_MODE=testing INSTALL_PATH="$1" NODE_PORT=${2:-8080} node .)
