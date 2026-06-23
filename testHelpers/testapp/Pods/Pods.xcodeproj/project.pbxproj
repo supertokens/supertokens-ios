@@ -469,43 +469,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		2FA94AE5CFEE9EF23137E6803E23BE72 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4CDE5070AAA6526101B1D9E148E7B64E /* SuperTokensIOS.debug.xcconfig */;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensIOS/SuperTokensIOS-prefix.pch";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS-Info.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MODULEMAP_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS.modulemap";
-				PRODUCT_MODULE_NAME = SuperTokensIOS;
-				PRODUCT_NAME = SuperTokensIOS;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
-				SWIFT_INSTALL_OBJC_HEADER = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Debug;
-		};
-		321E3EFB739A31B24EE8236D87C5B6B4 /* Release */ = {
+		121A28F935C1E9D992E781714F2944F4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = DCCAABACBBCA8AF9BF6D13E0000A53B2 /* Pods-SuperTokensSession_Example.release.xcconfig */;
 			buildSettings = {
@@ -520,8 +484,6 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
@@ -542,46 +504,9 @@
 			};
 			name = Release;
 		};
-		34553578ECC87C361FAB0B200356897B /* Release */ = {
+		3CD3D7B92B119452F5A1FC9FFF4D1B65 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B474DC5F6DC315FC121AB0F99818547 /* SuperTokensIOS.release.xcconfig */;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensIOS/SuperTokensIOS-prefix.pch";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS-Info.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MODULEMAP_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS.modulemap";
-				PRODUCT_MODULE_NAME = SuperTokensIOS;
-				PRODUCT_NAME = SuperTokensIOS;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
-				SWIFT_INSTALL_OBJC_HEADER = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Release;
-		};
-		63FE3B8582FBECC9FFCF9FF1227F053E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = C5966E68FF31F313FD27097F04CE008C /* Pods-SuperTokensSession_Tests.debug.xcconfig */;
+			baseConfigurationReference = B65530409553B690E83BECD6D0B7DFF1 /* Pods-SuperTokensSession_Example.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
@@ -594,14 +519,12 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests-Info.plist";
+				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				MACH_O_TYPE = staticlib;
-				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests.modulemap";
+				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example.modulemap";
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOLFLAGS = "";
 				PODS_ROOT = "$(SRCROOT)";
@@ -615,7 +538,39 @@
 			};
 			name = Debug;
 		};
-		7ABBEBB8B8E4AC289207004C72250612 /* Release */ = {
+		576703969CF3BF238262A217DB2D1C16 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4CDE5070AAA6526101B1D9E148E7B64E /* SuperTokensIOS.debug.xcconfig */;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensIOS/SuperTokensIOS-prefix.pch";
+				INFOPLIST_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MODULEMAP_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS.modulemap";
+				PRODUCT_MODULE_NAME = SuperTokensIOS;
+				PRODUCT_NAME = SuperTokensIOS;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		7A2F5F0EFD36ADD540E521F0F1F82E96 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0B0F1707C7EC6FB97703909D188805B8 /* Pods-SuperTokensSession_Tests.release.xcconfig */;
 			buildSettings = {
@@ -630,8 +585,6 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
@@ -780,9 +733,42 @@
 			};
 			name = Release;
 		};
-		EE04D979C913B79013D367CC0EF4E14E /* Debug */ = {
+		BCF19940963475B3AE9E4B71741146E3 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B65530409553B690E83BECD6D0B7DFF1 /* Pods-SuperTokensSession_Example.debug.xcconfig */;
+			baseConfigurationReference = 3B474DC5F6DC315FC121AB0F99818547 /* SuperTokensIOS.release.xcconfig */;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GCC_PREFIX_HEADER = "Target Support Files/SuperTokensIOS/SuperTokensIOS-prefix.pch";
+				INFOPLIST_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS-Info.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MODULEMAP_FILE = "Target Support Files/SuperTokensIOS/SuperTokensIOS.modulemap";
+				PRODUCT_MODULE_NAME = SuperTokensIOS;
+				PRODUCT_NAME = SuperTokensIOS;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		DC5BD4741B0F5142D50E00DE21455C2F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C5966E68FF31F313FD27097F04CE008C /* Pods-SuperTokensSession_Tests.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
@@ -795,14 +781,12 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_MODULE_VERIFIER = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example-Info.plist";
+				INFOPLIST_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				MACH_O_TYPE = staticlib;
-				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Example/Pods-SuperTokensSession_Example.modulemap";
+				MODULEMAP_FILE = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests.modulemap";
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOLFLAGS = "";
 				PODS_ROOT = "$(SRCROOT)";
@@ -831,8 +815,8 @@
 		B22C19D4B7DD6E1647FB70845A07FA98 /* Build configuration list for PBXNativeTarget "SuperTokensIOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				2FA94AE5CFEE9EF23137E6803E23BE72 /* Debug */,
-				34553578ECC87C361FAB0B200356897B /* Release */,
+				576703969CF3BF238262A217DB2D1C16 /* Debug */,
+				BCF19940963475B3AE9E4B71741146E3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -840,8 +824,8 @@
 		CEDFF4CA4CA49068A44274A69D59BBCD /* Build configuration list for PBXNativeTarget "Pods-SuperTokensSession_Example" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EE04D979C913B79013D367CC0EF4E14E /* Debug */,
-				321E3EFB739A31B24EE8236D87C5B6B4 /* Release */,
+				3CD3D7B92B119452F5A1FC9FFF4D1B65 /* Debug */,
+				121A28F935C1E9D992E781714F2944F4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -849,8 +833,8 @@
 		EF79DE54D0771C074FD94C0522D09578 /* Build configuration list for PBXNativeTarget "Pods-SuperTokensSession_Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				63FE3B8582FBECC9FFCF9FF1227F053E /* Debug */,
-				7ABBEBB8B8E4AC289207004C72250612 /* Release */,
+				DC5BD4741B0F5142D50E00DE21455C2F /* Debug */,
+				7A2F5F0EFD36ADD540E521F0F1F82E96 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -17,7 +17,6 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
 - OS: macOS
 - IDE: XCode
 - NodeJS >= 20.18.1
-- Docker
 
 ### Project Setup
 1. Clone the forked repository.
