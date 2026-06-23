@@ -83,6 +83,8 @@ xcuserdata
 *.xcscmblueprint
 /default.profraw
 *.xcodeproj
+!examples/email-password/ios/EmailPassword.xcodeproj/
+!examples/email-password/ios/EmailPassword.xcodeproj/**
 Utilities/Docker/*.tar.gz
 .swiftpm
 Package.resolved

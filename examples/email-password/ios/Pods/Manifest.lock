@@ -1,0 +1,16 @@
+PODS:
+  - SuperTokensIOS (0.4.3)
+
+DEPENDENCIES:
+  - SuperTokensIOS (from `../../../`)
+
+EXTERNAL SOURCES:
+  SuperTokensIOS:
+    :path: "../../../"
+
+SPEC CHECKSUMS:
+  SuperTokensIOS: 51863c95871e2fbf7aabf6b40adc5638fa626bc4
+
+PODFILE CHECKSUM: ed221be44b9c33d7a60e82901aadf990d5b33973
+
+COCOAPODS: 1.16.2
