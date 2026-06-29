@@ -50,7 +50,7 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
    - `TEST_HARNESS_AUTH_TOKEN`: optional token for harness control endpoints
 3. Open a new terminal in `supertokens-ios` and run all tests
    ```
-   xcodebuild test -enableCodeCoverage YES -workspace testHelpers/testapp/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=16.1,name=iPhone 14 Pro' ONLY_ACTIVE_ARCH=NO
+   xcodebuild test -enableCodeCoverage YES -workspace testHelpers/testapp/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 14 Pro' ONLY_ACTIVE_ARCH=NO
    ```
    Alternatively, you can also run all tests via XCode. The tests are present in the `testHelpers/testapp` project.
 4. If all tests pass the output should be:
