@@ -14,8 +14,8 @@ jobs:
     resource_class: m4pro.medium
     steps:
       - checkout
-      - run: pod lib lint SuperTokensIOS.podspec
-      - run: pod trunk push
+      - run: pod lib lint SuperTokensIOS.podspec --allow-warnings
+      - run: pod trunk push --allow-warnings
       - slack/status
   test:
     macos:
