@@ -10,7 +10,8 @@ orbs:
 jobs:
   publish:
     macos:
-      xcode: 14.1.0
+      xcode: 16.2.0
+    resource_class: m4pro.medium
     steps:
       - checkout
       - run: pod lib lint SuperTokensIOS.podspec
@@ -18,7 +19,8 @@ jobs:
       - slack/status
   test:
     macos:
-      xcode: 14.1.0
+      xcode: 16.2.0
+    resource_class: m4pro.medium
     steps:
       - checkout
       - run:
@@ -67,4 +69,3 @@ workflows:
       #         only: /v[0-9]+(\.[0-9]+)*/
       #       branches:
       #         ignore: /.*/
-
