@@ -16,14 +16,12 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
 ### Prerequisites
 - OS: macOS
 - IDE: XCode
-- NodeJS
-- Java
+- NodeJS >= 20.18.1
 
 ### Project Setup
-1. Please setup `supertokens-core` by following [this guide](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md#development-setup). If you are not contributing to `supertokens-core`, please skip  steps 1 & 4 under "Project Setup" section.
-2. Clone the forked repository in the parent directory of the previously setup `supertokens-root`.  That is, `supertokens-ios` and `supertokens-root` should exist side by side within the same parent directory.
-3. `cd supertokens-ios`
-4. Add git pre-commit hooks
+1. Clone the forked repository.
+2. `cd supertokens-ios`
+3. Add git pre-commit hooks
    ```
    ./setup-pre-commit.sh
    ```
@@ -33,26 +31,29 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
 2. You can start modifying the code.
 
 ## Testing
-1. Navigate to the `supertokens-root` repository
-2. Start the testing environment
+1. Prepare a SuperTokens Core test environment:
    ```
-   ./startTestingEnv --wait
+   cd ../supertokens-root
+   ./utils/setupTestEnv --local
    ```
-3. In a new terminal, navigate to the `supertokens-ios` repository.
-4. Start a node server required for testing
+2. Start the test harness from `supertokens-ios`:
    ```
-   cd ./testHelpers/server/
-   npm i -d
-   npm i git+https://github.com:supertokens/supertokens-node.git
-   cd ../..
-   ./testHelpers/startServer ../supertokens-root
+   cd ./testHelpers/server
+   npm ci
+   TEST_MODE=testing INSTALL_PATH=/path/to/supertokens-root npm run harness
    ```
-5. Open a new terminal in `supertokens-ios` and run all tests
+   The harness starts SuperTokens Core from the prepared `supertokens-root` checkout. Optional environment variables:
+   - `NODE_PORT`: harness port, defaults to `8080`
+   - `NODE_HOST`: harness bind host, defaults to `127.0.0.1`
+   - `SUPERTOKENS_CORE_PORT`: Core port started by the harness, defaults to `9000`
+   - `TEST_BACKEND_URL`: URL used by iOS tests, for example `http://127.0.0.1:8081`
+   - `TEST_HARNESS_AUTH_TOKEN`: optional token for harness control endpoints
+3. Open a new terminal in `supertokens-ios` and run all tests
    ```
    xcodebuild test -enableCodeCoverage YES -workspace testHelpers/testapp/SuperTokensSession.xcworkspace -scheme SuperTokensSession-Example -sdk iphonesimulator -destination 'platform=iOS Simulator,OS=16.1,name=iPhone 14 Pro' ONLY_ACTIVE_ARCH=NO
    ```
    Alternatively, you can also run all tests via XCode. The tests are present in the `testHelpers/testapp` project.
-6. If all tests pass the output should be:
+4. If all tests pass the output should be:
 
    <img src="https://github.com/supertokens/supertokens-logo/blob/master/images/supertokens-ios-tests-passing.png" alt="IOS tests passing" width="500px">
 

@@ -13,7 +13,7 @@
  * under the License.
  */
 const { exec } = require("child_process");
-let fs = require("fs");
+const fs = require("fs");
 
 module.exports.executeCommand = async function(cmd) {
     return new Promise((resolve, reject) => {
@@ -29,24 +29,29 @@ module.exports.executeCommand = async function(cmd) {
 };
 
 module.exports.setupST = async function() {
-    let installationPath = process.env.INSTALL_PATH;
+    const installationPath = shellQuote(getInstallationPath());
+
     try {
         await module.exports.executeCommand("cd " + installationPath + " && cp temp/licenseKey ./licenseKey");
     } catch (ignored) {}
+
     await module.exports.executeCommand("cd " + installationPath + " && cp temp/config.yaml ./config.yaml");
 };
 
 module.exports.setKeyValueInConfig = async function(key, value) {
     return new Promise((resolve, reject) => {
-        let installationPath = process.env.INSTALL_PATH;
+        const installationPath = getInstallationPath();
+
         fs.readFile(installationPath + "/config.yaml", "utf8", function(err, data) {
             if (err) {
                 reject(err);
                 return;
             }
-            let oldStr = new RegExp("((#\\s)?)" + key + "(:|((:\\s).+))\n");
-            let newStr = key + ": " + value + "\n";
-            let result = data.replace(oldStr, newStr);
+
+            const oldStr = new RegExp("((#\\s)?)" + key + "(:|((:\\s).+))\n");
+            const newStr = key + ": " + value + "\n";
+            const result = data.replace(oldStr, newStr);
+
             fs.writeFile(installationPath + "/config.yaml", result, "utf8", function(err) {
                 if (err) {
                     reject(err);
@@ -59,11 +64,11 @@ module.exports.setKeyValueInConfig = async function(key, value) {
 };
 
 module.exports.cleanST = async function() {
-    let installationPath = process.env.INSTALL_PATH;
-    try {
-        await module.exports.executeCommand("cd " + installationPath + " && rm licenseKey");
-    } catch (ignored) {}
-    await module.exports.executeCommand("cd " + installationPath + " && rm config.yaml");
+    const installationPath = shellQuote(getInstallationPath());
+
+    await module.exports.killAllST();
+    await module.exports.executeCommand("cd " + installationPath + " && rm -f licenseKey");
+    await module.exports.executeCommand("cd " + installationPath + " && rm -f config.yaml");
     await module.exports.executeCommand("cd " + installationPath + " && rm -rf .webserver-temp-*");
     await module.exports.executeCommand("cd " + installationPath + " && rm -rf .started");
 };
@@ -73,36 +78,53 @@ module.exports.stopST = async function(pid) {
     if (pidsBefore.length === 0) {
         return;
     }
+
+    if (pid === undefined || pid === null || pid === "") {
+        await module.exports.killAllST();
+        return;
+    }
+
     await module.exports.executeCommand("kill " + pid);
-    let startTime = Date.now();
+    const startTime = Date.now();
+
     while (Date.now() - startTime < 10000) {
-        let pidsAfter = await getListOfPids();
-        if (pidsAfter.includes(pid)) {
+        const pidsAfter = await getListOfPids();
+        if (pidsAfter.includes(String(pid))) {
             await new Promise(r => setTimeout(r, 100));
-            continue;
         } else {
             return;
         }
     }
+
     throw new Error("error while stopping ST with PID: " + pid);
 };
 
 module.exports.killAllST = async function() {
-    let pids = await getListOfPids();
+    const pids = await getListOfPids();
+
     for (let i = 0; i < pids.length; i++) {
         await module.exports.stopST(pids[i]);
     }
 };
 
-module.exports.startST = async function(host = "localhost", port = 9000) {
+module.exports.startST = async function(coreConfig = {}, host = "127.0.0.1", port = Number(process.env.SUPERTOKENS_CORE_PORT || 9000)) {
+    for (const [key, value] of Object.entries(coreConfig)) {
+        if (value !== undefined) {
+            await module.exports.setKeyValueInConfig(key, value);
+        }
+    }
+
     return new Promise(async (resolve, reject) => {
-        let installationPath = process.env.INSTALL_PATH;
+        const installationPath = shellQuote(getInstallationPath());
         let returned = false;
+
         module.exports
             .executeCommand(
                 "cd " +
                     installationPath +
-                    ` && java -Djava.security.egd=file:/dev/urandom -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV host=` +
+                    " && " +
+                    getJavaCommand() +
+                    ` -Djava.security.egd=file:/dev/urandom -classpath "./core/*:./plugin-interface/*:./ee/*" io.supertokens.Main ./ DEV host=` +
                     host +
                     " port=" +
                     port +
@@ -118,50 +140,80 @@ module.exports.startST = async function(host = "localhost", port = 9000) {
                     reject(err);
                 }
             });
-        let startTime = Date.now();
+
+        const startTime = Date.now();
         let helloResp;
-        while (Date.now() - startTime < 10000) {
+
+        while (Date.now() - startTime < 300000) {
             try {
                 helloResp = await fetch(`http://${host}:${port}/hello`);
                 if (helloResp.status === 200) {
                     console.log("Started ST, it's saying: " + await helloResp.text());
-                    resolve();
                     returned = true;
+                    resolve(`http://${host}:${port}`);
                     return;
                 }
             } catch (ex) {
                 console.log("Waiting for ST to start, caught exception: " + ex);
-                // We expect (and ignore) network errors here
             }
+
             await new Promise(r => setTimeout(r, 100));
         }
+
         console.log(helloResp);
+        returned = true;
         reject("Starting ST process timed out");
     });
 };
 
 async function getListOfPids() {
-    let installationPath = process.env.INSTALL_PATH;
+    const installationPath = shellQuote(getInstallationPath());
+
     try {
-        (await module.exports.executeCommand("cd " + installationPath + " && ls .started/")).stdout;
+        await module.exports.executeCommand("cd " + installationPath + " && ls .started/");
     } catch (err) {
         return [];
     }
+
     let currList = (await module.exports.executeCommand("cd " + installationPath + " && ls .started/")).stdout;
     currList = currList.split("\n");
-    let result = [];
+    const result = [];
+
     for (let i = 0; i < currList.length; i++) {
-        let item = currList[i];
+        const item = currList[i];
         if (item === "") {
             continue;
         }
+
         try {
-            let pid = (await module.exports.executeCommand("cd " + installationPath + " && cat .started/" + item))
-                .stdout;
+            const pid = (await module.exports.executeCommand("cd " + installationPath + " && cat .started/" + item))
+                .stdout
+                .trim();
             result.push(pid);
         } catch (err) {}
     }
+
     return result;
+}
+
+function getInstallationPath() {
+    if (process.env.INSTALL_PATH === undefined || process.env.INSTALL_PATH === "") {
+        throw new Error("INSTALL_PATH must point to a prepared supertokens-root test environment");
+    }
+
+    return process.env.INSTALL_PATH;
+}
+
+function shellQuote(value) {
+    return "'" + String(value).replace(/'/g, "'\\''") + "'";
+}
+
+function getJavaCommand() {
+    if (process.env.JAVA_HOME !== undefined && process.env.JAVA_HOME !== "") {
+        return shellQuote(process.env.JAVA_HOME + "/bin/java");
+    }
+
+    return "java";
 }
 
 module.exports.maxVersion = function(version1, version2) {

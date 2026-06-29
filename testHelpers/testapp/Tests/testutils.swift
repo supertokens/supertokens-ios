@@ -17,90 +17,151 @@ import XCTest
 @testable import SuperTokensIOS
 
 let testAPIBaseDomain = "127.0.0.1"
-let testAPIBase = "http://\(testAPIBaseDomain):8080"
+let testAPIBase = (ProcessInfo.processInfo.environment["TEST_BACKEND_URL"] ?? "http://\(testAPIBaseDomain):8080").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 let beforeEachAPIURL = "\(testAPIBase)beforeeach"
 let refreshDeviceInfoAPIURL = "\(testAPIBase)refreshDeviceInfo"
 
 class TestUtils {
-    static func afterAllTests(callback: @escaping () -> Void) {
-        let url = URL(string: "\(testAPIBase)/after")
-        var request = URLRequest(url: url!)
-        request.httpMethod = "POST"
-        let task = getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
-            
-            let stopRequest = URLRequest(url: URL(string: "\(testAPIBase)/stopst")!)
-            getTestingUrlSession().dataTask(with: stopRequest, completionHandler: {
-                _, _, _ in
-                
-                callback()
-            }).resume()
-        })
-        task.resume()
+    private static let harnessTimeout: TimeInterval = 300
+
+    private static func addHarnessAuthHeader(_ request: inout URLRequest) {
+        if let token = ProcessInfo.processInfo.environment["TEST_HARNESS_AUTH_TOKEN"], !token.isEmpty {
+            request.setValue(token, forHTTPHeaderField: "x-test-harness-token")
+        }
     }
-    
-    static func beforeAllTests(callback: @escaping () -> Void) {
-        let url = URL(string: "\(testAPIBase)/test/startServer")
-        var request = URLRequest(url: url!)
-        request.httpMethod = "POST"
-        let task = getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
-            
+
+    private static func runHarnessRequest(_ request: URLRequest) throws {
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultError: Error?
+
+        getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
+            defer {
+                semaphore.signal()
+            }
+
+            if let error = error {
+                resultError = error
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                resultError = NSError(domain: "TestHarness", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "No HTTP response from \(request.url?.absoluteString ?? "<unknown>")"
+                ])
+                return
+            }
+
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                let body = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                resultError = NSError(domain: "TestHarness", code: httpResponse.statusCode, userInfo: [
+                    NSLocalizedDescriptionKey: "Harness request failed: \(httpResponse.statusCode) \(body)"
+                ])
+                return
+            }
+        }).resume()
+
+        let timeout = DispatchTime.now() + .milliseconds(Int((harnessTimeout + 5) * 1000))
+        if semaphore.wait(timeout: timeout) == .timedOut {
+            throw NSError(domain: "TestHarness", code: -2, userInfo: [
+                NSLocalizedDescriptionKey: "Harness request timed out: \(request.url?.absoluteString ?? "<unknown>")"
+            ])
+        }
+
+        if let resultError = resultError {
+            throw resultError
+        }
+    }
+
+    static func afterAllTests(callback: @escaping () -> Void, file: StaticString = #filePath, line: UInt = #line) {
+        defer {
             callback()
-        })
-        task.resume()
+        }
+
+        var cleanupError: Error?
+
+        var afterRequest = URLRequest(url: URL(string: "\(testAPIBase)/after")!)
+        afterRequest.httpMethod = "POST"
+        addHarnessAuthHeader(&afterRequest)
+
+        do {
+            try runHarnessRequest(afterRequest)
+        } catch {
+            cleanupError = error
+        }
+
+        var stopRequest = URLRequest(url: URL(string: "\(testAPIBase)/stopst")!)
+        stopRequest.httpMethod = "POST"
+        addHarnessAuthHeader(&stopRequest)
+
+        do {
+            try runHarnessRequest(stopRequest)
+        } catch {
+            cleanupError = cleanupError ?? error
+        }
+
+        if let cleanupError = cleanupError {
+            XCTFail("Harness cleanup failed: \(cleanupError)", file: file, line: line)
+        }
     }
     
-    static func beforeEachTest(callback: @escaping () -> Void) {
+    static func beforeAllTests(callback: @escaping () -> Void, file: StaticString = #filePath, line: UInt = #line) {
+        var request = URLRequest(url: URL(string: "\(testAPIBase)/test/startServer")!)
+        request.httpMethod = "POST"
+        addHarnessAuthHeader(&request)
+
+        do {
+            try runHarnessRequest(request)
+        } catch {
+            XCTFail("Harness startup failed: \(error)", file: file, line: line)
+        }
+
+        callback()
+    }
+    
+    static func beforeEachTest(callback: @escaping () -> Void, file: StaticString = #filePath, line: UInt = #line) {
         SuperTokens.resetForTests()
         var beforeeachRequest = URLRequest(url: URL(string: "\(testAPIBase)/beforeeach")!)
         beforeeachRequest.httpMethod = "POST"
-        getTestingUrlSession().dataTask(with: beforeeachRequest, completionHandler: {
-            _, _, _ in
-            
-            callback()
-        }).resume()
+        addHarnessAuthHeader(&beforeeachRequest)
+
+        do {
+            try runHarnessRequest(beforeeachRequest)
+        } catch {
+            XCTFail("Harness /beforeeach failed: \(error)", file: file, line: line)
+        }
+
+        callback()
     }
     
     static func getTestingUrlSession() -> URLSession {
-        return URLSession(configuration: URLSessionConfiguration.default)
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = harnessTimeout
+        config.timeoutIntervalForResource = harnessTimeout
+        return URLSession(configuration: config)
     }
     
-    internal static func startST(validity: Int = 3, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false) {
-        let semaphore = DispatchSemaphore(value: 0)
-        startSTHelper(validity: validity, disableAntiCSRF: disableAntiCSRF, successCallback: {
-            semaphore.signal()
-        }, failureCallback: {
-            semaphore.signal()
-        })
-        _ = semaphore.wait(timeout: DispatchTime.distantFuture)
+    internal static func startST(validity: Int = 3, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false, file: StaticString = #filePath, line: UInt = #line) {
+        do {
+            try startSTHelper(validity: validity, refreshValidity: refreshValidity, disableAntiCSRF: disableAntiCSRF)
+        } catch {
+            XCTFail("Harness /startst failed: \(error)", file: file, line: line)
+        }
     }
     //
-    private static func startSTHelper(validity: Int = 1, disableAntiCSRF: Bool? = false, successCallback: @escaping () -> Void, failureCallback: @escaping () -> Void) {
-        let semaphore = DispatchSemaphore(value: 0)
-        let url = URL(string: "\(testAPIBase)/startst")
-        var request = URLRequest(url: url!)
+    private static func startSTHelper(validity: Int = 1, refreshValidity: Double? = nil, disableAntiCSRF: Bool? = false) throws {
+        var request = URLRequest(url: URL(string: "\(testAPIBase)/startst")!)
         
-        var json: [String: Any] = ["accessTokenValidity": validity, "enableAntiCsrf": !disableAntiCSRF!]
+        var json: [String: Any] = ["accessTokenValidity": validity, "enableAntiCsrf": !(disableAntiCSRF ?? false)]
+        if let refreshValidity = refreshValidity {
+            json["refreshValidity"] = refreshValidity
+        }
 
         let jsonData = try? JSONSerialization.data(withJSONObject: json)
         request.httpMethod = "POST"
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        addHarnessAuthHeader(&request)
         request.httpBody = jsonData
-        let task = getTestingUrlSession().dataTask(with: request, completionHandler: { data, response, error in
-            defer {
-                semaphore.signal()
-            }
-            
-            if response as? HTTPURLResponse != nil {
-                let httpResponse = response as! HTTPURLResponse
-                if httpResponse.statusCode == 200 {
-                    successCallback()
-                    return;
-                }
-            }
-            failureCallback()
-        })
-        task.resume()
-        _ = semaphore.wait(timeout: .distantFuture)
+        try runHarnessRequest(request)
     }
     
     internal static func getRefreshTokenCounter() -> Int {

@@ -24,12 +24,15 @@ let cors = require("cors");
 let { startST, stopST, killAllST, setupST, cleanST, setKeyValueInConfig, maxVersion, isProtectedPropName } = require("./utils");
 let { middleware, errorHandler } = require("supertokens-node/framework/express");
 let { verifySession } = require("supertokens-node/recipe/session/framework/express");
-const { spawnSync } = require("child_process");
 const morgan = require("morgan");
 let noOfTimesRefreshCalledDuringTest = 0;
 let noOfTimesGetSessionCalledDuringTest = 0;
 let noOfTimesRefreshAttemptedDuringTest = 0;
 let customRefreshHeaderValue = "";
+let coreConnectionURI = process.env.SUPERTOKENS_CONNECTION_URI || "http://localhost:9000";
+let harnessAuthToken = process.env.TEST_HARNESS_AUTH_TOKEN;
+let coreReady = false;
+let lifecycleQueue = Promise.resolve();
 let supertokens_node_version = require("supertokens-node/lib/build/version").version;
 let Querier = require("supertokens-node/lib/build/querier").Querier;
 let NormalisedURLPath = require("supertokens-node/lib/build/normalisedURLPath").default;
@@ -50,6 +53,41 @@ try {
     // Ignored
 }
 
+let AccountLinkingRecipeRaw, OpenIdRecipeRaw, JwtRecipeRaw, UserRolesRecipeRaw;
+try {
+    AccountLinkingRecipeRaw = require("supertokens-node/lib/build/recipe/accountlinking/recipe").default;
+} catch {
+    // Ignored
+}
+try {
+    OpenIdRecipeRaw = require("supertokens-node/lib/build/recipe/openid/recipe").default;
+} catch {
+    // Ignored
+}
+try {
+    JwtRecipeRaw = require("supertokens-node/lib/build/recipe/jwt/recipe").default;
+} catch {
+    // Ignored
+}
+try {
+    UserRolesRecipeRaw = require("supertokens-node/lib/build/recipe/userroles/recipe").default;
+} catch {
+    // Ignored
+}
+
+function resetBackendSDK() {
+    SuperTokensRaw.reset();
+    SessionRecipeRaw.reset();
+    if (multitenancySupported) {
+        MultitenancyRaw.reset();
+    }
+    for (const recipe of [UserMetaDataRecipeRaw, AccountLinkingRecipeRaw, OpenIdRecipeRaw, JwtRecipeRaw, UserRolesRecipeRaw]) {
+        if (recipe !== undefined) {
+            recipe.reset();
+        }
+    }
+}
+
 let urlencodedParser = bodyParser.urlencoded({ limit: "20mb", extended: true, parameterLimit: 20000 });
 let jsonParser = bodyParser.json({ limit: "20mb" });
 
@@ -64,6 +102,42 @@ let lastSetEnableAntiCSRF = false;
 let lastSetEnableJWT = false;
 let accountLinkingSupported = maxVersion(supertokens_node_version, "16.0") === supertokens_node_version;
 
+if (process.env.TEST_MODE !== "testing") {
+    console.error("Refusing to start test harness without TEST_MODE=testing");
+    process.exit(1);
+}
+
+function requireHarnessAuth(req, res, next) {
+    if (harnessAuthToken === undefined || harnessAuthToken === "") {
+        next();
+        return;
+    }
+
+    if (req.get("x-test-harness-token") === harnessAuthToken) {
+        next();
+        return;
+    }
+
+    res.status(401).send("");
+}
+
+function asyncRoute(handler) {
+    return (req, res, next) => {
+        Promise.resolve(handler(req, res, next)).catch(next);
+    };
+}
+
+function runLifecycleStep(handler) {
+    const run = lifecycleQueue.then(handler, handler);
+    lifecycleQueue = run.catch(() => {});
+    return run;
+}
+
+async function assertCoreReady() {
+    Querier.apiVersion = undefined;
+    await Querier.getNewInstanceOrThrowError().getAPIVersion();
+}
+
 function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
     if (maxVersion(supertokens_node_version, "14.0") === supertokens_node_version && enableJWT) {
         return {
@@ -73,7 +147,7 @@ function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
                 websiteDomain: "http://localhost.org:8080"
             },
             supertokens: {
-                connectionURI: "http://localhost:9000"
+                connectionURI: coreConnectionURI
             },
             recipeList: [
                 Session.init({
@@ -133,7 +207,7 @@ function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
                 websiteDomain: "http://localhost.org:8080"
             },
             supertokens: {
-                connectionURI: "http://localhost:9000"
+                connectionURI: coreConnectionURI
             },
             recipeList: [
                 Session.init({
@@ -181,7 +255,7 @@ function getConfig(enableAntiCsrf, enableJWT, jwtPropertyName) {
             websiteDomain: "http://localhost.org:8080"
         },
         supertokens: {
-            connectionURI: "http://localhost:9000"
+            connectionURI: coreConnectionURI
         },
         recipeList: [
             Session.init({
@@ -219,7 +293,12 @@ app.disable('etag');
 
 app.use(middleware());
 
-app.post("/login", async (req, res) => {
+app.post("/login", asyncRoute(async (req, res) => {
+    if (!coreReady) {
+        res.status(503).send("SuperTokens core is not ready. Did /startst fail?");
+        return;
+    }
+
     let userId = req.body.userId;
     
     let session;
@@ -230,40 +309,43 @@ app.post("/login", async (req, res) => {
     }
 
     res.send(session.getUserId());
-});
+}));
 
-app.post("/startst", async (req, res) => {
-    let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
-    let enableAntiCsrf = req.body.enableAntiCsrf === undefined ? true : req.body.enableAntiCsrf;
-    let enableJWT = req.body.enableJWT === undefined ? false : req.body.enableJWT;
+app.post("/startst", requireHarnessAuth, asyncRoute(async (req, res) => {
+    await runLifecycleStep(async () => {
+        coreReady = false;
 
-    lastSetEnableAntiCSRF = enableAntiCsrf;
-    lastSetEnableJWT = enableJWT;
+        let accessTokenValidity = req.body.accessTokenValidity === undefined ? 1 : req.body.accessTokenValidity;
+        let enableAntiCsrf = req.body.enableAntiCsrf === undefined ? true : req.body.enableAntiCsrf;
+        let enableJWT = req.body.enableJWT === undefined ? false : req.body.enableJWT;
 
-    await setKeyValueInConfig("access_token_validity", accessTokenValidity);
-    if (req.body.accessTokenSigningKeyUpdateInterval !== undefined) {
-        await setKeyValueInConfig(
-            "access_token_signing_key_update_interval",
-            req.body.accessTokenSigningKeyUpdateInterval
-        );
-    }
-    if (enableAntiCsrf !== undefined) {
-        SuperTokensRaw.reset();
-        SessionRecipeRaw.reset();
+        lastSetEnableAntiCSRF = enableAntiCsrf;
+        lastSetEnableJWT = enableJWT;
 
-        if (multitenancySupported) {
-            MultitenancyRaw.reset();
+        await setKeyValueInConfig("access_token_validity", accessTokenValidity);
+        if (req.body.accessTokenSigningKeyUpdateInterval !== undefined) {
+            await setKeyValueInConfig(
+                "access_token_signing_key_update_interval",
+                req.body.accessTokenSigningKeyUpdateInterval
+            );
         }
-        if (UserMetaDataRecipeRaw !== undefined) {
-            UserMetaDataRecipeRaw.reset();
+        if (req.body.refreshValidity !== undefined) {
+            await setKeyValueInConfig("refresh_token_validity", req.body.refreshValidity);
         }
-        console.log({multitenancySupported, MultitenancyRaw, UserMetaDataRecipeRaw});
+        coreConnectionURI = await startST({
+            access_token_validity: accessTokenValidity,
+            refresh_token_validity: req.body.refreshValidity,
+            access_token_signing_key_update_interval: req.body.accessTokenSigningKeyUpdateInterval
+        });
 
+        resetBackendSDK();
         SuperTokens.init(getConfig(enableAntiCsrf, enableJWT));
-    }
-    await startST();
+        await assertCoreReady();
+        coreReady = true;
+    });
+
     res.send("");
-});
+}));
 
 app.get("/featureFlags", async (req, res) => {
     let currentEnableJWT = lastSetEnableJWT;
@@ -276,43 +358,54 @@ app.get("/featureFlags", async (req, res) => {
     });
 });
 
-app.post("/reinitialiseBackendConfig", async (req, res) => {
-    let currentEnableJWT = lastSetEnableJWT;
-    let jwtPropertyName = req.body.jwtPropertyName;
+app.post("/reinitialiseBackendConfig", requireHarnessAuth, asyncRoute(async (req, res) => {
+    await runLifecycleStep(async () => {
+        coreReady = false;
 
-    SuperTokensRaw.reset();
-    SessionRecipeRaw.reset();
-    if (multitenancySupported) {
-        MultitenancyRaw.reset();
-    }
-    if (UserMetaDataRecipeRaw !== undefined) {
-        UserMetaDataRecipeRaw.reset();
-    }
-    SuperTokens.init(getConfig(lastSetEnableAntiCSRF, currentEnableJWT, jwtPropertyName));
+        let currentEnableJWT = lastSetEnableJWT;
+        let jwtPropertyName = req.body.jwtPropertyName;
+
+        resetBackendSDK();
+        SuperTokens.init(getConfig(lastSetEnableAntiCSRF, currentEnableJWT, jwtPropertyName));
+        await assertCoreReady();
+        coreReady = true;
+    });
 
     res.send("");
-});
+}));
 
-app.post("/beforeeach", async (req, res) => {
-    noOfTimesRefreshCalledDuringTest = 0;
-    noOfTimesGetSessionCalledDuringTest = 0;
-    noOfTimesRefreshAttemptedDuringTest = 0;
-    customRefreshHeaderValue = "";
-    await killAllST();
-    await setupST();
+app.post("/beforeeach", requireHarnessAuth, asyncRoute(async (req, res) => {
+    await runLifecycleStep(async () => {
+        coreReady = false;
+        noOfTimesRefreshCalledDuringTest = 0;
+        noOfTimesGetSessionCalledDuringTest = 0;
+        noOfTimesRefreshAttemptedDuringTest = 0;
+        customRefreshHeaderValue = "";
+        await killAllST();
+        await setupST();
+    });
+
     res.send();
-});
+}));
 
-app.post("/after", async (req, res) => {
-    await killAllST();
-    await cleanST();
+app.post("/after", requireHarnessAuth, asyncRoute(async (req, res) => {
+    await runLifecycleStep(async () => {
+        coreReady = false;
+        await killAllST();
+        await cleanST();
+    });
+
     res.send();
-});
+}));
 
-app.post("/stopst", async (req, res) => {
-    await stopST(req.body.pid);
+app.post("/stopst", requireHarnessAuth, asyncRoute(async (req, res) => {
+    await runLifecycleStep(async () => {
+        coreReady = false;
+        await stopST(req.body.pid);
+    });
+
     res.send("");
-});
+}));
 
 app.post("/testUserConfig", async (req, res) => {
     res.status(200).send();
@@ -517,54 +610,62 @@ app.get("/throw-401", (req, res) => {
     res.status(401).send("Unauthorised");
 });
 
-app.get("/stop", async (req, res) => {
+app.get("/stop", requireHarnessAuth, async (req, res) => {
     process.exit();
 });
 
-app.post("/test/startServer", async (req, res) => {
-    spawnSync("./startServer", [
-        process.env.INSTALL_PATH,
-        process.env.NODE_PORT === undefined ? 8080 : process.env.NODE_PORT,
-    ])
+app.post("/test/startServer", requireHarnessAuth, asyncRoute(async (req, res) => {
+    await runLifecycleStep(async () => {
+        coreReady = false;
+        await setupST();
+    });
 
     res.status(200).send("")
-});
+}));
 
-app.post("/login-2.18", async (req, res) => {
+app.post("/login-2.18", asyncRoute(async (req, res) => {
+    if (!coreReady) {
+        res.status(503).send("SuperTokens core is not ready. Did /startst fail?");
+        return;
+    }
+
     // This CDI version is no longer supported by this SDK, but we want to ensure that sessions keep working after the upgrade
     // We can hard-code the structure of the request&response, since this is a fixed CDI version and it's not going to change
     Querier.apiVersion = "2.18";
-    const payload = req.body.payload || {};
-    const userId = req.body.userId;
-    const legacySessionResp = await Querier.getNewInstanceOrThrowError().sendPostRequest(
-        new NormalisedURLPath("/recipe/session"),
-        {
-            userId,
-            enableAntiCsrf: false,
-            userDataInJWT: payload,
-            userDataInDatabase: {}
-        },
-        {}
-    );
-    Querier.apiVersion = undefined;
+    try {
+        const payload = req.body.payload || {};
+        const userId = req.body.userId;
+        const legacySessionResp = await Querier.getNewInstanceOrThrowError().sendPostRequest(
+            new NormalisedURLPath("/recipe/session"),
+            {
+                userId,
+                enableAntiCsrf: false,
+                userDataInJWT: payload,
+                userDataInDatabase: {}
+            },
+            {}
+        );
 
-    const legacyAccessToken = legacySessionResp.accessToken.token;
-    const legacyRefreshToken = legacySessionResp.refreshToken.token;
+        const legacyAccessToken = legacySessionResp.accessToken.token;
+        const legacyRefreshToken = legacySessionResp.refreshToken.token;
 
-    res.set("st-access-token", legacyAccessToken)
-        .set("st-refresh-token", legacyRefreshToken)
-        .set(
-            "front-token",
-            Buffer.from(
-                JSON.stringify({
-                    uid: userId,
-                    ate: Date.now() + 3600000,
-                    up: payload
-                })
-            ).toString("base64")
-        )
-        .send();
-});
+        res.set("st-access-token", legacyAccessToken)
+            .set("st-refresh-token", legacyRefreshToken)
+            .set(
+                "front-token",
+                Buffer.from(
+                    JSON.stringify({
+                        uid: userId,
+                        ate: Date.now() + 3600000,
+                        up: payload
+                    })
+                ).toString("base64")
+            )
+            .send();
+    } finally {
+        Querier.apiVersion = undefined;
+    }
+}));
 
 app.post("/logout-alt", async (req, res) => {
     res
@@ -594,5 +695,27 @@ app.use(async (err, req, res, next) => {
 });
 
 let server = http.createServer(app);
-// server.listen(process.env.NODE_PORT === undefined ? 8080 : process.env.NODE_PORT, "::");
-server.listen(8080, "::");
+server.listen(process.env.NODE_PORT === undefined ? 8080 : process.env.NODE_PORT, process.env.NODE_HOST || "127.0.0.1");
+
+let isShuttingDown = false;
+async function shutdown() {
+    if (isShuttingDown) {
+        return;
+    }
+    isShuttingDown = true;
+
+    try {
+        await cleanST();
+        server.close(() => process.exit(0));
+    } catch (err) {
+        console.log("Failed to stop test harness", err);
+        process.exit(1);
+    }
+}
+
+process.on("SIGINT", () => {
+    void shutdown();
+});
+process.on("SIGTERM", () => {
+    void shutdown();
+});

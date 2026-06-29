@@ -38,20 +38,18 @@ public class SuperTokens {
     
     
     internal static func resetForTests() {
-        FrontToken.removeToken()
-        AntiCSRF.removeToken()
+        _ = FrontToken.removeToken()
+        _ = AntiCSRF.removeToken()
+        _ = SDKStorage.clearSessionStorage()
         SuperTokens.isInitCalled = false
-        Utils.setToken(tokenType: .access, value: "")
-        Utils.setToken(tokenType: .refresh, value: "")
-        FrontToken.setItem(frontToken: "remove")
     }
     
-    public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, sessionTokenBackendDomain: String? = nil,  maxRetryAttemptsForSessionRefresh: Int? = nil, tokenTransferMethod: SuperTokensTokenTransferMethod? = nil, userDefaultsSuiteName: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
+    public static func initialize(apiDomain: String, apiBasePath: String? = nil, sessionExpiredStatusCode: Int? = nil, sessionTokenBackendDomain: String? = nil,  maxRetryAttemptsForSessionRefresh: Int? = nil, tokenTransferMethod: SuperTokensTokenTransferMethod? = nil, userDefaultsSuiteName: String? = nil, keychainAccessGroup: String? = nil, eventHandler: ((EventType) -> Void)? = nil, preAPIHook: ((APIAction, URLRequest) -> URLRequest)? = nil, postAPIHook: ((APIAction, URLRequest, URLResponse?) -> Void)? = nil) throws {
         if SuperTokens.isInitCalled {
             return;
         }
         
-        SuperTokens.config = try NormalisedInputType.normaliseInputType(apiDomain: apiDomain, apiBasePath: apiBasePath, sessionExpiredStatusCode: sessionExpiredStatusCode, maxRetryAttemptsForSessionRefresh: maxRetryAttemptsForSessionRefresh, sessionTokenBackendDomain: sessionTokenBackendDomain, tokenTransferMethod: tokenTransferMethod, eventHandler: eventHandler, preAPIHook: preAPIHook, postAPIHook: postAPIHook, userDefaultsSuiteName: userDefaultsSuiteName)
+        SuperTokens.config = try NormalisedInputType.normaliseInputType(apiDomain: apiDomain, apiBasePath: apiBasePath, sessionExpiredStatusCode: sessionExpiredStatusCode, maxRetryAttemptsForSessionRefresh: maxRetryAttemptsForSessionRefresh, sessionTokenBackendDomain: sessionTokenBackendDomain, tokenTransferMethod: tokenTransferMethod, eventHandler: eventHandler, preAPIHook: preAPIHook, postAPIHook: postAPIHook, userDefaultsSuiteName: userDefaultsSuiteName, keychainAccessGroup: keychainAccessGroup)
         
         guard let _config: NormalisedInputType = SuperTokens.config else {
             throw SuperTokensError.initError(message: "Error initialising SuperTokens")
@@ -60,6 +58,13 @@ public class SuperTokens {
         SuperTokens.refreshTokenUrl = _config.apiDomain + _config.apiBasePath + "/session/refresh"
         SuperTokens.signOutUrl = _config.apiDomain + _config.apiBasePath + "/signout"
         SuperTokens.rid = "session"
+        if _config.userDefaultsSuiteName != nil && _config.keychainAccessGroup == nil {
+            print("SuperTokens: userDefaultsSuiteName only migrates legacy UserDefaults values. Use keychainAccessGroup to share sessions with app extensions after migration.")
+        }
+
+        guard SDKStorage.configure(userDefaultsSuiteName: _config.userDefaultsSuiteName, keychainAccessGroup: _config.keychainAccessGroup, apiDomain: _config.apiDomain, apiBasePath: _config.apiBasePath) else {
+            throw SuperTokensError.initError(message: "Could not access Keychain with the configured access group")
+        }
         SuperTokens.isInitCalled = true
     }
     
@@ -129,6 +134,12 @@ public class SuperTokens {
         
         customSession.dataTask(with: signOutRequest, completionHandler: {
             data, response, error in
+
+            if let error = error {
+                completionHandler(error)
+                executionSemaphore.signal()
+                return
+            }
             
             if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {

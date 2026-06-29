@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "harness": "TEST_MODE=testing node index.js",
+    "test:integration:harness": "TEST_MODE=testing node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=20.18.1"
   },
   "author": "",
   "license": "ISC",
