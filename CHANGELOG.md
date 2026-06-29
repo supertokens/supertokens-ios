@@ -1,4 +1,5 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -6,18 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [0.5.0] - 2026-06-29
+
+### Changes
 
 - Session tokens are now stored in Keychain instead of UserDefaults. Existing UserDefaults values migrate on first read and are removed after a successful Keychain write.
-- Integration test setup now fails fast when the `supertokens-root` Core harness is not ready.
-
-### Added
-
 - Added `keychainAccessGroup` to `SuperTokens.initialize(...)` for sharing sessions across app targets with Keychain Sharing entitlements.
-
-### Migration
-
-- Keep passing `userDefaultsSuiteName` during upgrade if you used it previously; it is still used to find and remove legacy UserDefaults values.
 - For app extensions or multiple targets, enable Keychain Sharing for each target and pass the same `keychainAccessGroup`. `userDefaultsSuiteName` no longer shares active session tokens after migration.
 - Keychain write failures fail closed: the SDK treats the local session as missing and clears partial session state.
 
@@ -32,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changes
 
 - Added new FDI version support: 3.1, 4.0
-
 
 ## [0.4.1] - 2024-07-12
 
@@ -58,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking change
 
-The `shouldDoInterceptionBasedOnUrl` function now returns true: 
+The `shouldDoInterceptionBasedOnUrl` function now returns true:
+
 - If `sessionTokenBackendDomain` is a valid subdomain of the URL's domain. This aligns with the behavior of browsers when sending cookies to subdomains.
 - Even if the ports of the URL you are querying are different compared to the `apiDomain`'s port ot the `sessionTokenBackendDomain` port (as long as the hostname is the same, or a subdomain of the `sessionTokenBackendDomain`): https://github.com/supertokens/supertokens-website/issues/217
 
@@ -100,11 +95,11 @@ The `shouldDoInterceptionBasedOnUrl` function now returns true:
 
 - The SDK now only supports FDI version 1.16
 - The backend SDK should be updated to a version supporting the header-based sessions!
-    -   supertokens-node: >= 13.0.0
-    -   supertokens-python: >= 0.12.0
-    -   supertokens-golang: >= 0.10.0
+  - supertokens-node: >= 13.0.0
+  - supertokens-python: >= 0.12.0
+  - supertokens-golang: >= 0.10.0
 - Properties passed when calling SuperTokens.init have been renamed:
-    - `cookieDomain` -> `sessionTokenBackendDomain`
+  - `cookieDomain` -> `sessionTokenBackendDomain`
 
 ### Added
 
