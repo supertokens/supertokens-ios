@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixes
+
+- Fixed a session teardown race that could trigger an unnecessary refresh request and 401 during sign-out.
+
 ## [0.5.0] - 2026-06-29
 
 ### Changes
