@@ -17,17 +17,25 @@ import XCTest
 import Security
 @testable import SuperTokensIOS
 
+private enum TokenStorageOperation: Equatable {
+    case set(name: String, value: String)
+    case remove(name: String)
+}
+
 private class FakeTokenStorage: TokenStorage {
     var values: [String: String] = [:]
     var failSetKeys: Set<String> = []
     var failRemoveKeys: Set<String> = []
     var removedKeys: [String] = []
+    var operations: [TokenStorageOperation] = []
 
     func get(_ name: String) -> String? {
         return values[name]
     }
 
     func set(_ name: String, value: String) -> Bool {
+        operations.append(.set(name: name, value: value))
+
         if failSetKeys.contains(name) {
             return false
         }
@@ -37,6 +45,7 @@ private class FakeTokenStorage: TokenStorage {
     }
 
     func remove(_ name: String) -> Bool {
+        operations.append(.remove(name: name))
         removedKeys.append(name)
 
         if failRemoveKeys.contains(name) {
@@ -182,6 +191,88 @@ class utilsTest: XCTestCase {
         
         XCTAssert(accessToken == "access-token")
         XCTAssert(refreshToken == "refresh-token")
+    }
+
+    func testHeaderSessionClearClosesSessionGateBeforeRemovingTokens() throws {
+        let storage = FakeTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        let accessTokenKey = SDKStorage.genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME)
+        let refreshTokenKey = SDKStorage.genericKey(SuperTokensConstants.REFRESH_TOKEN_NAME)
+        let lastAccessTokenUpdateKey = SDKStorage.genericKey(SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE)
+
+        XCTAssertTrue(Utils.setToken(tokenType: .access, value: "access-token"))
+        XCTAssertTrue(Utils.setToken(tokenType: .refresh, value: "refresh-token"))
+        XCTAssertTrue(FrontToken.setItem(frontToken: makeFrontToken()))
+        XCTAssertEqual(Utils.getLocalSessionState().status, .EXISTS)
+        storage.operations.removeAll()
+
+        let httpResponse = HTTPURLResponse(
+            url: URL(string: fakeGetApi)!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: [
+                "st-refresh-token": "",
+                "st-access-token": "",
+                "front-token": "remove"
+            ]
+        )!
+
+        XCTAssertTrue(Utils.saveTokenFromHeaders(httpResponse: httpResponse))
+
+        let frontTokenRemoval = try XCTUnwrap(
+            storage.operations.firstIndex(of: .remove(name: SDKStorage.frontTokenKey))
+        )
+        let accessTokenRemoval = try XCTUnwrap(
+            storage.operations.firstIndex(of: .remove(name: accessTokenKey))
+        )
+        let refreshTokenRemoval = try XCTUnwrap(
+            storage.operations.firstIndex(of: .remove(name: refreshTokenKey))
+        )
+
+        XCTAssertLessThan(frontTokenRemoval, accessTokenRemoval)
+        XCTAssertLessThan(frontTokenRemoval, refreshTokenRemoval)
+        XCTAssertFalse(
+            storage.operations.contains {
+                if case .set(name: lastAccessTokenUpdateKey, value: _) = $0 {
+                    return true
+                }
+                return false
+            }
+        )
+        assertNoSessionValues(storage)
+    }
+
+    func testHeaderSessionUpdateStoresTokensBeforeOpeningSessionGate() throws {
+        let storage = FakeTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        let accessTokenKey = SDKStorage.genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME)
+        let refreshTokenKey = SDKStorage.genericKey(SuperTokensConstants.REFRESH_TOKEN_NAME)
+        let frontToken = makeFrontToken()
+        let httpResponse = HTTPURLResponse(
+            url: URL(string: fakeGetApi)!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: [
+                "st-refresh-token": "refresh-token",
+                "st-access-token": "access-token",
+                "front-token": frontToken
+            ]
+        )!
+
+        XCTAssertTrue(Utils.saveTokenFromHeaders(httpResponse: httpResponse))
+
+        let refreshTokenWrite = try XCTUnwrap(
+            storage.operations.firstIndex(of: .set(name: refreshTokenKey, value: "refresh-token"))
+        )
+        let accessTokenWrite = try XCTUnwrap(
+            storage.operations.firstIndex(of: .set(name: accessTokenKey, value: "access-token"))
+        )
+        let frontTokenWrite = try XCTUnwrap(
+            storage.operations.firstIndex(of: .set(name: SDKStorage.frontTokenKey, value: frontToken))
+        )
+
+        XCTAssertLessThan(refreshTokenWrite, accessTokenWrite)
+        XCTAssertLessThan(accessTokenWrite, frontTokenWrite)
     }
 
     private func makeFrontToken(uid: String = "user-id", up: [String: Any] = [:], ate: Int64 = 9999999999999) -> String {
