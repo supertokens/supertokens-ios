@@ -271,6 +271,15 @@ internal class Utils {
         }
 
         headerFields.lowerCaseKeys()
+
+        if headerFields[SuperTokensConstants.frontTokenHeaderKey] == "remove" {
+            guard FrontToken.removeToken() else {
+                SDKStorage.clearSessionStorage()
+                return false
+            }
+
+            return true
+        }
         
         if let refreshToken: String = headerFields[SuperTokensConstants.refreshTokenHeaderKey] {
             guard Utils.setToken(tokenType: .refresh, value: refreshToken) else {
