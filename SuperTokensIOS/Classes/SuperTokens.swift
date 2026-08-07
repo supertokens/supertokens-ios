@@ -145,7 +145,12 @@ public class SuperTokens {
             
             if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {
-                    // refresh must have already sent session expiry event
+                    // The session was already invalidated: the interceptor's refresh
+                    // attempt failed and cleared local state plus fired the session-expiry
+                    // event. For sign-out that is success — the session no longer exists —
+                    // so we still resolve the completion handler. Failing to call it here
+                    // strands any caller that awaits sign-out (e.g. a wrapped continuation).
+                    completionHandler(nil)
                     executionSemaphore.signal()
                     return
                 }
@@ -259,6 +264,12 @@ public class SuperTokens {
 
     /// Returns the current raw stored refresh token, or nil. No network, regardless
     /// of session validity.
+    ///
+    /// - Warning: This exposes a long-lived credential. Unlike `getAccessToken()`,
+    ///   it performs no `doesSessionExist()` gate and returns whatever is stored.
+    ///   It exists so an out-of-band integration can round-trip a session through
+    ///   the SDK's own storage; do not hand the value to anything but the SDK's
+    ///   session APIs, and never log or transmit it.
     public static func getRefreshToken() -> String? {
         guard SuperTokens.isInitCalled else { return nil }
         return SessionStateCoordinator.snapshot {
@@ -324,8 +335,10 @@ public class SuperTokens {
     /// - Returns: `true` on success. Returns `false` without writing anything if
     ///   `initialize()` has not been called, if `accessToken`/`refreshToken`/
     ///   `frontToken` is empty, or if `frontToken` is malformed. On any write
-    ///   failure the session storage is fully rolled back (`clearSessionStorage`)
-    ///   and `false` is returned.
+    ///   failure the session storage is cleared best-effort (`clearSessionStorage`),
+    ///   leaving the SDK signed out, and `false` is returned. Storage removal can
+    ///   itself fail (e.g. a locked keychain), so a partial write is possible on a
+    ///   `false` return; treat `false` strictly as "no usable session".
     @discardableResult
     public static func installSession(accessToken: String,
                                       refreshToken: String,

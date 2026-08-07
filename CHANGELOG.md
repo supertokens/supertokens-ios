@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `installSession` now clears any anti-CSRF token left over from a previous session when installing a new session without one.
 - `installSession` and `clearSessionLocally` now invalidate older in-flight responses, preventing stale response headers from overwriting or recreating an out-of-band session.
 - Session response updates are ordered and rollback clears the front-token session marker before access and refresh tokens.
+- `signOut` now resolves its completion handler on the session-expired (401) response instead of returning without calling it, which hung any caller that awaited sign-out (e.g. a wrapped continuation); an already-invalid session is treated as a successful sign-out.
+- Writing a front token no longer crashes when a malformed value is already in storage. The previous-token payload comparison force-parsed the stored token and would trap on a corrupt value; it now tolerates an unparseable stored token and overwrites it.
+- Documented that `getRefreshToken()` exposes a long-lived, ungated credential, and corrected the `installSession` rollback note (storage clearing is best-effort, so a `false` return means "no usable session", not a guaranteed pristine store).
 
 
 ## [0.5.1] - 2026-08-06

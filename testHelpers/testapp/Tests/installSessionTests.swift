@@ -427,4 +427,23 @@ final class InstallSessionTests: XCTestCase {
         guard case .stale = siblingResult else { return XCTFail("Expected sibling response to be stale") }
         XCTAssertFalse(SuperTokens.doesSessionExist())
     }
+
+    // A corrupt front token left in storage must not crash the next install: the
+    // old-token payload comparison used to force-parse and trap. installSession
+    // validates only the incoming token, so a garbage stored value has to be
+    // tolerated (and simply overwritten).
+    func testInstallSessionOverCorruptStoredFrontTokenDoesNotCrash() {
+        _ = initAndOverrideStorage()
+        XCTAssertTrue(SuperTokens.installSession(accessToken: "OLD_AT", refreshToken: "OLD_RT",
+                                                 frontToken: makeFrontToken(uid: "old"), antiCSRFToken: nil))
+        // Simulate a corrupted stored front token (e.g. keychain corruption).
+        XCTAssertTrue(SDKStorage.set(SDKStorage.frontTokenKey, value: "not-base64-json!!"))
+        FrontToken.clearInMemoryCache()                                 // force a reload from storage
+
+        let newFront = makeFrontToken(uid: "new")
+        XCTAssertTrue(SuperTokens.installSession(accessToken: "NEW_AT", refreshToken: "NEW_RT",
+                                                 frontToken: newFront, antiCSRFToken: nil))
+        XCTAssertEqual(SuperTokens.getAccessToken(), "NEW_AT")
+        XCTAssertEqual(SuperTokens.getFrontToken(), newFront)
+    }
 }
