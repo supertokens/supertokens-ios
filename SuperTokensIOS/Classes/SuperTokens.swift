@@ -237,7 +237,126 @@ public class SuperTokens {
         if doesSessionExist() {
             return Utils.getTokenForHeaderAuth(tokenType: .access)
         }
-        
+
         return nil
+    }
+
+    /// Returns the current raw stored refresh token, or nil. No network, regardless
+    /// of session validity.
+    public static func getRefreshToken() -> String? {
+        return Utils.getTokenForHeaderAuth(tokenType: .refresh)
+    }
+
+    /// Returns the current raw front token (base64-encoded JSON), or nil. No network.
+    public static func getFrontToken() -> String? {
+        return SDKStorage.get(SDKStorage.frontTokenKey)
+    }
+
+    /// Returns the current anti-CSRF token, or nil. No network.
+    public static func getAntiCSRF() -> String? {
+        return SDKStorage.get(SDKStorage.antiCSRFKey)
+    }
+
+    /// A front token is well-formed if it is base64-encoded UTF8 JSON containing
+    /// `uid` (String), `ate` (Int), and `up` ([String: Any]). Does not delegate to
+    /// `FrontToken.parseFrontToken`, which force-unwraps and would crash on a
+    /// malformed value; this is a pure, side-effect-free check.
+    private static func isWellFormedFrontToken(_ frontToken: String) -> Bool {
+        guard let decodedData = Data(base64Encoded: frontToken),
+              let decodedString = String(data: decodedData, encoding: .utf8),
+              let jsonData = decodedString.data(using: .utf8),
+              let jsonObject = try? JSONSerialization.jsonObject(with: jsonData),
+              let json = jsonObject as? [String: Any] else {
+            return false
+        }
+
+        guard json["uid"] is String,
+              json["ate"] is Int,
+              json["up"] is [String: Any] else {
+            return false
+        }
+
+        return true
+    }
+
+    /// Installs a session from tokens obtained OUT OF BAND (e.g. a WKWebView / Hub
+    /// magic-link flow) whose responses never traversed `SuperTokensURLProtocol`.
+    ///
+    /// Reuses the SDK's own validated write path — identical order and rollback to
+    /// `saveTokenFromHeaders` — so the front-token in-memory cache, the anti-CSRF
+    /// timestamp association, and the last-access-token-update stamp all stay
+    /// coherent. No network call.
+    ///
+    /// The write sequence is serialized on `SuperTokensURLProtocol`'s refresh
+    /// barrier queue, so an out-of-band install is atomic with respect to an
+    /// in-flight 401 refresh. As a result the call may block briefly while a
+    /// refresh is in flight; do not call it on the main thread.
+    ///
+    /// `frontToken` is validated (base64-decodable JSON containing `uid`/`ate`/`up`)
+    /// before anything is written; a malformed value (including the `"remove"`
+    /// sentinel) is rejected rather than stored. Validation is structural only:
+    /// tokens are trusted as provided and are not cryptographically verified (a
+    /// forged access token is rejected server-side on the next request).
+    ///
+    /// - Returns: `true` on success. Returns `false` without writing anything if
+    ///   `initialize()` has not been called, if `accessToken`/`refreshToken`/
+    ///   `frontToken` is empty, or if `frontToken` is malformed. On any write
+    ///   failure the session storage is fully rolled back (`clearSessionStorage`)
+    ///   and `false` is returned.
+    @discardableResult
+    public static func installSession(accessToken: String,
+                                      refreshToken: String,
+                                      frontToken: String,
+                                      antiCSRFToken: String? = nil) -> Bool {
+        guard SuperTokens.isInitCalled else { return false }
+        guard !accessToken.isEmpty, !refreshToken.isEmpty, !frontToken.isEmpty else { return false }
+        guard isWellFormedFrontToken(frontToken) else { return false }
+
+        // installSession is a public entry point never called from within this
+        // queue's own work items, so this sync barrier cannot deadlock.
+        return SuperTokensURLProtocol.readWriteDispatchQueue.sync(flags: .barrier) {
+            // Intentionally does NOT fire a session-lifecycle event; callers own semantic events.
+            guard Utils.setToken(tokenType: .refresh, value: refreshToken) else {
+                SDKStorage.clearSessionStorage(); return false
+            }
+            guard Utils.setToken(tokenType: .access, value: accessToken) else {
+                SDKStorage.clearSessionStorage(); return false
+            }
+            guard FrontToken.setItem(frontToken: frontToken) else {
+                SDKStorage.clearSessionStorage(); return false
+            }
+            if let antiCSRFToken, !antiCSRFToken.isEmpty {
+                let lastUpdate = Utils.getLocalSessionState().lastAccessTokenUpdate
+                guard AntiCSRF.setToken(antiCSRFToken: antiCSRFToken,
+                                        associatedAccessTokenUpdate: lastUpdate) else {
+                    SDKStorage.clearSessionStorage(); return false
+                }
+            } else {
+                // No anti-CSRF token for this session: clear out any stale token left
+                // over from a previous session rather than silently inheriting it.
+                guard AntiCSRF.removeToken() else {
+                    SDKStorage.clearSessionStorage(); return false
+                }
+            }
+            return true
+        }
+    }
+
+    /// Clears all local session state — tokens plus the `FrontToken` / `AntiCSRF`
+    /// in-memory caches — WITHOUT a network `/signout`. Use when a caller has torn
+    /// down the session out of band and needs the SDK's local view invalidated.
+    ///
+    /// Serialized on the same barrier queue as `installSession` and the SDK's
+    /// refresh flow, so a local clear is atomic with respect to an in-flight
+    /// refresh. Never called from within that queue's own work items, so this
+    /// sync barrier cannot deadlock. May block briefly while a refresh is in
+    /// flight; do not call it on the main thread.
+    ///
+    /// Intentionally does NOT fire a session-lifecycle event; callers own semantic events.
+    @discardableResult
+    public static func clearSessionLocally() -> Bool {
+        return SuperTokensURLProtocol.readWriteDispatchQueue.sync(flags: .barrier) {
+            FrontToken.removeToken()
+        }
     }
 }

@@ -8,7 +8,9 @@
 import Foundation
 
 public class SuperTokensURLProtocol: URLProtocol {
-    private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
+    // Internal (not private) so SuperTokens.installSession/clearSessionLocally can
+    // serialize their out-of-band writes on this same barrier queue.
+    static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
     private var sessionRefreshAttempts = 0
     
     // Refer to comment in makeRequest to know why this is needed
