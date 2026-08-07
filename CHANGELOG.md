@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `SuperTokens.installSession(accessToken:refreshToken:frontToken:antiCSRFToken:)` — install a session from tokens obtained out of band (e.g. a WKWebView/Hub flow) through the SDK's validated write path.
+- `SuperTokens.clearSessionLocally()` — clear local session state (including in-memory caches) without a network sign-out.
+- `SuperTokens.getRefreshToken()`, `SuperTokens.getFrontToken()`, `SuperTokens.getAntiCSRF()` — read-only getters for the current session's stored tokens, symmetric with `getAccessToken()`. No network.
+
+### Fixes
+
+- `installSession` now validates `frontToken` before writing anything, rejecting malformed values (including the `"remove"` sentinel) instead of storing them and crashing later.
+- `installSession` now rejects empty `accessToken`/`refreshToken`/`frontToken` instead of silently deleting the corresponding stored token.
+- `installSession` now clears any anti-CSRF token left over from a previous session when installing a new session without one.
+- `installSession` and `clearSessionLocally` now serialize their writes on the same barrier queue used by the SDK's own 401 refresh flow, so an out-of-band install/clear can't race an in-flight refresh.
+
+
 ## [0.5.1] - 2026-08-06
 
 ### Fixes
