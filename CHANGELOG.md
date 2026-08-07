@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `installSession` now validates `frontToken` before writing anything, rejecting malformed values (including the `"remove"` sentinel) instead of storing them and crashing later.
 - `installSession` now rejects empty `accessToken`/`refreshToken`/`frontToken` instead of silently deleting the corresponding stored token.
 - `installSession` now clears any anti-CSRF token left over from a previous session when installing a new session without one.
-- `installSession` and `clearSessionLocally` now serialize their writes on the same barrier queue used by the SDK's own 401 refresh flow, so an out-of-band install/clear can't race an in-flight refresh.
+- `installSession` and `clearSessionLocally` now invalidate older in-flight responses, preventing stale response headers from overwriting or recreating an out-of-band session.
+- Session response updates are ordered and rollback clears the front-token session marker before access and refresh tokens.
 
 
 ## [0.5.1] - 2026-08-06

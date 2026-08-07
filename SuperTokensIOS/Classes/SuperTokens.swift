@@ -38,6 +38,8 @@ public class SuperTokens {
     
     
     internal static func resetForTests() {
+        SessionStateCoordinator.resetForTests()
+        SuperTokensURLProtocol.resetForTests()
         _ = FrontToken.removeToken()
         _ = AntiCSRF.removeToken()
         _ = SDKStorage.clearSessionStorage()
@@ -69,7 +71,7 @@ public class SuperTokens {
     }
     
     public static func doesSessionExist() -> Bool {
-        let tokenInfo = FrontToken.getToken()
+        let tokenInfo = SessionStateCoordinator.snapshot { FrontToken.getToken() }.value
         
         if tokenInfo == nil {
             return false
@@ -81,7 +83,7 @@ public class SuperTokens {
             let executionSemaphore = DispatchSemaphore(value: 0)
             var shouldRetry: Bool = false
             var error: Error?
-            let preRequestLocalSessionState = Utils.getLocalSessionState()
+            let preRequestLocalSessionState = SessionStateCoordinator.snapshot { Utils.getLocalSessionState() }.value
             
             SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, callback: { unauthResponse in
                 
@@ -208,7 +210,11 @@ public class SuperTokens {
     }
     
     public static func getUserId() throws -> String {
-        guard let frontToken: [String: Any] = FrontToken.getToken(), let userId: String = frontToken["uid"] as? String else {
+        let userId = SessionStateCoordinator.snapshot {
+            FrontToken.getToken()?["uid"] as? String
+        }.value
+
+        guard let userId else {
             throw SuperTokensError.illegalAccess(message: "No session exists")
         }
         
@@ -216,11 +222,20 @@ public class SuperTokens {
     }
     
     public static func getAccessTokenPayloadSecurely() throws -> [String: Any] {
-        guard let frontToken: [String: Any] = FrontToken.getToken(), let accessTokenExpiry: Int = frontToken["ate"] as? Int, let userPayload: [String: Any] = frontToken["up"] as? [String: Any] else {
+        let tokenInfo = SessionStateCoordinator.snapshot { () -> (expiry: Int, payload: [String: Any])? in
+            guard let frontToken = FrontToken.getToken(),
+                  let accessTokenExpiry = frontToken["ate"] as? Int,
+                  let userPayload = frontToken["up"] as? [String: Any] else {
+                return nil
+            }
+            return (accessTokenExpiry, userPayload)
+        }.value
+
+        guard let tokenInfo else {
             throw SuperTokensError.illegalAccess(message: "No session exists")
         }
         
-        if accessTokenExpiry < Int(Date().timeIntervalSince1970 * 1000) {
+        if tokenInfo.expiry < Int(Date().timeIntervalSince1970 * 1000) {
             let retry = try SuperTokens.attemptRefreshingSession()
             
             if retry {
@@ -230,31 +245,41 @@ public class SuperTokens {
             }
         }
         
-        return userPayload
+        return tokenInfo.payload
     }
     
     public static func getAccessToken() -> String? {
-        if doesSessionExist() {
-            return Utils.getTokenForHeaderAuth(tokenType: .access)
-        }
+        guard doesSessionExist() else { return nil }
 
-        return nil
+        return SessionStateCoordinator.snapshot {
+            guard Utils.getLocalSessionState().status == .EXISTS else { return nil }
+            return Utils.getTokenForHeaderAuth(tokenType: .access)
+        }.value
     }
 
     /// Returns the current raw stored refresh token, or nil. No network, regardless
     /// of session validity.
     public static func getRefreshToken() -> String? {
-        return Utils.getTokenForHeaderAuth(tokenType: .refresh)
+        guard SuperTokens.isInitCalled else { return nil }
+        return SessionStateCoordinator.snapshot {
+            Utils.getTokenForHeaderAuth(tokenType: .refresh)
+        }.value
     }
 
     /// Returns the current raw front token (base64-encoded JSON), or nil. No network.
     public static func getFrontToken() -> String? {
-        return SDKStorage.get(SDKStorage.frontTokenKey)
+        guard SuperTokens.isInitCalled else { return nil }
+        return SessionStateCoordinator.snapshot {
+            SDKStorage.get(SDKStorage.frontTokenKey)
+        }.value
     }
 
     /// Returns the current anti-CSRF token, or nil. No network.
     public static func getAntiCSRF() -> String? {
-        return SDKStorage.get(SDKStorage.antiCSRFKey)
+        guard SuperTokens.isInitCalled else { return nil }
+        return SessionStateCoordinator.snapshot {
+            SDKStorage.get(SDKStorage.antiCSRFKey)
+        }.value
     }
 
     /// A front token is well-formed if it is base64-encoded UTF8 JSON containing
@@ -287,10 +312,8 @@ public class SuperTokens {
     /// timestamp association, and the last-access-token-update stamp all stay
     /// coherent. No network call.
     ///
-    /// The write sequence is serialized on `SuperTokensURLProtocol`'s refresh
-    /// barrier queue, so an out-of-band install is atomic with respect to an
-    /// in-flight 401 refresh. As a result the call may block briefly while a
-    /// refresh is in flight; do not call it on the main thread.
+    /// Installing a session invalidates responses from requests that started
+    /// beforehand, preventing stale response headers from overwriting it.
     ///
     /// `frontToken` is validated (base64-decodable JSON containing `uid`/`ate`/`up`)
     /// before anything is written; a malformed value (including the `"remove"`
@@ -312,51 +335,63 @@ public class SuperTokens {
         guard !accessToken.isEmpty, !refreshToken.isEmpty, !frontToken.isEmpty else { return false }
         guard isWellFormedFrontToken(frontToken) else { return false }
 
-        // installSession is a public entry point never called from within this
-        // queue's own work items, so this sync barrier cannot deadlock.
-        return SuperTokensURLProtocol.readWriteDispatchQueue.sync(flags: .barrier) {
+        let result = SessionStateCoordinator.performAuthoritativeMutation {
             // Intentionally does NOT fire a session-lifecycle event; callers own semantic events.
             guard Utils.setToken(tokenType: .refresh, value: refreshToken) else {
-                SDKStorage.clearSessionStorage(); return false
+                SDKStorage.clearSessionStorage()
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
             }
             guard Utils.setToken(tokenType: .access, value: accessToken) else {
-                SDKStorage.clearSessionStorage(); return false
+                SDKStorage.clearSessionStorage()
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
             }
-            guard FrontToken.setItem(frontToken: frontToken) else {
-                SDKStorage.clearSessionStorage(); return false
+            let frontTokenResult = FrontToken.setItemWithoutFiringEvent(frontToken: frontToken)
+            guard frontTokenResult.success else {
+                SDKStorage.clearSessionStorage()
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
             }
             if let antiCSRFToken, !antiCSRFToken.isEmpty {
                 let lastUpdate = Utils.getLocalSessionState().lastAccessTokenUpdate
                 guard AntiCSRF.setToken(antiCSRFToken: antiCSRFToken,
                                         associatedAccessTokenUpdate: lastUpdate) else {
-                    SDKStorage.clearSessionStorage(); return false
+                    SDKStorage.clearSessionStorage()
+                    return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
                 }
             } else {
                 // No anti-CSRF token for this session: clear out any stale token left
                 // over from a previous session rather than silently inheriting it.
                 guard AntiCSRF.removeToken() else {
-                    SDKStorage.clearSessionStorage(); return false
+                    SDKStorage.clearSessionStorage()
+                    return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
                 }
             }
-            return true
+            return SessionTokenUpdateResult(success: true, shouldFirePayloadUpdated: frontTokenResult.shouldFirePayloadUpdated, didMutateSession: true, clearsSession: false)
         }
+
+        if result.success && result.shouldFirePayloadUpdated {
+            SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+        }
+
+        return result.success
     }
 
     /// Clears all local session state — tokens plus the `FrontToken` / `AntiCSRF`
     /// in-memory caches — WITHOUT a network `/signout`. Use when a caller has torn
     /// down the session out of band and needs the SDK's local view invalidated.
     ///
-    /// Serialized on the same barrier queue as `installSession` and the SDK's
-    /// refresh flow, so a local clear is atomic with respect to an in-flight
-    /// refresh. Never called from within that queue's own work items, so this
-    /// sync barrier cannot deadlock. May block briefly while a refresh is in
-    /// flight; do not call it on the main thread.
+    /// Invalidates responses from requests that started before the clear, so stale
+    /// response headers cannot recreate the removed session.
     ///
     /// Intentionally does NOT fire a session-lifecycle event; callers own semantic events.
+    ///
+    /// - Returns: `true` when local state was cleared; `false` if the SDK has not
+    ///   been initialized or storage cleanup failed.
     @discardableResult
     public static func clearSessionLocally() -> Bool {
-        return SuperTokensURLProtocol.readWriteDispatchQueue.sync(flags: .barrier) {
-            FrontToken.removeToken()
-        }
+        guard SuperTokens.isInitCalled else { return false }
+
+        return SessionStateCoordinator.performAuthoritativeMutation {
+            SessionTokenUpdateResult(success: FrontToken.removeToken(), shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: true)
+        }.success
     }
 }

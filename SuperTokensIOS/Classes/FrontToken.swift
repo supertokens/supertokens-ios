@@ -7,6 +7,11 @@
 
 import Foundation
 
+internal struct FrontTokenUpdateResult {
+    let success: Bool
+    let shouldFirePayloadUpdated: Bool
+}
+
 internal class FrontToken {
     static var tokenInMemory: String? = nil
     static var userDefaultsKey: String = SDKStorage.frontTokenKey
@@ -80,7 +85,7 @@ internal class FrontToken {
         return true
     }
     
-    private static func setFrontToken(frontToken: String?) -> Bool {
+    private static func setFrontTokenWithoutFiringEvent(frontToken: String?) -> FrontTokenUpdateResult {
         let oldToken = getFrontTokenFromStorage()
         var shouldFirePayloadUpdated = false
         
@@ -97,14 +102,10 @@ internal class FrontToken {
         }
         
         guard setFrontTokenToStorage(frontToken: frontToken) else {
-            return false
+            return FrontTokenUpdateResult(success: false, shouldFirePayloadUpdated: false)
         }
 
-        if shouldFirePayloadUpdated {
-            SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
-        }
-
-        return true
+        return FrontTokenUpdateResult(success: true, shouldFirePayloadUpdated: shouldFirePayloadUpdated)
     }
     
     private static func removeTokenFromStorage() -> Bool {
@@ -142,7 +143,11 @@ internal class FrontToken {
     }
     
     @discardableResult
-    static func setItem(frontToken: String) -> Bool {
+    static func setItemWithoutFiringEvent(frontToken: String) -> FrontTokenUpdateResult {
+        if frontToken == "remove" {
+            return FrontTokenUpdateResult(success: FrontToken.removeToken(), shouldFirePayloadUpdated: false)
+        }
+
         // We update the refresh attempt info here as well, since this means that we've updated the session in some way
         // This could be both by a refresh call or if the access token was updated in a custom endpoint
         // By saving every time the access token has been updated, we cause an early retry if
@@ -151,20 +156,28 @@ internal class FrontToken {
         // As a side-effect we reload the anti-csrf token to check if it was changed by another tab.
         guard Utils.saveLastAccessTokenUpdate() else {
             SDKStorage.clearSessionStorage()
-            return false
-        }
-        
-        if frontToken == "remove" {
-            return FrontToken.removeToken()
-        }
-        
-        guard FrontToken.setFrontToken(frontToken: frontToken) else {
-            tokenInMemory = nil
-            SDKStorage.clearSessionStorage()
-            return false
+            return FrontTokenUpdateResult(success: false, shouldFirePayloadUpdated: false)
         }
 
-        return true
+        let result = FrontToken.setFrontTokenWithoutFiringEvent(frontToken: frontToken)
+        guard result.success else {
+            tokenInMemory = nil
+            SDKStorage.clearSessionStorage()
+            return result
+        }
+
+        return result
+    }
+
+    @discardableResult
+    static func setItem(frontToken: String) -> Bool {
+        let result = setItemWithoutFiringEvent(frontToken: frontToken)
+
+        if result.success && result.shouldFirePayloadUpdated {
+            SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+        }
+
+        return result.success
     }
     
     static func doesTokenExist() -> Bool {

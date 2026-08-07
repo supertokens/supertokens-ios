@@ -230,25 +230,23 @@ internal class SDKStorage {
     internal static func clearSessionStorage() -> Bool {
         var didClear = true
 
-        for key in sessionKeys() {
+        for key in sessionKeysInRemovalOrder() {
             didClear = remove(key) && didClear
         }
 
-        if didClear {
-            FrontToken.clearInMemoryCache()
-            AntiCSRF.clearInMemoryCache()
-        }
+        FrontToken.clearInMemoryCache()
+        AntiCSRF.clearInMemoryCache()
 
         return didClear
     }
 
-    private static func sessionKeys() -> [String] {
+    private static func sessionKeysInRemovalOrder() -> [String] {
         return [
+            frontTokenKey,
             genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME),
             genericKey(SuperTokensConstants.REFRESH_TOKEN_NAME),
             genericKey(SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE),
             genericKey("sIRTFrontend"),
-            frontTokenKey,
             antiCSRFKey
         ]
     }
