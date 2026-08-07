@@ -85,22 +85,40 @@ internal class FrontToken {
         return true
     }
     
+    /// Extracts a canonical string form of a front token's `up` payload, or nil if
+    /// the token is not base64-encoded UTF8 JSON with an `up` object. Unlike
+    /// `parseFrontToken`, which force-unwraps and traps, this tolerates a malformed
+    /// value so a corrupt token already in storage cannot crash a write.
+    private static func payloadString(fromFrontToken frontToken: String) -> String? {
+        guard let base64decodedData = Data(base64Encoded: frontToken),
+              let decodedString = String(data: base64decodedData, encoding: .utf8),
+              let jsonData = decodedString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+              let payload = json["up"] as? [String: Any],
+              let payloadData = try? JSONSerialization.data(withJSONObject: payload),
+              let payloadString = String(data: payloadData, encoding: .utf8) else {
+            return nil
+        }
+
+        return payloadString
+    }
+
     private static func setFrontTokenWithoutFiringEvent(frontToken: String?) -> FrontTokenUpdateResult {
         let oldToken = getFrontTokenFromStorage()
         var shouldFirePayloadUpdated = false
-        
-        if oldToken != nil && frontToken != nil {
-            let oldTokenPayload: [String: Any] = parseFrontToken(frontTokenDecoded: oldToken!)["up"] as! [String : Any]
-            let newPayload: [String: Any] = parseFrontToken(frontTokenDecoded: frontToken!)["up"] as! [String : Any]
-            
-            let oldPayloadString = String(data: try! JSONSerialization.data(withJSONObject: oldTokenPayload), encoding: .utf8)!
-            let newPayloadString = String(data: try! JSONSerialization.data(withJSONObject: newPayload), encoding: .utf8)!
-            
-            if oldPayloadString != newPayloadString {
+
+        if let oldToken = oldToken, let newToken = frontToken {
+            let oldPayloadString = payloadString(fromFrontToken: oldToken)
+            let newPayloadString = payloadString(fromFrontToken: newToken)
+
+            // If either token cannot be parsed (e.g. a corrupt value left in
+            // storage), do not crash — treat the payload as changed so observers
+            // re-read, which is the safe superset of the equality check below.
+            if oldPayloadString == nil || newPayloadString == nil || oldPayloadString != newPayloadString {
                 shouldFirePayloadUpdated = true
             }
         }
-        
+
         guard setFrontTokenToStorage(frontToken: frontToken) else {
             return FrontTokenUpdateResult(success: false, shouldFirePayloadUpdated: false)
         }
