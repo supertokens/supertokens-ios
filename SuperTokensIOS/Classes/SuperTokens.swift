@@ -35,11 +35,21 @@ public class SuperTokens {
     static var signOutUrl: String = ""
     static var rid: String = ""
     static var config: NormalisedInputType? = nil
+    internal static var signOutRequestExecutor: SuperTokensURLProtocol.NetworkRequestExecutor = executeSignOutRequest
+
+    private static func executeSignOutRequest(_ request: URLRequest, completion: @escaping SuperTokensURLProtocol.NetworkCompletion) {
+        let sessionConfiguration = URLSessionConfiguration.default
+        sessionConfiguration.protocolClasses?.insert(SuperTokensURLProtocol.self, at: 0)
+        URLSession(configuration: sessionConfiguration)
+            .dataTask(with: request, completionHandler: completion)
+            .resume()
+    }
     
     
     internal static func resetForTests() {
         SessionStateCoordinator.resetForTests()
         SuperTokensURLProtocol.resetForTests()
+        signOutRequestExecutor = executeSignOutRequest
         _ = FrontToken.removeToken()
         _ = AntiCSRF.removeToken()
         _ = SDKStorage.clearSessionStorage()
@@ -71,7 +81,10 @@ public class SuperTokens {
     }
     
     public static func doesSessionExist() -> Bool {
-        let tokenInfo = SessionStateCoordinator.snapshot { FrontToken.getToken() }.value
+        let sessionSnapshot = SessionStateCoordinator.snapshot {
+            (tokenInfo: FrontToken.getToken(), localState: Utils.getLocalSessionState())
+        }
+        let tokenInfo = sessionSnapshot.value.tokenInfo
         
         if tokenInfo == nil {
             return false
@@ -83,9 +96,7 @@ public class SuperTokens {
             let executionSemaphore = DispatchSemaphore(value: 0)
             var shouldRetry: Bool = false
             var error: Error?
-            let preRequestLocalSessionState = SessionStateCoordinator.snapshot { Utils.getLocalSessionState() }.value
-            
-            SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, callback: { unauthResponse in
+            SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: sessionSnapshot.value.localState, expectedGeneration: sessionSnapshot.generation, callback: { unauthResponse in
                 
                 if unauthResponse.status == .API_ERROR {
                     error = unauthResponse.error
@@ -97,11 +108,15 @@ public class SuperTokens {
             })
             
             executionSemaphore.wait()
-            
+
             // Here we dont throw the error and instead return false, because
             // otherwise users would have to use a try catch just to call doesSessionExist
             if error != nil {
                 return false
+            }
+
+            if !SessionStateCoordinator.isCurrent(sessionSnapshot.generation) {
+                return doesSessionExist()
             }
             
             return shouldRetry
@@ -122,10 +137,6 @@ public class SuperTokens {
             return
         }
         
-        let sessionConfiguration: URLSessionConfiguration = URLSessionConfiguration.default
-        sessionConfiguration.protocolClasses?.insert(SuperTokensURLProtocol.self, at: 0)
-        let customSession = URLSession(configuration: sessionConfiguration)
-        
         var signOutRequest = URLRequest(url: url)
         signOutRequest.httpMethod = "POST"
         signOutRequest.addValue(SuperTokens.rid, forHTTPHeaderField: "rid")
@@ -134,7 +145,7 @@ public class SuperTokens {
         
         let executionSemaphore = DispatchSemaphore(value: 0)
         
-        customSession.dataTask(with: signOutRequest, completionHandler: {
+        signOutRequestExecutor(signOutRequest, {
             data, response, error in
 
             if let error = error {
@@ -145,11 +156,9 @@ public class SuperTokens {
             
             if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode {
-                    // The session was already invalidated: the interceptor's refresh
-                    // attempt failed and cleared local state plus fired the session-expiry
-                    // event. For sign-out that is success — the session no longer exists —
-                    // so we still resolve the completion handler. Failing to call it here
-                    // strands any caller that awaits sign-out (e.g. a wrapped continuation).
+                    // The requested session is already invalid, absent, or was replaced
+                    // while this request was in flight. In each case the original session
+                    // is signed out, so resolve without mutating any replacement session.
                     completionHandler(nil)
                     executionSemaphore.signal()
                     return
@@ -181,7 +190,7 @@ public class SuperTokens {
             }
             
             // we do not send an event here since it's triggered in fireSessionUpdateEventsIfNecessary.
-        }).resume()
+        })
     }
     
     public static func attemptRefreshingSession() throws -> Bool {
@@ -189,12 +198,22 @@ public class SuperTokens {
             throw SuperTokensError.initError(message: "Init function not called")
         }
         
-        let preRequestLocalSessionState = Utils.getLocalSessionState()
+        let sessionSnapshot = SessionStateCoordinator.snapshot { Utils.getLocalSessionState() }
+        let shouldRetry = try attemptRefreshingSession(preRequestLocalSessionState: sessionSnapshot.value, expectedGeneration: sessionSnapshot.generation)
+
+        if !SessionStateCoordinator.isCurrent(sessionSnapshot.generation) {
+            return doesSessionExist()
+        }
+
+        return shouldRetry
+    }
+
+    private static func attemptRefreshingSession(preRequestLocalSessionState: LocalSessionState, expectedGeneration: UInt64) throws -> Bool {
         var error: Error?
         let executionSemaphore = DispatchSemaphore(value: 0)
         var shouldRetry: Bool = false
         
-        SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, callback: {
+        SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, expectedGeneration: expectedGeneration, callback: {
             unauthResponse in
             
             if unauthResponse.status == .API_ERROR {
@@ -227,21 +246,27 @@ public class SuperTokens {
     }
     
     public static func getAccessTokenPayloadSecurely() throws -> [String: Any] {
-        let tokenInfo = SessionStateCoordinator.snapshot { () -> (expiry: Int, payload: [String: Any])? in
+        let sessionSnapshot = SessionStateCoordinator.snapshot { () -> (tokenInfo: (expiry: Int, payload: [String: Any])?, localState: LocalSessionState) in
+            let localState = Utils.getLocalSessionState()
             guard let frontToken = FrontToken.getToken(),
                   let accessTokenExpiry = frontToken["ate"] as? Int,
                   let userPayload = frontToken["up"] as? [String: Any] else {
-                return nil
+                return (nil, localState)
             }
-            return (accessTokenExpiry, userPayload)
-        }.value
+            return ((accessTokenExpiry, userPayload), localState)
+        }
+        let tokenInfo = sessionSnapshot.value.tokenInfo
 
         guard let tokenInfo else {
             throw SuperTokensError.illegalAccess(message: "No session exists")
         }
         
         if tokenInfo.expiry < Int(Date().timeIntervalSince1970 * 1000) {
-            let retry = try SuperTokens.attemptRefreshingSession()
+            let retry = try attemptRefreshingSession(preRequestLocalSessionState: sessionSnapshot.value.localState, expectedGeneration: sessionSnapshot.generation)
+
+            if !SessionStateCoordinator.isCurrent(sessionSnapshot.generation) {
+                return try getAccessTokenPayloadSecurely()
+            }
             
             if retry {
                 return try getAccessTokenPayloadSecurely()
@@ -293,28 +318,6 @@ public class SuperTokens {
         }.value
     }
 
-    /// A front token is well-formed if it is base64-encoded UTF8 JSON containing
-    /// `uid` (String), `ate` (Int), and `up` ([String: Any]). Does not delegate to
-    /// `FrontToken.parseFrontToken`, which force-unwraps and would crash on a
-    /// malformed value; this is a pure, side-effect-free check.
-    private static func isWellFormedFrontToken(_ frontToken: String) -> Bool {
-        guard let decodedData = Data(base64Encoded: frontToken),
-              let decodedString = String(data: decodedData, encoding: .utf8),
-              let jsonData = decodedString.data(using: .utf8),
-              let jsonObject = try? JSONSerialization.jsonObject(with: jsonData),
-              let json = jsonObject as? [String: Any] else {
-            return false
-        }
-
-        guard json["uid"] is String,
-              json["ate"] is Int,
-              json["up"] is [String: Any] else {
-            return false
-        }
-
-        return true
-    }
-
     /// Installs a session from tokens obtained OUT OF BAND (e.g. a WKWebView / Hub
     /// magic-link flow) whose responses never traversed `SuperTokensURLProtocol`.
     ///
@@ -335,10 +338,10 @@ public class SuperTokens {
     /// - Returns: `true` on success. Returns `false` without writing anything if
     ///   `initialize()` has not been called, if `accessToken`/`refreshToken`/
     ///   `frontToken` is empty, or if `frontToken` is malformed. On any write
-    ///   failure the session storage is cleared best-effort (`clearSessionStorage`),
-    ///   leaving the SDK signed out, and `false` is returned. Storage removal can
-    ///   itself fail (e.g. a locked keychain), so a partial write is possible on a
-    ///   `false` return; treat `false` strictly as "no usable session".
+    ///   failure, session storage cleanup is attempted and `false` is returned.
+    ///   Storage removal can itself fail (e.g. a locked keychain), so callers must
+    ///   not assume a `false` return means storage is empty or a previous session
+    ///   was fully removed.
     @discardableResult
     public static func installSession(accessToken: String,
                                       refreshToken: String,
@@ -346,7 +349,7 @@ public class SuperTokens {
                                       antiCSRFToken: String? = nil) -> Bool {
         guard SuperTokens.isInitCalled else { return false }
         guard !accessToken.isEmpty, !refreshToken.isEmpty, !frontToken.isEmpty else { return false }
-        guard isWellFormedFrontToken(frontToken) else { return false }
+        guard FrontToken.isWellFormed(frontToken) else { return false }
 
         let result = SessionStateCoordinator.performAuthoritativeMutation {
             // Intentionally does NOT fire a session-lifecycle event; callers own semantic events.

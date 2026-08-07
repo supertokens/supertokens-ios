@@ -40,10 +40,20 @@ internal struct SessionTokenUpdateResult {
     let shouldFirePayloadUpdated: Bool
     let didMutateSession: Bool
     let clearsSession: Bool
+    let startsNewSession: Bool
+
+    init(success: Bool, shouldFirePayloadUpdated: Bool, didMutateSession: Bool, clearsSession: Bool, startsNewSession: Bool = false) {
+        self.success = success
+        self.shouldFirePayloadUpdated = shouldFirePayloadUpdated
+        self.didMutateSession = didMutateSession
+        self.clearsSession = clearsSession
+        self.startsNewSession = startsNewSession
+    }
 }
 
 internal enum SessionResponseUpdateResult {
-    case stale
+    case staleGeneration
+    case outOfOrder
     case failed
     case applied(shouldFirePayloadUpdated: Bool, generation: UInt64)
 }
@@ -76,12 +86,16 @@ internal class SessionStateCoordinator {
         return result
     }
 
-    internal static func applyResponse(expectedGeneration: UInt64, requestSequence: UInt64, _ body: () -> SessionTokenUpdateResult) -> SessionResponseUpdateResult {
+    internal static func applyResponse(expectedGeneration: UInt64, requestSequence: UInt64, allowOutOfOrder: (() -> Bool)? = nil, _ body: () -> SessionTokenUpdateResult) -> SessionResponseUpdateResult {
         lock.lock()
         defer { lock.unlock() }
 
-        guard generation == expectedGeneration, requestSequence >= lastAppliedRequestSequence else {
-            return .stale
+        guard generation == expectedGeneration else {
+            return .staleGeneration
+        }
+
+        guard requestSequence >= lastAppliedRequestSequence || allowOutOfOrder?() == true else {
+            return .outOfOrder
         }
 
         let result = body()
@@ -92,7 +106,7 @@ internal class SessionStateCoordinator {
         }
 
         if result.didMutateSession {
-            if result.clearsSession {
+            if result.clearsSession || result.startsNewSession {
                 generation &+= 1
                 lastAppliedRequestSequence = 0
             } else {
@@ -357,12 +371,20 @@ internal class Utils {
         return result.success
     }
 
-    internal static func saveTokenFromHeadersWithoutFiringEvent(httpResponse: HTTPURLResponse) -> SessionTokenUpdateResult {
+    internal static func saveTokenFromHeadersWithoutFiringEvent(httpResponse: HTTPURLResponse, isRefreshResponse: Bool = false) -> SessionTokenUpdateResult {
         guard var headerFields: [String: String] = httpResponse.allHeaderFields as? [String: String] else {
             return SessionTokenUpdateResult(success: true, shouldFirePayloadUpdated: false, didMutateSession: false, clearsSession: false)
         }
 
         headerFields.lowerCaseKeys()
+
+        let startsNewSession = responseStartsNewSession(headerFields: headerFields, isRefreshResponse: isRefreshResponse)
+
+        if let frontToken = headerFields[SuperTokensConstants.frontTokenHeaderKey],
+           frontToken != "remove",
+           !FrontToken.isWellFormed(frontToken) {
+            return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: false, clearsSession: false)
+        }
 
         if headerFields[SuperTokensConstants.frontTokenHeaderKey] == "remove" {
             guard FrontToken.removeToken() else {
@@ -412,7 +434,31 @@ internal class Utils {
             }
         }
 
-        return SessionTokenUpdateResult(success: true, shouldFirePayloadUpdated: shouldFirePayloadUpdated, didMutateSession: didMutateSession, clearsSession: false)
+        return SessionTokenUpdateResult(success: true, shouldFirePayloadUpdated: shouldFirePayloadUpdated, didMutateSession: didMutateSession, clearsSession: false, startsNewSession: startsNewSession)
+    }
+
+    internal static func responseStartsNewSession(httpResponse: HTTPURLResponse, isRefreshResponse: Bool = false) -> Bool {
+        guard var headerFields = httpResponse.allHeaderFields as? [String: String] else { return false }
+        headerFields.lowerCaseKeys()
+        return responseStartsNewSession(headerFields: headerFields, isRefreshResponse: isRefreshResponse)
+    }
+
+    private static func responseStartsNewSession(headerFields: [String: String], isRefreshResponse: Bool) -> Bool {
+        guard let incomingFrontToken = headerFields[SuperTokensConstants.frontTokenHeaderKey],
+              incomingFrontToken != "remove",
+              let incomingUserId = FrontToken.parseFrontToken(frontTokenDecoded: incomingFrontToken)?["uid"] as? String else {
+            return false
+        }
+
+        if !isRefreshResponse && headerFields[SuperTokensConstants.refreshTokenHeaderKey] != nil {
+            return true
+        }
+
+        guard let currentUserId = FrontToken.getToken()?["uid"] as? String else {
+            return true
+        }
+
+        return currentUserId != incomingUserId
     }
     
     internal static func getTokenForHeaderAuth(tokenType: TokenType) -> String? {

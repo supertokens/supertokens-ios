@@ -8,12 +8,17 @@
 import Foundation
 
 public class SuperTokensURLProtocol: URLProtocol {
+    internal typealias NetworkCompletion = (Data?, URLResponse?, Error?) -> Void
+    internal typealias NetworkRequestExecutor = (URLRequest, @escaping NetworkCompletion) -> Void
+
     private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.session.readwrite", attributes: .concurrent)
     private static let refreshStateQueue = DispatchQueue(label: "io.supertokens.session.refresh")
     private static let refreshApplicationCallbackKey = "io.supertokens.session.refresh.application-callback"
     private static var refreshInProgress = false
+    private static var activeRefreshGeneration: UInt64? = nil
     private static var refreshEpoch: UInt64 = 0
     private static var refreshCallbacks: [(UnauthorisedResponse) -> Void] = []
+    internal static var networkRequestExecutor: NetworkRequestExecutor = executeNetworkRequest
     private var sessionRefreshAttempts = 0
     
     // Refer to comment in makeRequest to know why this is needed
@@ -21,6 +26,12 @@ public class SuperTokensURLProtocol: URLProtocol {
     
     override public init(request: URLRequest, cachedResponse: CachedURLResponse?, client: URLProtocolClient?) {
         super.init(request: request, cachedResponse: cachedResponse, client: client)
+    }
+
+    private static func executeNetworkRequest(_ request: URLRequest, completion: @escaping NetworkCompletion) {
+        URLSession(configuration: URLSessionConfiguration.default)
+            .dataTask(with: request, completionHandler: completion)
+            .resume()
     }
     
     public override class func canInit(with request: URLRequest) -> Bool {
@@ -61,8 +72,9 @@ public class SuperTokensURLProtocol: URLProtocol {
         // we have a read write lock here. We take a read lock while making a request and a write lock while refreshing
         // because if we dno't do that, then there may be a race condition where we may read a new id refresh token from storage
         // but the cookies may still be the older ones.
+        let requestExecutor = SuperTokensURLProtocol.networkRequestExecutor
         SuperTokensURLProtocol.readWriteDispatchQueue.async {
-            self.makeRequest()
+            self.makeRequest(networkRequestExecutor: requestExecutor)
         }
     }
     
@@ -82,9 +94,10 @@ public class SuperTokensURLProtocol: URLProtocol {
         return _mutableRequest
     }
     
-    func makeRequest() {
+    func makeRequest(networkRequestExecutor: NetworkRequestExecutor? = nil, expectedGeneration: UInt64? = nil, onGenerationChange: (() -> Void)? = nil) {
         var mutableRequest = (self.request as NSURLRequest).mutableCopy() as! NSMutableURLRequest
         var didAddAuthorizationHeader = false
+        let requestExecutor = networkRequestExecutor ?? SuperTokensURLProtocol.networkRequestExecutor
         
         // When this function is called for retrying we cannot use the global request
         // because that will not have the modified headers
@@ -123,17 +136,26 @@ public class SuperTokensURLProtocol: URLProtocol {
         let preRequestLocalSessionState = sessionSnapshot.value
         let requestGeneration = sessionSnapshot.generation
         let requestSequence = sessionSnapshot.sequence
+
+        if let expectedGeneration, requestGeneration != expectedGeneration {
+            onGenerationChange?()
+            return
+        }
         
         let apiRequest = mutableRequest.copy() as! URLRequest
+        let isRefreshRequest = apiRequest.url?.absoluteString == SuperTokens.refreshTokenUrl
         
-        // We need to use a custom URLSession here because otherwise it will use this protocol, causing an infinite loop
-        let customSession = URLSession(configuration: URLSessionConfiguration.default)
-        customSession.dataTask(with: apiRequest, completionHandler: {
+        // A custom URLSession bypasses this protocol and avoids an interception loop.
+        requestExecutor(apiRequest, {
             data, response, error in
             
             if let httpResponse: HTTPURLResponse = response as? HTTPURLResponse {
-                let tokenUpdate = SessionStateCoordinator.applyResponse(expectedGeneration: requestGeneration, requestSequence: requestSequence) {
-                    Utils.saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse)
+                let tokenUpdate = SessionStateCoordinator.applyResponse(
+                    expectedGeneration: requestGeneration,
+                    requestSequence: requestSequence,
+                    allowOutOfOrder: { Utils.responseStartsNewSession(httpResponse: httpResponse, isRefreshResponse: isRefreshRequest) }
+                ) {
+                    Utils.saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse, isRefreshResponse: isRefreshRequest)
                 }
 
                 if case .failed = tokenUpdate {
@@ -141,11 +163,15 @@ public class SuperTokensURLProtocol: URLProtocol {
                     return
                 }
 
-                if case .stale = tokenUpdate {
-                    if httpResponse.statusCode != SuperTokens.config!.sessionExpiredStatusCode {
-                        self.resolveToUser(data: data, response: response, error: error)
-                        return
-                    }
+                if case .staleGeneration = tokenUpdate {
+                    self.resolveToUser(data: data, response: response, error: error)
+                    return
+                }
+
+                if case .outOfOrder = tokenUpdate,
+                   httpResponse.statusCode != SuperTokens.config!.sessionExpiredStatusCode {
+                    self.resolveToUser(data: data, response: response, error: error)
+                    return
                 }
 
                 if case .applied(let shouldFirePayloadUpdated, let committedGeneration) = tokenUpdate {
@@ -181,14 +207,20 @@ public class SuperTokensURLProtocol: URLProtocol {
                     } else {
                         mutableRequest = self.removeAuthHeaderIfMatchesLocalToken(_mutableRequest: mutableRequest)
                     }
-                    SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, callback: {
+                    SuperTokensURLProtocol.onUnauthorisedResponse(preRequestLocalSessionState: preRequestLocalSessionState, expectedGeneration: requestGeneration, callback: {
                         unauthResponse in
                         
                         self.sessionRefreshAttempts += 1;
                         
                         if unauthResponse.status == .RETRY {
                             self.requestForRetry = mutableRequest
-                            self.makeRequest()
+                            self.makeRequest(
+                                networkRequestExecutor: requestExecutor,
+                                expectedGeneration: requestGeneration,
+                                onGenerationChange: {
+                                    self.resolveToUser(data: data, response: response, error: error)
+                                }
+                            )
                         } else {                            
                             if unauthResponse.error != nil {
                                 self.resolveToUser(data: nil, response: nil, error: unauthResponse.error)
@@ -203,7 +235,7 @@ public class SuperTokensURLProtocol: URLProtocol {
             } else {
                 self.resolveToUser(data: data, response: response, error: error)
             }
-        }).resume()
+        })
     }
     
     func resolveToUser(data: Data?, response: URLResponse?, error: Error?) {
@@ -241,6 +273,7 @@ public class SuperTokensURLProtocol: URLProtocol {
             let callbacks = refreshCallbacks
             refreshCallbacks.removeAll()
             refreshInProgress = false
+            activeRefreshGeneration = nil
 
             DispatchQueue.global().async {
                 callbacks.forEach { $0(response) }
@@ -255,13 +288,15 @@ public class SuperTokensURLProtocol: URLProtocol {
             callbacks = refreshCallbacks
             refreshCallbacks.removeAll()
             refreshInProgress = false
+            activeRefreshGeneration = nil
         }
 
         let response = UnauthorisedResponse(status: .API_ERROR, error: SuperTokensError.generalError(message: "Session refresh reset during testing"))
         callbacks.forEach { $0(response) }
+        networkRequestExecutor = executeNetworkRequest
     }
 
-    static func onUnauthorisedResponse(preRequestLocalSessionState: LocalSessionState, callback: @escaping (UnauthorisedResponse) -> Void) {
+    static func onUnauthorisedResponse(preRequestLocalSessionState: LocalSessionState, expectedGeneration: UInt64, callback: @escaping (UnauthorisedResponse) -> Void) {
         if Thread.current.threadDictionary[refreshApplicationCallbackKey] as? Bool == true {
             callback(UnauthorisedResponse(status: .SESSION_EXPIRED))
             return
@@ -293,6 +328,13 @@ public class SuperTokensURLProtocol: URLProtocol {
             let refreshGeneration = sessionSnapshot.generation
             let refreshSequence = sessionSnapshot.sequence
 
+            if refreshGeneration != expectedGeneration {
+                DispatchQueue.global().async {
+                    callback(UnauthorisedResponse(status: .SESSION_EXPIRED))
+                }
+                return
+            }
+
             if postLockLocalSessionState.status == .NOT_EXISTS {
                 DispatchQueue.global().async {
                     SuperTokens.config!.eventHandler(.UNAUTHORISED)
@@ -308,27 +350,43 @@ public class SuperTokensURLProtocol: URLProtocol {
                 return
             }
 
+            if refreshInProgress && activeRefreshGeneration != expectedGeneration {
+                let staleCallbacks = refreshCallbacks
+                refreshCallbacks.removeAll()
+                refreshInProgress = false
+                activeRefreshGeneration = nil
+                refreshEpoch &+= 1
+                DispatchQueue.global().async {
+                    staleCallbacks.forEach { $0(UnauthorisedResponse(status: .SESSION_EXPIRED)) }
+                }
+            }
+
             refreshCallbacks.append(callback)
             guard !refreshInProgress else { return }
             refreshInProgress = true
+            activeRefreshGeneration = expectedGeneration
             let currentRefreshEpoch = refreshEpoch
 
             let initialRefreshRequest = sessionSnapshot.value.request!
+            let requestExecutor = networkRequestExecutor
             DispatchQueue.global().async {
                 let refreshRequest = runRefreshApplicationCallback {
                     SuperTokens.config!.preAPIHook(.REFRESH_SESSION, initialRefreshRequest)
                 }
 
-                let customSession = URLSession(configuration: URLSessionConfiguration.default)
-                let refreshTask = customSession.dataTask(with: refreshRequest, completionHandler: { _, response, error in
+                requestExecutor(refreshRequest, { _, response, error in
                     guard let httpResponse = response as? HTTPURLResponse else {
                         completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .API_ERROR, error: error))
                         return
                     }
 
                     let isUnauthorised = httpResponse.statusCode == SuperTokens.config!.sessionExpiredStatusCode
-                    let tokenUpdate = SessionStateCoordinator.applyResponse(expectedGeneration: refreshGeneration, requestSequence: refreshSequence) {
-                        let result = Utils.saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse)
+                    let tokenUpdate = SessionStateCoordinator.applyResponse(
+                        expectedGeneration: refreshGeneration,
+                        requestSequence: refreshSequence,
+                        allowOutOfOrder: { Utils.responseStartsNewSession(httpResponse: httpResponse, isRefreshResponse: true) }
+                    ) {
+                        let result = Utils.saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse, isRefreshResponse: true)
                         guard result.success else { return result }
 
                         if isUnauthorised && httpResponse.value(forHTTPHeaderField: SuperTokensConstants.frontTokenHeaderKey) == nil {
@@ -339,7 +397,10 @@ public class SuperTokensURLProtocol: URLProtocol {
                     }
 
                     switch tokenUpdate {
-                    case .stale:
+                    case .staleGeneration:
+                        completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .SESSION_EXPIRED))
+                        return
+                    case .outOfOrder:
                         completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: statusAfterStaleResponse()))
                         return
                     case .failed:
@@ -353,7 +414,7 @@ public class SuperTokensURLProtocol: URLProtocol {
                         }
 
                         guard SessionStateCoordinator.isCurrent(committedGeneration) else {
-                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: statusAfterStaleResponse()))
+                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .SESSION_EXPIRED))
                             return
                         }
 
@@ -367,7 +428,7 @@ public class SuperTokensURLProtocol: URLProtocol {
                         }
 
                         guard SessionStateCoordinator.isCurrent(committedGeneration) else {
-                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: statusAfterStaleResponse()))
+                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .SESSION_EXPIRED))
                             return
                         }
 
@@ -381,7 +442,7 @@ public class SuperTokensURLProtocol: URLProtocol {
                         }
 
                         guard SessionStateCoordinator.isCurrent(committedGeneration) else {
-                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: statusAfterStaleResponse()))
+                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .SESSION_EXPIRED))
                             return
                         }
 
@@ -396,11 +457,10 @@ public class SuperTokensURLProtocol: URLProtocol {
                         if SessionStateCoordinator.isCurrent(committedGeneration) {
                             completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .RETRY))
                         } else {
-                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: statusAfterStaleResponse()))
+                            completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .SESSION_EXPIRED))
                         }
                     }
                 })
-                refreshTask.resume()
             }
         }
     }
