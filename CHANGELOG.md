@@ -15,11 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 
-- Fixed a session teardown race that could trigger an unnecessary refresh request and 401 during sign-out.
 - `installSession` now validates `frontToken` before writing anything, rejecting malformed values (including the `"remove"` sentinel) instead of storing them and crashing later.
 - `installSession` now rejects empty `accessToken`/`refreshToken`/`frontToken` instead of silently deleting the corresponding stored token.
 - `installSession` now clears any anti-CSRF token left over from a previous session when installing a new session without one.
 - `installSession` and `clearSessionLocally` now serialize their writes on the same barrier queue used by the SDK's own 401 refresh flow, so an out-of-band install/clear can't race an in-flight refresh.
+
+
+## [0.5.1] - 2026-08-06
+
+### Fixes
+
+- Fixed a session teardown race that could trigger an unnecessary refresh request and 401 during sign-out.
 
 ## [0.5.0] - 2026-06-29
 
