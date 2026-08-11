@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-08-11
+
 ### Fixes
 
 - Intercepted requests once again include the stored access token when both access and refresh tokens exist, even if local session metadata is incomplete. Existing authorization headers are preserved, while session existence, anti-CSRF, and refresh handling remain strict.
