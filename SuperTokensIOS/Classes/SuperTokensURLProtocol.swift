@@ -125,11 +125,9 @@ public class SuperTokensURLProtocol: URLProtocol {
             let tokenTransferMethod = SuperTokens.config!.tokenTransferMethod
             mutableRequest.setValue(tokenTransferMethod.rawValue, forHTTPHeaderField: "st-auth-mode")
 
-            if localSessionState.status == .EXISTS {
-                let hadAuthorizationHeader = mutableRequest.value(forHTTPHeaderField: "Authorization") != nil
-                Utils.setAuthorizationHeaderIfRequired(mutableRequest: mutableRequest)
-                didAddAuthorizationHeader = !hadAuthorizationHeader && mutableRequest.value(forHTTPHeaderField: "Authorization") != nil
-            }
+            let hadAuthorizationHeader = mutableRequest.value(forHTTPHeaderField: "Authorization") != nil
+            Utils.setAuthorizationHeaderIfRequired(mutableRequest: mutableRequest)
+            didAddAuthorizationHeader = !hadAuthorizationHeader && mutableRequest.value(forHTTPHeaderField: "Authorization") != nil
             return localSessionState
         }
 

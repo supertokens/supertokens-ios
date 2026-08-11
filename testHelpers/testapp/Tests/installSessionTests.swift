@@ -580,6 +580,67 @@ final class InstallSessionTests: XCTestCase {
         XCTAssertFalse(siblingWriteExecuted)
     }
 
+    func testRequestAddsStoredAuthorizationWithoutLocalSession() throws {
+        _ = initAndOverrideStorage()
+        XCTAssertTrue(Utils.setToken(tokenType: .access, value: "AT"))
+        XCTAssertTrue(SDKStorage.set(SDKStorage.antiCSRFKey, value: "ACSRF"))
+        XCTAssertTrue(SuperTokensURLProtocol.canInit(with: URLRequest(url: URL(string: "https://api.example.com/protected")!)))
+        XCTAssertFalse(SuperTokensURLProtocol.canInit(with: URLRequest(url: URL(string: "https://unrelated.example/protected")!)))
+
+        func captureRequest(authorization: String? = nil) throws -> URLRequest {
+            var capturedRequest: URLRequest?
+            var request = URLRequest(url: URL(string: "https://api.example.com/protected")!)
+            request.setValue(authorization, forHTTPHeaderField: "Authorization")
+            let urlProtocol = SuperTokensURLProtocol(request: request, cachedResponse: nil, client: nil)
+            urlProtocol.makeRequest(networkRequestExecutor: { request, _ in
+                capturedRequest = request
+            })
+            return try XCTUnwrap(capturedRequest)
+        }
+
+        XCTAssertFalse(SuperTokens.doesSessionExist())
+        XCTAssertNil(try captureRequest().value(forHTTPHeaderField: "Authorization"))
+
+        XCTAssertTrue(Utils.setToken(tokenType: .refresh, value: "RT"))
+
+        let request = try captureRequest()
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer AT")
+        XCTAssertNil(request.value(forHTTPHeaderField: SuperTokensConstants.antiCSRFHeaderKey))
+        XCTAssertFalse(SuperTokens.doesSessionExist())
+        XCTAssertEqual(try captureRequest(authorization: "Bearer custom").value(forHTTPHeaderField: "Authorization"), "Bearer custom")
+        XCTAssertEqual(try captureRequest(authorization: "Bearer AT").value(forHTTPHeaderField: "Authorization"), "Bearer AT")
+    }
+
+    func testRefreshStillRequiresLocalSessionWhenStoredTokensRemain() throws {
+        _ = initAndOverrideStorage()
+        XCTAssertTrue(Utils.setToken(tokenType: .access, value: "AT"))
+        XCTAssertTrue(Utils.setToken(tokenType: .refresh, value: "RT"))
+        XCTAssertFalse(SuperTokens.doesSessionExist())
+
+        let unexpectedRefresh = expectation(description: "refresh request executed without a local session")
+        unexpectedRefresh.isInverted = true
+        SuperTokensURLProtocol.networkRequestExecutor = { _, _ in
+            unexpectedRefresh.fulfill()
+        }
+
+        XCTAssertFalse(try SuperTokens.attemptRefreshingSession())
+
+        let request = URLRequest(url: URL(string: "https://api.example.com/protected")!)
+        let urlProtocol = SuperTokensURLProtocol(request: request, cachedResponse: nil, client: nil)
+        var originalCompletion: SuperTokensURLProtocol.NetworkCompletion?
+        urlProtocol.makeRequest(networkRequestExecutor: { _, completion in
+            originalCompletion = completion
+        })
+        originalCompletion?(
+            nil,
+            HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: nil, headerFields: nil),
+            nil
+        )
+
+        wait(for: [unexpectedRefresh], timeout: 0.2)
+        XCTAssertFalse(SuperTokens.doesSessionExist())
+    }
+
     func testGenerationStale401DoesNotRetryAgainstReplacementSession() {
         _ = initAndOverrideStorage()
         XCTAssertTrue(SuperTokens.installSession(accessToken: "OLD_AT", refreshToken: "OLD_RT",
