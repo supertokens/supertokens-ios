@@ -270,6 +270,7 @@ final class SessionGenerationTests: XCTestCase {
 
     func testAcceptedSignOutClearRunsPostHookOnce() {
         install("old")
+        clearEvents()
         let finished = expectation(description: "signout completed")
         finished.assertForOverFulfill = true
         var preHooks = 0
@@ -293,6 +294,7 @@ final class SessionGenerationTests: XCTestCase {
         XCTAssertEqual(preHooks, 1)
         XCTAssertEqual(postHooks, 1)
         XCTAssertFalse(SuperTokens.getSessionSnapshot().sessionExists)
+        XCTAssertEqual(recordedEvents().filter { $0 == .SIGN_OUT }.count, 1)
     }
 
     func testCurrentSignOutAPIErrorPreservesSession() {
@@ -305,6 +307,7 @@ final class SessionGenerationTests: XCTestCase {
 
     private func assertCurrentSignOutFailure(networkError: Bool) {
         install("old")
+        let before = SuperTokens.getSessionSnapshot()
         clearEvents()
         let finished = expectation(description: "signout completes once")
         finished.assertForOverFulfill = true
@@ -331,7 +334,7 @@ final class SessionGenerationTests: XCTestCase {
         XCTAssertEqual(postHooks, 0)
         XCTAssertTrue(recordedEvents().isEmpty)
         XCTAssertTrue(SuperTokens.doesSessionExist())
-        XCTAssertEqual(SuperTokens.getSessionSnapshot().accessToken, "old-access")
+        XCTAssertEqual(SuperTokens.getSessionSnapshot(), before)
     }
 
     func testConcurrentRequestsRefreshSuccessfully() {
@@ -346,11 +349,149 @@ final class SessionGenerationTests: XCTestCase {
         assertConcurrentRefresh(outcome: .disconnect)
     }
 
+    func testCallerHeadersAndAuthorizationSurviveRefreshRetryWhileOtherDomainIsExcluded() {
+        install("old")
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [SuperTokensURLProtocol.self, GatedBackend.self]
+        let intercepted = URLSession(configuration: configuration)
+        defer { intercepted.invalidateAndCancel() }
+        let finished = expectation(description: "matching request retried")
+        let excluded = expectation(description: "excluded request bypassed SDK")
+        var matchingRequests = 0
+        var refreshRequests = 0
+        let lock = NSLock()
+        GatedBackend.receive = { transport in
+            let request = transport.request
+            if request.url?.host == "other.example.com" {
+                XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer caller")
+                XCTAssertEqual(request.value(forHTTPHeaderField: "X-Caller"), "custom")
+                XCTAssertNil(request.value(forHTTPHeaderField: "anti-csrf"))
+                XCTAssertNil(request.value(forHTTPHeaderField: "st-auth-mode"))
+                transport.respond()
+                return
+            }
+            if request.url?.path == "/auth/session/refresh" {
+                lock.lock(); refreshRequests += 1; lock.unlock()
+                XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer old-refresh")
+                XCTAssertEqual(request.value(forHTTPHeaderField: "anti-csrf"), "old-csrf")
+                transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": self.front("old"), "anti-csrf": "rotated-csrf"])
+                return
+            }
+            lock.lock(); matchingRequests += 1; let attempt = matchingRequests; lock.unlock()
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer caller")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Caller"), "custom")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "anti-csrf"), attempt == 1 ? "old-csrf" : "rotated-csrf")
+            transport.respond(status: attempt == 1 ? 401 : 200)
+        }
+        func request(_ host: String) -> URLRequest {
+            var request = URLRequest(url: URL(string: "https://\(host)/protected")!)
+            request.setValue("Bearer caller", forHTTPHeaderField: "Authorization")
+            request.setValue("custom", forHTTPHeaderField: "X-Caller")
+            return request
+        }
+        intercepted.dataTask(with: request("other.example.com")) { _, response, error in
+            XCTAssertNil(error)
+            XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+            excluded.fulfill()
+        }.resume()
+        wait(for: [excluded], timeout: 3)
+        intercepted.dataTask(with: request("api.example.com")) { _, response, error in
+            XCTAssertNil(error)
+            XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+            finished.fulfill()
+        }.resume()
+        wait(for: [finished], timeout: 3)
+        XCTAssertEqual(matchingRequests, 2)
+        XCTAssertEqual(refreshRequests, 1)
+        XCTAssertEqual(SuperTokens.getAccessToken(), "rotated-access")
+    }
+
+    func testValidPublicGettersDoNotRefresh() throws {
+        install("old")
+        GatedBackend.receive = { _ in XCTFail("Valid getters should not make a request") }
+        XCTAssertTrue(SuperTokens.doesSessionExist())
+        XCTAssertEqual(try SuperTokens.getUserId(), "old")
+        XCTAssertEqual(try SuperTokens.getAccessTokenPayloadSecurely()["user"] as? String, "old")
+        XCTAssertEqual(SuperTokens.getAccessToken(), "old-access")
+    }
+
+    func testExpiredPublicGetterRefreshesSuccessfully() {
+        assertExpiredGetter(outcome: .success)
+    }
+
+    func testExpiredPublicGetterReportsRefresh401() {
+        assertExpiredGetter(outcome: .unauthorized)
+    }
+
+    func testExpiredPublicGetterReportsRefreshDisconnect() {
+        assertExpiredGetter(outcome: .disconnect)
+    }
+
+    private func assertExpiredGetter(outcome: RefreshOutcome) {
+        let expired = try! JSONSerialization.data(withJSONObject: ["uid": "old", "ate": 1, "up": ["user": "old"]]).base64EncodedString()
+        XCTAssertTrue(SuperTokens.installSession(accessToken: "old-access", refreshToken: "old-refresh", frontToken: expired, antiCSRFToken: "old-csrf"))
+        let before = SuperTokens.getSessionSnapshot()
+        XCTAssertEqual(try? SuperTokens.getUserId(), "old")
+        let done = expectation(description: "expired getter completes")
+        GatedBackend.receive = { transport in
+            XCTAssertEqual(transport.request.url?.path, "/auth/session/refresh")
+            switch outcome {
+            case .success:
+                transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": self.front("old")])
+            case .unauthorized: transport.respond(status: 401, headers: ["front-token": "remove"])
+            case .disconnect: transport.fail()
+            }
+        }
+        DispatchQueue.global().async {
+            do {
+            switch outcome {
+            case .success:
+                XCTAssertTrue(SuperTokens.doesSessionExist())
+                XCTAssertEqual(SuperTokens.getAccessToken(), "rotated-access")
+                XCTAssertEqual(try? SuperTokens.getAccessTokenPayloadSecurely()["user"] as? String, "old")
+            case .unauthorized:
+                XCTAssertFalse(SuperTokens.doesSessionExist())
+                XCTAssertNil(SuperTokens.getAccessToken())
+                XCTAssertThrowsError(try SuperTokens.getUserId())
+            case .disconnect:
+                XCTAssertFalse(SuperTokens.doesSessionExist())
+                XCTAssertEqual(SuperTokens.getRefreshToken(), "old-refresh")
+                XCTAssertEqual(SuperTokens.getFrontToken(), expired)
+                XCTAssertThrowsError(try SuperTokens.getAccessTokenPayloadSecurely())
+                XCTAssertEqual(SuperTokens.getSessionSnapshot(), before)
+            }
+            } catch {
+                XCTFail("Unexpected getter error: \(error)")
+            }
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 5)
+    }
+
+    func testRealKeychainRestoresPublicGettersAfterReinitialization() throws {
+        let domain = "https://\(UUID().uuidString.lowercased()).example.com"
+        SuperTokens.isInitCalled = false
+        try SuperTokens.initialize(apiDomain: domain)
+        let token = front("keychain-user")
+        XCTAssertTrue(SuperTokens.installSession(accessToken: "keychain-access", refreshToken: "keychain-refresh", frontToken: token, antiCSRFToken: "keychain-csrf"))
+        SuperTokens.isInitCalled = false
+        try SuperTokens.initialize(apiDomain: domain)
+        XCTAssertTrue(SuperTokens.doesSessionExist())
+        XCTAssertEqual(try SuperTokens.getUserId(), "keychain-user")
+        XCTAssertEqual(SuperTokens.getAccessToken(), "keychain-access")
+        XCTAssertEqual(SuperTokens.getRefreshToken(), "keychain-refresh")
+        XCTAssertEqual(SuperTokens.getFrontToken(), token)
+        XCTAssertEqual(SuperTokens.getAntiCSRF(), "keychain-csrf")
+        XCTAssertTrue(SuperTokens.clearSessionLocally())
+    }
+
     private enum RefreshOutcome { case success, unauthorized, disconnect }
 
     private func assertConcurrentRefresh(outcome: RefreshOutcome) {
         install("old")
+        let before = SuperTokens.getSessionSnapshot()
         clearEvents()
+        let rotatedFront = front("old")
         let count = 4
         let originals = expectation(description: "original requests reached transport")
         originals.expectedFulfillmentCount = count
@@ -368,6 +509,8 @@ final class SessionGenerationTests: XCTestCase {
         SuperTokens.config!.preAPIHook = { action, request in
             XCTAssertEqual(action, .REFRESH_SESSION)
             XCTAssertEqual(request.url?.path, "/auth/session/refresh")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "anti-csrf"), "old-csrf")
             lock.lock(); preHooks += 1; lock.unlock()
             return request
         }
@@ -380,7 +523,7 @@ final class SessionGenerationTests: XCTestCase {
         func resolveRefresh(_ transport: GatedBackend) {
             switch outcome {
             case .success:
-                transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": self.front("old"), "anti-csrf": "rotated-csrf"])
+                transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": rotatedFront, "anti-csrf": "rotated-csrf"])
             case .unauthorized: transport.respond(status: 401, headers: ["front-token": "remove"])
             case .disconnect: transport.fail()
             }
@@ -388,6 +531,8 @@ final class SessionGenerationTests: XCTestCase {
         GatedBackend.receive = { transport in
             if transport.request.url?.path == "/auth/session/refresh" {
                 XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "Bearer old-refresh")
+                XCTAssertEqual(transport.request.httpMethod, "POST")
+                XCTAssertEqual(transport.request.value(forHTTPHeaderField: "anti-csrf"), "old-csrf")
                 lock.lock()
                 refreshCount += 1
                 let isFirst = firstRefresh == nil
@@ -433,25 +578,45 @@ final class SessionGenerationTests: XCTestCase {
             XCTAssertEqual(observedRetries, count)
             XCTAssertEqual(observedPost, 1)
             XCTAssertEqual(SuperTokens.getAccessToken(), "rotated-access")
-            XCTAssertTrue(recordedEvents().contains(.REFRESH_SESSION))
+            let after = SuperTokens.getSessionSnapshot()
+            XCTAssertEqual(after.generation, before.generation)
+            XCTAssertEqual(after.refreshToken, "rotated-refresh")
+            XCTAssertEqual(after.frontToken, rotatedFront)
+            XCTAssertEqual(after.antiCSRFToken, "rotated-csrf")
+            XCTAssertNotNil(after.lastAccessTokenUpdate)
+            XCTAssertEqual(recordedEvents().filter { $0 == .REFRESH_SESSION }.count, 1)
         case .unauthorized:
             XCTAssertEqual(observedPost, 0)
             XCTAssertFalse(SuperTokens.doesSessionExist())
+            let after = SuperTokens.getSessionSnapshot()
+            XCTAssertNil(after.accessToken)
+            XCTAssertNil(after.refreshToken)
+            XCTAssertNil(after.frontToken)
+            XCTAssertNil(after.antiCSRFToken)
+            XCTAssertNil(after.lastAccessTokenUpdate)
+            XCTAssertTrue(recordedEvents().contains(.UNAUTHORISED))
             XCTAssertFalse(recordedEvents().contains(.REFRESH_SESSION))
         case .disconnect:
             XCTAssertEqual(observedPost, 0)
             XCTAssertTrue(SuperTokens.doesSessionExist())
-            XCTAssertEqual(SuperTokens.getAccessToken(), "old-access")
+            XCTAssertEqual(SuperTokens.getSessionSnapshot(), before)
             XCTAssertFalse(recordedEvents().contains(.REFRESH_SESSION))
             let recovered = expectation(description: "later request refreshes and completes")
+            var recoveryRefreshes = 0
+            var recoveryRetries = 0
             GatedBackend.receive = { transport in
                 if transport.request.url?.path == "/auth/session/refresh" {
-                    transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": self.front("old"), "anti-csrf": "rotated-csrf"])
+                    XCTAssertEqual(transport.request.httpMethod, "POST")
+                    XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "Bearer old-refresh")
+                    XCTAssertEqual(transport.request.value(forHTTPHeaderField: "anti-csrf"), "old-csrf")
+                    lock.lock(); recoveryRefreshes += 1; lock.unlock()
+                    transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": rotatedFront, "anti-csrf": "rotated-csrf"])
                 } else if transport.request.value(forHTTPHeaderField: "Authorization") == "Bearer old-access" {
                     transport.respond(status: 401)
                 } else {
                     XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "Bearer rotated-access")
                     XCTAssertEqual(transport.request.value(forHTTPHeaderField: "anti-csrf"), "rotated-csrf")
+                    lock.lock(); recoveryRetries += 1; lock.unlock()
                     transport.respond()
                 }
             }
@@ -462,7 +627,12 @@ final class SessionGenerationTests: XCTestCase {
             }.resume()
             wait(for: [recovered], timeout: 5)
             XCTAssertEqual(SuperTokens.getAccessToken(), "rotated-access")
-            XCTAssertTrue(recordedEvents().contains(.REFRESH_SESSION))
+            lock.lock(); let finalPre = preHooks; let finalPost = postHooks; let finalRefreshes = recoveryRefreshes; let finalRetries = recoveryRetries; lock.unlock()
+            XCTAssertEqual(finalPre, observedPre + 1)
+            XCTAssertEqual(finalPost, observedPost + 1)
+            XCTAssertEqual(finalRefreshes, 1)
+            XCTAssertEqual(finalRetries, 1)
+            XCTAssertEqual(recordedEvents().filter { $0 == .REFRESH_SESSION }.count, 1)
         }
     }
 
