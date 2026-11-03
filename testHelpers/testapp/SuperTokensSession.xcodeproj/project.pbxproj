@@ -21,6 +21,7 @@
 		B9B282332AB2F6D400FB772D /* utilsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B282322AB2F6D400FB772D /* utilsTests.swift */; };
 		C0FFEE012AB2F6D400FB772D /* installSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE022AB2F6D400FB772D /* installSessionTests.swift */; };
 		C0FFEE032AB2F6D400FB772D /* sessionGenerationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE042AB2F6D400FB772D /* sessionGenerationTests.swift */; };
+		C0FFEE052AB2F6D400FB772D /* refreshCompatibilityMatrixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE062AB2F6D400FB772D /* refreshCompatibilityMatrixTests.swift */; };
 		B9DA5DC12968303E003EC794 /* sessionTestsWithHeaders.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9DA5DC02968303E003EC794 /* sessionTestsWithHeaders.swift */; };
 /* End PBXBuildFile section */
 
@@ -59,6 +60,7 @@
 		B9B282322AB2F6D400FB772D /* utilsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = utilsTests.swift; sourceTree = "<group>"; };
 		C0FFEE022AB2F6D400FB772D /* installSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = installSessionTests.swift; sourceTree = "<group>"; };
 		C0FFEE042AB2F6D400FB772D /* sessionGenerationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sessionGenerationTests.swift; sourceTree = "<group>"; };
+		C0FFEE062AB2F6D400FB772D /* refreshCompatibilityMatrixTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = refreshCompatibilityMatrixTests.swift; sourceTree = "<group>"; };
 		B9DA5DC02968303E003EC794 /* sessionTestsWithHeaders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sessionTestsWithHeaders.swift; sourceTree = "<group>"; };
 		E35A7D85714018E880278378 /* Pods-SuperTokensSession_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SuperTokensSession_Tests.debug.xcconfig"; path = "Target Support Files/Pods-SuperTokensSession_Tests/Pods-SuperTokensSession_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -139,6 +141,7 @@
 				B9B282322AB2F6D400FB772D /* utilsTests.swift */,
 				C0FFEE022AB2F6D400FB772D /* installSessionTests.swift */,
 				C0FFEE042AB2F6D400FB772D /* sessionGenerationTests.swift */,
+				C0FFEE062AB2F6D400FB772D /* refreshCompatibilityMatrixTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -367,6 +370,7 @@
 				B9B282332AB2F6D400FB772D /* utilsTests.swift in Sources */,
 				C0FFEE012AB2F6D400FB772D /* installSessionTests.swift in Sources */,
 				C0FFEE032AB2F6D400FB772D /* sessionGenerationTests.swift in Sources */,
+				C0FFEE052AB2F6D400FB772D /* refreshCompatibilityMatrixTests.swift in Sources */,
 				13089062242A62A70063D4D2 /* sessionTests.swift in Sources */,
 				B9DA5DC12968303E003EC794 /* sessionTestsWithHeaders.swift in Sources */,
 			);
