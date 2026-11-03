@@ -7,8 +7,26 @@
 
 import Foundation
 
+internal final class SignOutOwnership: NSObject {
+    private let lock = NSLock()
+    private var admittedGeneration: UInt64?
+
+    func admit(_ generation: UInt64) {
+        lock.lock()
+        admittedGeneration = generation
+        lock.unlock()
+    }
+
+    func currentGeneration(or original: UInt64) -> UInt64 {
+        lock.lock()
+        defer { lock.unlock() }
+        return admittedGeneration ?? original
+    }
+}
+
 public class SuperTokensURLProtocol: URLProtocol {
     internal static let signOutGenerationKey = "io.supertokens.session.signout-generation"
+    internal static let signOutOwnershipKey = "io.supertokens.session.signout-ownership"
     internal typealias NetworkCompletion = (Data?, URLResponse?, Error?) -> Void
     internal typealias NetworkRequestExecutor = (URLRequest, @escaping NetworkCompletion) -> Void
 
@@ -198,6 +216,7 @@ public class SuperTokensURLProtocol: URLProtocol {
                 }
 
                 if case .applied(let shouldFirePayloadUpdated, let committedGeneration) = tokenUpdate {
+                    (URLProtocol.property(forKey: Self.signOutOwnershipKey, in: self.request) as? SignOutOwnership)?.admit(committedGeneration)
                     if shouldFirePayloadUpdated && SessionStateCoordinator.isCurrent(committedGeneration) {
                         SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
                     }

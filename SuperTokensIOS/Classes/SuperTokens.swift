@@ -168,7 +168,9 @@ public class SuperTokens {
         
         signOutRequest = SuperTokens.config!.preAPIHook(.SIGN_OUT, signOutRequest)
         let pinnedRequest = (signOutRequest as NSURLRequest).mutableCopy() as! NSMutableURLRequest
+        let ownership = SignOutOwnership()
         URLProtocol.setProperty(generation, forKey: SuperTokensURLProtocol.signOutGenerationKey, in: pinnedRequest)
+        URLProtocol.setProperty(ownership, forKey: SuperTokensURLProtocol.signOutOwnershipKey, in: pinnedRequest)
         signOutRequest = pinnedRequest.copy() as! URLRequest
 
         guard SessionStateCoordinator.isCurrent(generation) else {
@@ -181,7 +183,7 @@ public class SuperTokens {
         signOutRequestExecutor(signOutRequest, {
             data, response, error in
 
-            if !SessionStateCoordinator.isCurrent(generation), getSessionSnapshot().sessionExists {
+            if !SessionStateCoordinator.isCurrent(ownership.currentGeneration(or: generation)) {
                 completionHandler(nil)
                 executionSemaphore.signal()
                 return

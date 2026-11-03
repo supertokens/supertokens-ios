@@ -22,6 +22,10 @@ private final class GatedBackend: URLProtocol {
         client?.urlProtocol(self, didLoad: Data(body.utf8))
         client?.urlProtocolDidFinishLoading(self)
     }
+
+    func fail() {
+        client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost))
+    }
 }
 
 final class SessionGenerationTests: XCTestCase {
@@ -230,6 +234,50 @@ final class SessionGenerationTests: XCTestCase {
         XCTAssertEqual(SuperTokens.getSessionSnapshot(), replacement)
         XCTAssertTrue(recordedEvents().isEmpty)
         XCTAssertEqual(postHookCount, 0)
+    }
+
+    func testLateSignOutSuccessAfterLocalClearDoesNotRunPostHook() {
+        assertLateSignOutAfterClear(replaceFirst: false, fail: false)
+    }
+
+    func testLateSignOutErrorAfterLocalClearDoesNotReportObsoleteError() {
+        assertLateSignOutAfterClear(replaceFirst: false, fail: true)
+    }
+
+    func testLateSignOutSuccessAfterReplacementAndClearDoesNotRunPostHook() {
+        assertLateSignOutAfterClear(replaceFirst: true, fail: false)
+    }
+
+    private func assertLateSignOutAfterClear(replaceFirst: Bool, fail: Bool) {
+        install("old")
+        let started = expectation(description: "signout reached transport")
+        let finished = expectation(description: "signout completed")
+        var responseGate: GatedBackend?
+        var postHooks = 0
+        SuperTokens.config!.postAPIHook = { _, _, _ in postHooks += 1 }
+        GatedBackend.receive = { transport in responseGate = transport; started.fulfill() }
+        SuperTokens.signOut { error in
+            XCTAssertNil(error)
+            finished.fulfill()
+        }
+        wait(for: [started], timeout: 3)
+        if replaceFirst { install("new") }
+        XCTAssertTrue(SuperTokens.clearSessionLocally())
+        if fail { responseGate?.fail() } else { responseGate?.respond(headers: ["front-token": "remove"]) }
+        wait(for: [finished], timeout: 3)
+        XCTAssertEqual(postHooks, 0)
+    }
+
+    func testAcceptedSignOutClearRunsPostHookOnce() {
+        install("old")
+        let finished = expectation(description: "signout completed")
+        var postHooks = 0
+        SuperTokens.config!.postAPIHook = { _, _, _ in postHooks += 1 }
+        GatedBackend.receive = { $0.respond(headers: ["front-token": "remove"]) }
+        SuperTokens.signOut { error in XCTAssertNil(error); finished.fulfill() }
+        wait(for: [finished], timeout: 3)
+        XCTAssertEqual(postHooks, 1)
+        XCTAssertFalse(SuperTokens.getSessionSnapshot().sessionExists)
     }
 
     func testConcurrentInstallAndClearHaveExactlyOneCASWinner() {
