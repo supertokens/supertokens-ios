@@ -271,13 +271,199 @@ final class SessionGenerationTests: XCTestCase {
     func testAcceptedSignOutClearRunsPostHookOnce() {
         install("old")
         let finished = expectation(description: "signout completed")
+        finished.assertForOverFulfill = true
+        var preHooks = 0
         var postHooks = 0
-        SuperTokens.config!.postAPIHook = { _, _, _ in postHooks += 1 }
+        SuperTokens.config!.preAPIHook = { action, request in
+            XCTAssertEqual(action, .SIGN_OUT)
+            XCTAssertEqual(request.url?.path, "/auth/signout")
+            XCTAssertEqual(request.httpMethod, "POST")
+            preHooks += 1
+            return request
+        }
+        SuperTokens.config!.postAPIHook = { action, request, response in
+            XCTAssertEqual(action, .SIGN_OUT)
+            XCTAssertEqual(request.url?.path, "/auth/signout")
+            XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+            postHooks += 1
+        }
         GatedBackend.receive = { $0.respond(headers: ["front-token": "remove"]) }
         SuperTokens.signOut { error in XCTAssertNil(error); finished.fulfill() }
         wait(for: [finished], timeout: 3)
+        XCTAssertEqual(preHooks, 1)
         XCTAssertEqual(postHooks, 1)
         XCTAssertFalse(SuperTokens.getSessionSnapshot().sessionExists)
+    }
+
+    func testCurrentSignOutAPIErrorPreservesSession() {
+        assertCurrentSignOutFailure(networkError: false)
+    }
+
+    func testCurrentSignOutNetworkErrorPreservesSession() {
+        assertCurrentSignOutFailure(networkError: true)
+    }
+
+    private func assertCurrentSignOutFailure(networkError: Bool) {
+        install("old")
+        clearEvents()
+        let finished = expectation(description: "signout completes once")
+        finished.assertForOverFulfill = true
+        var preHooks = 0
+        var postHooks = 0
+        SuperTokens.config!.preAPIHook = { action, request in
+            XCTAssertEqual(action, .SIGN_OUT)
+            XCTAssertEqual(request.url?.path, "/auth/signout")
+            XCTAssertEqual(request.httpMethod, "POST")
+            preHooks += 1
+            return request
+        }
+        SuperTokens.config!.postAPIHook = { _, _, _ in postHooks += 1 }
+        GatedBackend.receive = { transport in
+            XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "Bearer old-access")
+            if networkError { transport.fail() } else { transport.respond(status: 500) }
+        }
+        SuperTokens.signOut { error in
+            XCTAssertNotNil(error)
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 3)
+        XCTAssertEqual(preHooks, 1)
+        XCTAssertEqual(postHooks, 0)
+        XCTAssertTrue(recordedEvents().isEmpty)
+        XCTAssertTrue(SuperTokens.doesSessionExist())
+        XCTAssertEqual(SuperTokens.getSessionSnapshot().accessToken, "old-access")
+    }
+
+    func testConcurrentRequestsRefreshSuccessfully() {
+        assertConcurrentRefresh(outcome: .success)
+    }
+
+    func testConcurrentRequestsHandleTerminalRefresh401() {
+        assertConcurrentRefresh(outcome: .unauthorized)
+    }
+
+    func testConcurrentRequestsRecoverAfterRefreshDisconnect() {
+        assertConcurrentRefresh(outcome: .disconnect)
+    }
+
+    private enum RefreshOutcome { case success, unauthorized, disconnect }
+
+    private func assertConcurrentRefresh(outcome: RefreshOutcome) {
+        install("old")
+        clearEvents()
+        let count = 4
+        let originals = expectation(description: "original requests reached transport")
+        originals.expectedFulfillmentCount = count
+        let refreshStarted = expectation(description: "first refresh reached transport")
+        let completed = expectation(description: "all callers completed")
+        completed.expectedFulfillmentCount = count
+        completed.assertForOverFulfill = true
+        let lock = NSLock()
+        var originalGates: [GatedBackend] = []
+        var firstRefresh: GatedBackend?
+        var refreshCount = 0
+        var retries = 0
+        var preHooks = 0
+        var postHooks = 0
+        SuperTokens.config!.preAPIHook = { action, request in
+            XCTAssertEqual(action, .REFRESH_SESSION)
+            XCTAssertEqual(request.url?.path, "/auth/session/refresh")
+            lock.lock(); preHooks += 1; lock.unlock()
+            return request
+        }
+        SuperTokens.config!.postAPIHook = { action, request, response in
+            XCTAssertEqual(action, .REFRESH_SESSION)
+            XCTAssertEqual(request.url?.path, "/auth/session/refresh")
+            XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+            lock.lock(); postHooks += 1; lock.unlock()
+        }
+        func resolveRefresh(_ transport: GatedBackend) {
+            switch outcome {
+            case .success:
+                transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": self.front("old"), "anti-csrf": "rotated-csrf"])
+            case .unauthorized: transport.respond(status: 401, headers: ["front-token": "remove"])
+            case .disconnect: transport.fail()
+            }
+        }
+        GatedBackend.receive = { transport in
+            if transport.request.url?.path == "/auth/session/refresh" {
+                XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "Bearer old-refresh")
+                lock.lock()
+                refreshCount += 1
+                let isFirst = firstRefresh == nil
+                if isFirst { firstRefresh = transport }
+                lock.unlock()
+                if isFirst { refreshStarted.fulfill() } else { resolveRefresh(transport) }
+            } else if transport.request.value(forHTTPHeaderField: "Authorization") == "Bearer old-access" {
+                lock.lock(); originalGates.append(transport); lock.unlock()
+                originals.fulfill()
+            } else {
+                XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "Bearer rotated-access")
+                XCTAssertEqual(transport.request.value(forHTTPHeaderField: "anti-csrf"), "rotated-csrf")
+                lock.lock(); retries += 1; lock.unlock()
+                transport.respond()
+            }
+        }
+        for _ in 0..<count {
+            session.dataTask(with: URL(string: "https://api.example.com/protected")!) { _, response, error in
+                switch outcome {
+                case .success:
+                    XCTAssertNil(error)
+                    XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+                case .unauthorized:
+                    XCTAssertNotNil(error)
+                case .disconnect:
+                    XCTAssertEqual((error as? URLError)?.code, .networkConnectionLost)
+                }
+                completed.fulfill()
+            }.resume()
+        }
+        wait(for: [originals], timeout: 3)
+        lock.lock(); let gates = originalGates; lock.unlock()
+        gates.forEach { $0.respond(status: 401) }
+        wait(for: [refreshStarted], timeout: 3)
+        lock.lock(); let gate = firstRefresh; lock.unlock()
+        if let gate { resolveRefresh(gate) }
+        wait(for: [completed], timeout: 5)
+        lock.lock(); let observedRefreshes = refreshCount; let observedRetries = retries; let observedPre = preHooks; let observedPost = postHooks; lock.unlock()
+        XCTAssertEqual(observedPre, observedRefreshes)
+        switch outcome {
+        case .success:
+            XCTAssertEqual(observedRefreshes, 1)
+            XCTAssertEqual(observedRetries, count)
+            XCTAssertEqual(observedPost, 1)
+            XCTAssertEqual(SuperTokens.getAccessToken(), "rotated-access")
+            XCTAssertTrue(recordedEvents().contains(.REFRESH_SESSION))
+        case .unauthorized:
+            XCTAssertEqual(observedPost, 0)
+            XCTAssertFalse(SuperTokens.doesSessionExist())
+            XCTAssertFalse(recordedEvents().contains(.REFRESH_SESSION))
+        case .disconnect:
+            XCTAssertEqual(observedPost, 0)
+            XCTAssertTrue(SuperTokens.doesSessionExist())
+            XCTAssertEqual(SuperTokens.getAccessToken(), "old-access")
+            XCTAssertFalse(recordedEvents().contains(.REFRESH_SESSION))
+            let recovered = expectation(description: "later request refreshes and completes")
+            GatedBackend.receive = { transport in
+                if transport.request.url?.path == "/auth/session/refresh" {
+                    transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": self.front("old"), "anti-csrf": "rotated-csrf"])
+                } else if transport.request.value(forHTTPHeaderField: "Authorization") == "Bearer old-access" {
+                    transport.respond(status: 401)
+                } else {
+                    XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "Bearer rotated-access")
+                    XCTAssertEqual(transport.request.value(forHTTPHeaderField: "anti-csrf"), "rotated-csrf")
+                    transport.respond()
+                }
+            }
+            session.dataTask(with: URL(string: "https://api.example.com/protected")!) { _, response, error in
+                XCTAssertNil(error)
+                XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+                recovered.fulfill()
+            }.resume()
+            wait(for: [recovered], timeout: 5)
+            XCTAssertEqual(SuperTokens.getAccessToken(), "rotated-access")
+            XCTAssertTrue(recordedEvents().contains(.REFRESH_SESSION))
+        }
     }
 
     func testDelayedLifecycleEventCarriesClearGenerationAndCannotClearReplacement() {
