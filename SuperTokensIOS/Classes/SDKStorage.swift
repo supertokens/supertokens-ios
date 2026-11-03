@@ -188,6 +188,10 @@ internal class SDKStorage {
     }
 
     internal static func get(_ key: String) -> String? {
+        return SessionStateCoordinator.snapshot { getUnlocked(key) }.value
+    }
+
+    private static func getUnlocked(_ key: String) -> String? {
         if let value = tokenStorage.get(key) {
             return value
         }
@@ -206,6 +210,10 @@ internal class SDKStorage {
     }
 
     internal static func set(_ key: String, value: String) -> Bool {
+        return SessionStateCoordinator.legacyMutation { setUnlocked(key, value: value) }
+    }
+
+    private static func setUnlocked(_ key: String, value: String) -> Bool {
         if value.isEmpty {
             return remove(key)
         }
@@ -220,6 +228,10 @@ internal class SDKStorage {
     }
 
     internal static func remove(_ key: String) -> Bool {
+        return SessionStateCoordinator.legacyMutation { removeUnlocked(key) }
+    }
+
+    private static func removeUnlocked(_ key: String) -> Bool {
         let keychainRemoved = tokenStorage.remove(key)
         Utils.getUserDefaults().removeObject(forKey: key)
         Utils.getUserDefaults().synchronize()
@@ -228,6 +240,10 @@ internal class SDKStorage {
 
     @discardableResult
     internal static func clearSessionStorage() -> Bool {
+        return SessionStateCoordinator.legacyMutation { clearSessionStorageUnlocked() }
+    }
+
+    private static func clearSessionStorageUnlocked() -> Bool {
         var didClear = true
 
         for key in sessionKeysInRemovalOrder() {

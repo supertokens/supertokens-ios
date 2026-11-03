@@ -59,7 +59,10 @@ internal enum SessionResponseUpdateResult {
 }
 
 internal class SessionStateCoordinator {
-    private static let lock = NSLock()
+    // Storage helpers nest synchronously inside a session transaction, on this thread.
+    private static let lock = NSRecursiveLock()
+    private static var mutationDepth = 0
+    private static var listeners: [UUID: (SessionSnapshot) -> Void] = [:]
     private static var generation: UInt64 = 0
     private static var nextRequestSequence: UInt64 = 0
     private static var lastAppliedRequestSequence: UInt64 = 0
@@ -77,31 +80,97 @@ internal class SessionStateCoordinator {
         return (body(), generation, nextRequestSequence)
     }
 
-    internal static func performAuthoritativeMutation(_ body: () -> SessionTokenUpdateResult) -> SessionTokenUpdateResult {
+    internal static func sessionSnapshot() -> SessionSnapshot {
+        return snapshot { readSessionSnapshot() }.value
+    }
+
+    private static func readSessionSnapshot() -> SessionSnapshot {
+        SessionSnapshot(generation: generation,
+                        accessToken: SDKStorage.get(SDKStorage.genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME)),
+                        refreshToken: SDKStorage.get(SDKStorage.genericKey(SuperTokensConstants.REFRESH_TOKEN_NAME)),
+                        frontToken: SDKStorage.get(SDKStorage.frontTokenKey),
+                        antiCSRFToken: SDKStorage.get(SDKStorage.antiCSRFKey),
+                        lastAccessTokenUpdate: SDKStorage.get(SDKStorage.genericKey(SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE)))
+    }
+
+    internal static func addListener(_ listener: @escaping (SessionSnapshot) -> Void) -> UUID {
         lock.lock()
+        defer { lock.unlock() }
+        let id = UUID()
+        listeners[id] = listener
+        return id
+    }
+
+    internal static func removeListener(_ id: UUID) {
+        lock.lock()
+        defer { lock.unlock() }
+        listeners.removeValue(forKey: id)
+    }
+
+    internal static func legacyMutation(_ body: () -> Bool) -> Bool {
+        lock.lock()
+        if mutationDepth > 0 {
+            defer { lock.unlock() }
+            return body()
+        }
+        // Keep the check and outer transaction atomic; release before callbacks.
+        mutationDepth += 1
         generation &+= 1
         lastAppliedRequestSequence = 0
-        let result = body()
+        let success = body()
+        mutationDepth -= 1
+        let callbacks = Array(listeners.values)
+        let state = callbacks.isEmpty ? nil : readSessionSnapshot()
         lock.unlock()
+        if let state { callbacks.forEach { $0(state) } }
+        return success
+    }
+
+    internal static func performAuthoritativeMutation(expectedGeneration: UInt64? = nil, _ body: () -> SessionTokenUpdateResult) -> SessionTokenUpdateResult {
+        lock.lock()
+        if let expectedGeneration, generation != expectedGeneration {
+            lock.unlock()
+            return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: false, clearsSession: false)
+        }
+        generation &+= 1
+        lastAppliedRequestSequence = 0
+        mutationDepth += 1
+        let result = body()
+        mutationDepth -= 1
+        let callbacks = Array(listeners.values)
+        let committedGeneration = generation
+        let state = callbacks.isEmpty ? nil : readSessionSnapshot()
+        lock.unlock()
+        if let state { callbacks.forEach { $0(state) } }
+        if result.success && result.shouldFirePayloadUpdated && isCurrent(committedGeneration) {
+            SuperTokens.config?.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+        }
         return result
     }
 
     internal static func applyResponse(expectedGeneration: UInt64, requestSequence: UInt64, allowOutOfOrder: (() -> Bool)? = nil, _ body: () -> SessionTokenUpdateResult) -> SessionResponseUpdateResult {
         lock.lock()
-        defer { lock.unlock() }
 
         guard generation == expectedGeneration else {
+            lock.unlock()
             return .staleGeneration
         }
 
         guard requestSequence >= lastAppliedRequestSequence || allowOutOfOrder?() == true else {
+            lock.unlock()
             return .outOfOrder
         }
 
+        mutationDepth += 1
         let result = body()
+        mutationDepth -= 1
         guard result.success else {
             generation &+= 1
             lastAppliedRequestSequence = 0
+            let callbacks = Array(listeners.values)
+            let state = callbacks.isEmpty ? nil : readSessionSnapshot()
+            lock.unlock()
+            if let state { callbacks.forEach { $0(state) } }
             return .failed
         }
 
@@ -114,7 +183,12 @@ internal class SessionStateCoordinator {
             }
         }
 
-        return .applied(shouldFirePayloadUpdated: result.shouldFirePayloadUpdated, generation: generation)
+        let callbacks = result.didMutateSession ? Array(listeners.values) : []
+        let committedGeneration = generation
+        let state = callbacks.isEmpty ? nil : readSessionSnapshot()
+        lock.unlock()
+        if let state { callbacks.forEach { $0(state) } }
+        return .applied(shouldFirePayloadUpdated: result.shouldFirePayloadUpdated, generation: committedGeneration)
     }
 
     internal static func isCurrent(_ expectedGeneration: UInt64) -> Bool {
@@ -127,6 +201,7 @@ internal class SessionStateCoordinator {
         lock.lock()
         generation &+= 1
         lastAppliedRequestSequence = 0
+        listeners.removeAll()
         lock.unlock()
     }
 }
@@ -362,13 +437,9 @@ internal class Utils {
     
     @discardableResult
     internal static func saveTokenFromHeaders(httpResponse: HTTPURLResponse) -> Bool {
-        let result = saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse)
-
-        if result.success && result.shouldFirePayloadUpdated {
-            SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
-        }
-
-        return result.success
+        return SessionStateCoordinator.performAuthoritativeMutation {
+            saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse)
+        }.success
     }
 
     internal static func saveTokenFromHeadersWithoutFiringEvent(httpResponse: HTTPURLResponse, isRefreshResponse: Bool = false) -> SessionTokenUpdateResult {
@@ -451,6 +522,10 @@ internal class Utils {
         }
 
         if !isRefreshResponse && headerFields[SuperTokensConstants.refreshTokenHeaderKey] != nil {
+            if let current = sessionHandle(getTokenForHeaderAuth(tokenType: .access)),
+               let incoming = sessionHandle(headerFields[SuperTokensConstants.accessTokenHeaderKey]) {
+                return current != incoming
+            }
             return true
         }
 
@@ -459,6 +534,18 @@ internal class Utils {
         }
 
         return currentUserId != incomingUserId
+    }
+
+    private static func sessionHandle(_ token: String?) -> String? {
+        guard let token = token else { return nil }
+        let parts = token.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3 else { return nil }
+        var payload = String(parts[1]).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        payload += String(repeating: "=", count: (4 - payload.count % 4) % 4)
+        guard let data = Data(base64Encoded: payload),
+              let claims = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let handle = claims["sessionHandle"] as? String, !handle.isEmpty else { return nil }
+        return handle
     }
     
     internal static func getTokenForHeaderAuth(tokenType: TokenType) -> String? {

@@ -15,70 +15,32 @@
 
 import Foundation
 
-// TODO: verify about locking
 internal class AntiCSRF {
-    class AntiCSRFInfo {
-        var antiCSRF: String? = nil
-        var associatedAccessTokenUpdate: String? = nil
-        
-        init(antiCSRFToken: String, associatedAccessTokenUpdate: String) {
-            antiCSRF = antiCSRFToken
-            self.associatedAccessTokenUpdate = associatedAccessTokenUpdate
-        }
-    }
-    
-    private static var antiCSRFInfo: AntiCSRFInfo? = nil
     private static let antiCSRFUserDefaultsKey = SDKStorage.antiCSRFKey
     
     internal static func getToken(associatedAccessTokenUpdate: String?) -> String? {
-        if associatedAccessTokenUpdate == nil {
-            AntiCSRF.antiCSRFInfo = nil
-            return nil
-        }
-        
-        if AntiCSRF.antiCSRFInfo == nil {
-            let antiCSRFToken = SDKStorage.get(AntiCSRF.antiCSRFUserDefaultsKey)
-            if ( antiCSRFToken == nil ) {
-                return nil
-            }
-            
-            AntiCSRF.antiCSRFInfo = AntiCSRFInfo(antiCSRFToken: antiCSRFToken!, associatedAccessTokenUpdate: associatedAccessTokenUpdate!)
-        } else if AntiCSRF.antiCSRFInfo?.associatedAccessTokenUpdate != nil && AntiCSRF.antiCSRFInfo?.associatedAccessTokenUpdate != associatedAccessTokenUpdate! {
-            AntiCSRF.antiCSRFInfo = nil
-            return AntiCSRF.getToken(associatedAccessTokenUpdate: associatedAccessTokenUpdate)
-        }
-        
-        return AntiCSRF.antiCSRFInfo!.antiCSRF
+        guard associatedAccessTokenUpdate != nil else { return nil }
+        return SDKStorage.get(antiCSRFUserDefaultsKey)
     }
     
     @discardableResult
     internal static func setToken(antiCSRFToken: String, associatedAccessTokenUpdate: String? = nil) -> Bool {
-        if associatedAccessTokenUpdate == nil {
-            AntiCSRF.antiCSRFInfo = nil
-            return true;
+        return SessionStateCoordinator.legacyMutation {
+            guard associatedAccessTokenUpdate != nil else { return true }
+            guard SDKStorage.set(antiCSRFUserDefaultsKey, value: antiCSRFToken) else {
+                SDKStorage.clearSessionStorage()
+                return false
+            }
+            return true
         }
-        
-        guard SDKStorage.set(AntiCSRF.antiCSRFUserDefaultsKey, value: antiCSRFToken) else {
-            AntiCSRF.antiCSRFInfo = nil
-            SDKStorage.clearSessionStorage()
-            return false
-        }
-        
-        AntiCSRF.antiCSRFInfo = AntiCSRFInfo(antiCSRFToken: antiCSRFToken, associatedAccessTokenUpdate: associatedAccessTokenUpdate!)
-        return true
     }
     
     @discardableResult
     internal static func removeToken() -> Bool {
-        let didRemove = SDKStorage.remove(AntiCSRF.antiCSRFUserDefaultsKey)
-        if didRemove {
-            AntiCSRF.antiCSRFInfo = nil
-        }
-
-        return didRemove
+        return SDKStorage.remove(antiCSRFUserDefaultsKey)
     }
 
     internal static func clearInMemoryCache() {
-        AntiCSRF.antiCSRFInfo = nil
+        // No independent cache; reads share the session coordinator's storage lock.
     }
 }

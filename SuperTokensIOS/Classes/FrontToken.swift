@@ -42,17 +42,12 @@ internal class FrontToken {
         }
     }
 
-    static var tokenInMemory: String? = nil
+    // Retained for internal compatibility; no independent mutable token cache.
+    static var tokenInMemory: String? { SDKStorage.get(userDefaultsKey) }
     static var userDefaultsKey: String = SDKStorage.frontTokenKey
-    private static let readWriteDispatchQueue = DispatchQueue(label: "io.supertokens.fronttoken.concurrent", attributes: .concurrent)
-    private static var tokenInfoSemaphore = DispatchSemaphore(value: 0)
     
     private static func getFrontTokenFromStorage() -> String? {
-        if tokenInMemory == nil {
-            tokenInMemory = SDKStorage.get(userDefaultsKey)
-        }
-        
-        return tokenInMemory
+        return SDKStorage.get(userDefaultsKey)
     }
     
     private static func getFrontToken() -> String? {
@@ -82,32 +77,10 @@ internal class FrontToken {
     }
     
     private static func getTokenInfo() -> [String: Any]? {
-        var finalReturnValue: [String: Any]? = nil
-        let executionSemaphore = DispatchSemaphore(value: 0)
-        
-        readWriteDispatchQueue.async {
-            while (true) {
-                let frontToken: String? = getFrontToken()
-                
-                if frontToken == nil {
-                    let localSessionState = Utils.getLocalSessionState()
-                    if localSessionState.status == .EXISTS {
-                        tokenInfoSemaphore.wait()
-                    } else {
-                        finalReturnValue = nil
-                        executionSemaphore.signal()
-                        break
-                    }
-                } else {
-                    finalReturnValue = parseFrontToken(frontTokenDecoded: frontToken!)
-                    executionSemaphore.signal()
-                    break
-                }
-            }
-        }
-        
-        executionSemaphore.wait()
-        return finalReturnValue
+        return SessionStateCoordinator.snapshot {
+            guard let token = getFrontToken() else { return nil }
+            return parseFrontToken(frontTokenDecoded: token)
+        }.value
     }
     
     static func getToken() -> [String: Any]? {
@@ -120,7 +93,6 @@ internal class FrontToken {
             return false
         }
 
-        tokenInMemory = frontToken
         return true
     }
     
@@ -162,38 +134,13 @@ internal class FrontToken {
         return FrontTokenUpdateResult(success: true, shouldFirePayloadUpdated: shouldFirePayloadUpdated)
     }
     
-    private static func removeTokenFromStorage() -> Bool {
-        let didRemove = SDKStorage.remove(userDefaultsKey)
-        if didRemove {
-            tokenInMemory = nil
-        }
-
-        return didRemove
-    }
-    
     static func clearInMemoryCache() {
-        tokenInMemory = nil
+        // Storage is the single source of truth; there is no cache to invalidate.
     }
     
     @discardableResult
     static func removeToken() -> Bool {
-        let antiCSRFRemoved = AntiCSRF.removeToken()
-        let executionSemaphore = DispatchSemaphore(value: 0)
-        var didRemove = false
-        
-        readWriteDispatchQueue.async(flags: .barrier) {
-            let frontTokenRemoved = removeTokenFromStorage()
-            let accessTokenRemoved = Utils.setToken(tokenType: .access, value: "")
-            let refreshTokenRemoved = Utils.setToken(tokenType: .refresh, value: "")
-            let lastAccessTokenUpdateRemoved = SDKStorage.remove(SDKStorage.genericKey(SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE))
-            let refreshAttemptInfoRemoved = SDKStorage.remove(SDKStorage.genericKey("sIRTFrontend"))
-            didRemove = antiCSRFRemoved && frontTokenRemoved && accessTokenRemoved && refreshTokenRemoved && lastAccessTokenUpdateRemoved && refreshAttemptInfoRemoved
-            tokenInfoSemaphore.signal()
-            executionSemaphore.signal()
-        }
-        
-        executionSemaphore.wait()
-        return didRemove
+        return SDKStorage.clearSessionStorage()
     }
     
     @discardableResult
@@ -219,7 +166,6 @@ internal class FrontToken {
 
         let result = FrontToken.setFrontTokenWithoutFiringEvent(frontToken: frontToken)
         guard result.success else {
-            tokenInMemory = nil
             SDKStorage.clearSessionStorage()
             return result
         }
@@ -229,13 +175,11 @@ internal class FrontToken {
 
     @discardableResult
     static func setItem(frontToken: String) -> Bool {
-        let result = setItemWithoutFiringEvent(frontToken: frontToken)
-
-        if result.success && result.shouldFirePayloadUpdated {
-            SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
-        }
-
-        return result.success
+        return SessionStateCoordinator.performAuthoritativeMutation {
+            let result = setItemWithoutFiringEvent(frontToken: frontToken)
+            return SessionTokenUpdateResult(success: result.success, shouldFirePayloadUpdated: result.shouldFirePayloadUpdated,
+                                            didMutateSession: true, clearsSession: frontToken == "remove")
+        }.success
     }
     
     static func doesTokenExist() -> Bool {

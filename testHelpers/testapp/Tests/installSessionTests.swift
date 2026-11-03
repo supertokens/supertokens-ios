@@ -798,4 +798,64 @@ final class InstallSessionTests: XCTestCase {
         XCTAssertEqual(completionCount, 1)
         XCTAssertNil(completionError)
     }
+
+    func testSignOutPreHookCannotSendReplacementCredentials() {
+        _ = initAndOverrideStorage()
+        XCTAssertTrue(SuperTokens.installSession(accessToken: "OLD_AT", refreshToken: "OLD_RT", frontToken: makeFrontToken()))
+        SuperTokens.config!.preAPIHook = { _, request in
+            XCTAssertTrue(SuperTokens.installSession(accessToken: "NEW_AT", refreshToken: "NEW_RT", frontToken: self.makeFrontToken()))
+            return request
+        }
+        let completed = expectation(description: "signout completed")
+        SuperTokens.signOutRequestExecutor = { request, completion in
+            let transport = SuperTokensURLProtocol(request: request, cachedResponse: nil, client: nil)
+            transport.makeRequest(networkRequestExecutor: { request, _ in
+                XCTFail("Obsolete signout sent credentials: \(request.value(forHTTPHeaderField: "Authorization") ?? "none")")
+            })
+            completion(Data("{\"status\":\"OK\"}".utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+        }
+        SuperTokens.signOut { error in
+            XCTAssertNil(error)
+            completed.fulfill()
+        }
+        wait(for: [completed], timeout: 2)
+        XCTAssertEqual(SuperTokens.getAccessToken(), "NEW_AT")
+    }
+
+    func testConditionalInstallAndClearRejectObsoleteSnapshot() {
+        _ = initAndOverrideStorage()
+        let empty = SuperTokens.getSessionSnapshot()
+        XCTAssertTrue(SuperTokens.installSession(expectedGeneration: empty.generation, accessToken: "AT", refreshToken: "RT", frontToken: makeFrontToken(), antiCSRFToken: "CSRF"))
+        let installed = SuperTokens.getSessionSnapshot()
+        XCTAssertNotEqual(installed.generation, empty.generation)
+        XCTAssertEqual(installed.accessToken, "AT")
+        XCTAssertEqual(installed.refreshToken, "RT")
+        XCTAssertEqual(installed.antiCSRFToken, "CSRF")
+        XCTAssertTrue(installed.sessionExists)
+        XCTAssertFalse(SuperTokens.clearSession(expectedGeneration: empty.generation))
+        XCTAssertFalse(SuperTokens.installSession(expectedGeneration: empty.generation, accessToken: "STALE", refreshToken: "STALE", frontToken: makeFrontToken()))
+        XCTAssertEqual(SuperTokens.getSessionSnapshot(), installed)
+        XCTAssertTrue(SuperTokens.clearSession(expectedGeneration: installed.generation))
+        XCTAssertNil(SuperTokens.getSessionSnapshot().frontToken)
+        XCTAssertEqual(installed.accessToken, "AT")
+    }
+
+    func testObsoleteOrdinary401RetriesReplacementWithoutOldCSRF() {
+        _ = initAndOverrideStorage()
+        XCTAssertTrue(SuperTokens.installSession(accessToken: "OLD_AT", refreshToken: "OLD_RT", frontToken: makeFrontToken(), antiCSRFToken: "OLD_CSRF"))
+        var requests: [URLRequest] = []
+        var firstCompletion: SuperTokensURLProtocol.NetworkCompletion?
+        let transport = SuperTokensURLProtocol(request: URLRequest(url: URL(string: "https://api.example.com/protected")!), cachedResponse: nil, client: nil)
+        transport.makeRequest(networkRequestExecutor: { request, completion in
+            requests.append(request)
+            if requests.count == 1 { firstCompletion = completion }
+        })
+        XCTAssertTrue(SuperTokens.installSession(accessToken: "NEW_AT", refreshToken: "NEW_RT", frontToken: makeFrontToken()))
+        firstCompletion?(nil, HTTPURLResponse(url: requests[0].url!, statusCode: 401, httpVersion: nil, headerFields: ["front-token": "remove"]), nil)
+        XCTAssertEqual(requests.count, 2)
+        guard requests.count == 2 else { return }
+        XCTAssertEqual(requests[1].value(forHTTPHeaderField: "Authorization"), "Bearer NEW_AT")
+        XCTAssertNil(requests[1].value(forHTTPHeaderField: "anti-csrf"))
+        XCTAssertEqual(SuperTokens.getAccessToken(), "NEW_AT")
+    }
 }
