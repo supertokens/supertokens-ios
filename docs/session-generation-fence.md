@@ -43,7 +43,8 @@ Baseline: `04a4570` (0.5.4). Adapt Android Phase 2, not the archived iOS rewrite
 5. Each request/retry builds auth and anti-CSRF headers while reading one coherent
    session. Retrying clears the SDK's old headers; unrelated custom Authorization
    headers retain existing behavior. A generation-stale response cannot mutate
-   storage or produce session events. Successful old ordinary responses are still
+   storage or admit a new lifecycle event. An event admitted earlier can still be
+   delivered after replacement. Successful old ordinary responses are still
    delivered to the caller; SDK ownership fencing does not fence application data.
 6. Sign-out captures ownership before checking presence/refreshing and before its
    pre-hook. A private URLProtocol request property carries that generation through
@@ -54,9 +55,16 @@ Baseline: `04a4570` (0.5.4). Adapt Android Phase 2, not the archived iOS rewrite
    install, clear, or unregister. Concurrent commits/reentrant listeners can overtake
    delivery; snapshots are not a globally ordered stream. Use snapshot generation
    for CAS. Removing a listener does not cancel an already-captured callback.
-8. Lifecycle events retain the existing public `EventType` contract. Ownership is
-   rechecked before dispatch and after reentrant callbacks. Events describe accepted
-   transitions, not a lock/lease on the session during application callback execution.
+8. Lifecycle admission checks the transition generation under the storage lock, then
+   invokes callbacks outside locks. The existing `EventType` handler remains supported,
+   but has **no strict stale-entry guarantee**: replacement can complete after
+   admission and before the handler begins. An admitted generation-aware listener
+   receives the generation of that transition even when delivery is delayed. More
+   listeners are rechecked between calls and may be skipped after replacement.
+   For clears the event generation is the committed **post-clear** generation; for
+   same-session refreshes it remains the session generation. Use it with conditional
+   session mutations. It cannot fence unconditional SDK calls, application state,
+   navigation, or UI writes. No callback holds the state lock or a delivery gate.
    Refresh application callbacks cannot synchronously join their own refresh flight.
 
 ## Public API and compatibility
@@ -65,6 +73,13 @@ Baseline: `04a4570` (0.5.4). Adapt Android Phase 2, not the archived iOS rewrite
 - `installSession(expectedGeneration:accessToken:refreshToken:frontToken:antiCSRFToken:) -> Bool`.
 - `clearSession(expectedGeneration:) -> Bool` (local only).
 - `addSessionListener(_:) -> UUID`, `removeSessionListener(_:)`.
+- `addLifecycleListener(_:) -> UUID`, `removeLifecycleListener(_:)`: additive
+  lifecycle events containing `type` and process-local `generation`, with no raw
+  credentials. This is distinct from state-snapshot listeners. Removal prevents
+  future admission but cannot cancel a callback already captured for delivery.
+  Callback order across threads is not guaranteed. Migrate consumers that take
+  session-dependent actions to conditional APIs; the legacy handler cannot do so
+  from `EventType` alone.
 - Keep unconditional `installSession(...)`, `clearSessionLocally()`, individual
   getters, existing Keychain keys, iOS 13/macOS 12 targets and Swift 5 language mode.
 - A false mutation result can mean CAS rejection, invalid input, or storage failure;

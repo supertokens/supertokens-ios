@@ -40,6 +40,12 @@ public enum EventType {
     case UNAUTHORISED
 }
 
+/// The process-local ownership generation after an accepted lifecycle transition.
+public struct SessionLifecycleEvent {
+    public let type: EventType
+    public let generation: UInt64
+}
+
 public enum APIAction {
     case SIGN_OUT
     case REFRESH_SESSION
@@ -145,9 +151,7 @@ public class SuperTokens {
     public static func signOut(completionHandler: @escaping (Error?) -> Void) {
         let generation = SessionStateCoordinator.snapshot { () }.generation
         if !doesSessionExist() {
-            if SessionStateCoordinator.isCurrent(generation) {
-                SuperTokens.config!.eventHandler(.SIGN_OUT)
-            }
+            SessionStateCoordinator.emitLifecycle(.SIGN_OUT, expectedGeneration: generation)
             completionHandler(nil)
             return
         }
@@ -374,6 +378,18 @@ public class SuperTokens {
 
     public static func removeSessionListener(_ id: UUID) {
         SessionStateCoordinator.removeListener(id)
+    }
+
+    /// Delivery is outside SDK locks and can arrive after replacement. Use the
+    /// event generation with conditional session mutations, not arbitrary UI writes.
+    @discardableResult
+    public static func addLifecycleListener(_ listener: @escaping (SessionLifecycleEvent) -> Void) -> UUID {
+        return SessionStateCoordinator.addLifecycleListener(listener)
+    }
+
+    /// Does not cancel a callback already admitted for delivery.
+    public static func removeLifecycleListener(_ id: UUID) {
+        SessionStateCoordinator.removeLifecycleListener(id)
     }
 
     /// Compare-and-set install. A mismatch writes nothing and returns false.

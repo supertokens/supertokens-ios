@@ -63,6 +63,8 @@ internal class SessionStateCoordinator {
     private static let lock = NSRecursiveLock()
     private static var mutationDepth = 0
     private static var listeners: [UUID: (SessionSnapshot) -> Void] = [:]
+    private static var lifecycleListeners: [UUID: (SessionLifecycleEvent) -> Void] = [:]
+    internal static var beforeLifecycleDeliveryForTests: (() -> Void)?
     private static var generation: UInt64 = 0
     private static var nextRequestSequence: UInt64 = 0
     private static var lastAppliedRequestSequence: UInt64 = 0
@@ -107,6 +109,39 @@ internal class SessionStateCoordinator {
         listeners.removeValue(forKey: id)
     }
 
+    internal static func addLifecycleListener(_ listener: @escaping (SessionLifecycleEvent) -> Void) -> UUID {
+        lock.lock()
+        defer { lock.unlock() }
+        let id = UUID()
+        lifecycleListeners[id] = listener
+        return id
+    }
+
+    internal static func removeLifecycleListener(_ id: UUID) {
+        lock.lock()
+        defer { lock.unlock() }
+        lifecycleListeners.removeValue(forKey: id)
+    }
+
+    internal static func emitLifecycle(_ type: EventType, expectedGeneration: UInt64) {
+        lock.lock()
+        guard generation == expectedGeneration else { lock.unlock(); return }
+        let callbacks = Array(lifecycleListeners.values)
+        let legacy = SuperTokens.config?.eventHandler
+        let hook = beforeLifecycleDeliveryForTests
+        let event = SessionLifecycleEvent(type: type, generation: generation)
+        lock.unlock()
+
+        hook?()
+        // Both forms belong to this admitted transition, even if either callback
+        // is delayed or reenters session APIs. Later listeners are rechecked.
+        legacy?(type)
+        for (index, callback) in callbacks.enumerated() {
+            if index > 0 && !isCurrent(event.generation) { break }
+            callback(event)
+        }
+    }
+
     internal static func legacyMutation(_ body: () -> Bool) -> Bool {
         lock.lock()
         if mutationDepth > 0 {
@@ -142,8 +177,8 @@ internal class SessionStateCoordinator {
         let state = callbacks.isEmpty ? nil : readSessionSnapshot()
         lock.unlock()
         if let state { callbacks.forEach { $0(state) } }
-        if result.success && result.shouldFirePayloadUpdated && isCurrent(committedGeneration) {
-            SuperTokens.config?.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+        if result.success && result.shouldFirePayloadUpdated {
+            emitLifecycle(.ACCESS_TOKEN_PAYLOAD_UPDATED, expectedGeneration: committedGeneration)
         }
         return result
     }
@@ -202,6 +237,8 @@ internal class SessionStateCoordinator {
         generation &+= 1
         lastAppliedRequestSequence = 0
         listeners.removeAll()
+        lifecycleListeners.removeAll()
+        beforeLifecycleDeliveryForTests = nil
         lock.unlock()
     }
 }
@@ -578,7 +615,8 @@ internal class Utils {
     internal static func fireSessionUpdateEventsIfNecessary(
         wasLoggedIn: Bool,
         status: Int,
-        frontTokenheaderFromResponse: String?
+        frontTokenheaderFromResponse: String?,
+        generation: UInt64
     ) {
         // In case we've received a 401 that didn't clear the session (e.g.: we've sent no session token, or we should try refreshing)
         // then onUnauthorised will handle firing the UNAUTHORISED event if necessary
@@ -598,13 +636,13 @@ internal class Utils {
             // to query an API that returned 401 while the user was not logged in...
             if !frontTokenExistsAfter {
                 if status == SuperTokens.config!.sessionExpiredStatusCode {
-                    SuperTokens.config!.eventHandler(.UNAUTHORISED)
+                    SessionStateCoordinator.emitLifecycle(.UNAUTHORISED, expectedGeneration: generation)
                 } else {
-                    SuperTokens.config!.eventHandler(.SIGN_OUT)
+                    SessionStateCoordinator.emitLifecycle(.SIGN_OUT, expectedGeneration: generation)
                 }
             }
         } else if frontTokenExistsAfter {
-            SuperTokens.config!.eventHandler(.SESSION_CREATED)
+            SessionStateCoordinator.emitLifecycle(.SESSION_CREATED, expectedGeneration: generation)
         }
     }
 }

@@ -217,15 +217,16 @@ public class SuperTokensURLProtocol: URLProtocol {
 
                 if case .applied(let shouldFirePayloadUpdated, let committedGeneration) = tokenUpdate {
                     (URLProtocol.property(forKey: Self.signOutOwnershipKey, in: self.request) as? SignOutOwnership)?.admit(committedGeneration)
-                    if shouldFirePayloadUpdated && SessionStateCoordinator.isCurrent(committedGeneration) {
-                        SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+                    if shouldFirePayloadUpdated {
+                        SessionStateCoordinator.emitLifecycle(.ACCESS_TOKEN_PAYLOAD_UPDATED, expectedGeneration: committedGeneration)
                     }
 
                     if SessionStateCoordinator.isCurrent(committedGeneration) {
                         Utils.fireSessionUpdateEventsIfNecessary(
                             wasLoggedIn: preRequestLocalSessionState.status == .EXISTS,
                             status: httpResponse.statusCode,
-                            frontTokenheaderFromResponse: httpResponse.value(forHTTPHeaderField: SuperTokensConstants.frontTokenHeaderKey)
+                            frontTokenheaderFromResponse: httpResponse.value(forHTTPHeaderField: SuperTokensConstants.frontTokenHeaderKey),
+                            generation: committedGeneration
                         )
                     }
                 }
@@ -383,9 +384,7 @@ public class SuperTokensURLProtocol: URLProtocol {
 
             if postLockLocalSessionState.status == .NOT_EXISTS {
                 DispatchQueue.global().async {
-                    if SessionStateCoordinator.isCurrent(refreshGeneration) {
-                        SuperTokens.config!.eventHandler(.UNAUTHORISED)
-                    }
+                    SessionStateCoordinator.emitLifecycle(.UNAUTHORISED, expectedGeneration: refreshGeneration)
                     callback(UnauthorisedResponse(status: .SESSION_EXPIRED))
                 }
                 return
@@ -455,9 +454,9 @@ public class SuperTokensURLProtocol: URLProtocol {
                         completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .API_ERROR, error: SuperTokensError.generalError(message: "Could not update session storage")))
                         return
                     case .applied(let shouldFirePayloadUpdated, let committedGeneration):
-                        if shouldFirePayloadUpdated && SessionStateCoordinator.isCurrent(committedGeneration) {
+                        if shouldFirePayloadUpdated {
                             runRefreshApplicationCallback {
-                                SuperTokens.config!.eventHandler(.ACCESS_TOKEN_PAYLOAD_UPDATED)
+                                SessionStateCoordinator.emitLifecycle(.ACCESS_TOKEN_PAYLOAD_UPDATED, expectedGeneration: committedGeneration)
                             }
                         }
 
@@ -471,7 +470,8 @@ public class SuperTokensURLProtocol: URLProtocol {
                             Utils.fireSessionUpdateEventsIfNecessary(
                                 wasLoggedIn: preRequestLocalSessionState.status == .EXISTS,
                                 status: httpResponse.statusCode,
-                                frontTokenheaderFromResponse: frontTokenInHeaders == nil ? "remove" : frontTokenInHeaders!
+                                frontTokenheaderFromResponse: frontTokenInHeaders == nil ? "remove" : frontTokenInHeaders!,
+                                generation: committedGeneration
                             )
                         }
 
@@ -500,7 +500,7 @@ public class SuperTokensURLProtocol: URLProtocol {
                         }
 
                         runRefreshApplicationCallback {
-                            SuperTokens.config!.eventHandler(.REFRESH_SESSION)
+                            SessionStateCoordinator.emitLifecycle(.REFRESH_SESSION, expectedGeneration: committedGeneration)
                         }
                         if SessionStateCoordinator.isCurrent(committedGeneration) {
                             completeRefresh(expectedEpoch: currentRefreshEpoch, UnauthorisedResponse(status: .RETRY))

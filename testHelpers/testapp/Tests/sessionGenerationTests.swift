@@ -280,6 +280,111 @@ final class SessionGenerationTests: XCTestCase {
         XCTAssertFalse(SuperTokens.getSessionSnapshot().sessionExists)
     }
 
+    func testDelayedLifecycleEventCarriesClearGenerationAndCannotClearReplacement() {
+        install("old")
+        let admitted = expectation(description: "event admitted")
+        let delivered = expectation(description: "event delivered")
+        let finished = expectation(description: "request finished")
+        let release = DispatchSemaphore(value: 0)
+        var observed: SessionLifecycleEvent?
+        SessionStateCoordinator.beforeLifecycleDeliveryForTests = {
+            admitted.fulfill()
+            _ = release.wait(timeout: .now() + 3)
+        }
+        let id = SuperTokens.addLifecycleListener { event in
+            observed = event
+            XCTAssertFalse(SuperTokens.clearSession(expectedGeneration: event.generation))
+            XCTAssertFalse(SuperTokens.installSession(expectedGeneration: event.generation, accessToken: "stale", refreshToken: "stale", frontToken: self.front("stale")))
+            delivered.fulfill()
+        }
+        GatedBackend.receive = { $0.respond(headers: ["front-token": "remove"]) }
+        session.dataTask(with: URL(string: "https://api.example.com/logout")!) { _, _, _ in finished.fulfill() }.resume()
+        wait(for: [admitted], timeout: 3)
+        let clearedGeneration = SuperTokens.getSessionSnapshot().generation
+        SuperTokens.removeLifecycleListener(id)
+        install("new")
+        release.signal()
+        wait(for: [delivered, finished], timeout: 3)
+        XCTAssertEqual(observed?.type, .SIGN_OUT)
+        XCTAssertEqual(observed?.generation, clearedGeneration)
+        XCTAssertEqual(SuperTokens.getSessionSnapshot().accessToken, "new-access")
+        XCTAssertTrue(recordedEvents().contains(.SIGN_OUT))
+    }
+
+    func testRemovedLifecycleListenerIsNotAdmitted() {
+        install("old")
+        let completed = expectation(description: "request completed")
+        var calls = 0
+        let id = SuperTokens.addLifecycleListener { _ in calls += 1 }
+        SuperTokens.removeLifecycleListener(id)
+        GatedBackend.receive = { $0.respond(headers: ["front-token": "remove"]) }
+        session.dataTask(with: URL(string: "https://api.example.com/logout")!) { _, _, _ in completed.fulfill() }.resume()
+        wait(for: [completed], timeout: 3)
+        XCTAssertEqual(calls, 0)
+    }
+
+    func testClearLifecycleGenerationPermitsConditionalActionAndUnregister() {
+        install("old")
+        let delivered = expectation(description: "clear event")
+        let completed = expectation(description: "request completed")
+        var id: UUID!
+        id = SuperTokens.addLifecycleListener { event in
+            XCTAssertEqual(event.type, .SIGN_OUT)
+            XCTAssertEqual(event.generation, SuperTokens.getSessionSnapshot().generation)
+            SuperTokens.removeLifecycleListener(id)
+            XCTAssertTrue(SuperTokens.clearSession(expectedGeneration: event.generation))
+            XCTAssertTrue(SuperTokens.installSession(expectedGeneration: SuperTokens.getSessionSnapshot().generation,
+                                                      accessToken: "reentrant-access", refreshToken: "reentrant-refresh", frontToken: self.front("reentrant")))
+            delivered.fulfill()
+        }
+        GatedBackend.receive = { $0.respond(headers: ["front-token": "remove"]) }
+        session.dataTask(with: URL(string: "https://api.example.com/logout")!) { _, _, _ in completed.fulfill() }.resume()
+        wait(for: [delivered, completed], timeout: 3)
+        XCTAssertEqual(SuperTokens.getSessionSnapshot().accessToken, "reentrant-access")
+    }
+
+    func testLifecycleListenerCanSynchronouslyRefreshWithoutDeadlock() {
+        let delivered = expectation(description: "session created callback")
+        let completed = expectation(description: "request completed")
+        let initialGeneration = SuperTokens.getSessionSnapshot().generation
+        var createdGeneration: UInt64?
+        var refreshGeneration: UInt64?
+        SuperTokensURLProtocol.networkRequestExecutor = { request, completion in
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.protocolClasses = [GatedBackend.self]
+            let transport = URLSession(configuration: configuration)
+            transport.dataTask(with: request) { data, response, error in
+                completion(data, response, error)
+                transport.finishTasksAndInvalidate()
+            }.resume()
+        }
+        let id = SuperTokens.addLifecycleListener { event in
+            switch event.type {
+            case .SESSION_CREATED:
+                createdGeneration = event.generation
+                do { XCTAssertTrue(try SuperTokens.attemptRefreshingSession()) }
+                catch { XCTFail("Refresh failed: \(error)") }
+                delivered.fulfill()
+            case .REFRESH_SESSION:
+                refreshGeneration = event.generation
+            default: break
+            }
+        }
+        GatedBackend.receive = { transport in
+            if transport.request.url?.path == "/auth/session/refresh" {
+                transport.respond(headers: ["st-access-token": "rotated-access", "st-refresh-token": "rotated-refresh", "front-token": self.front("user")])
+            } else {
+                transport.respond(headers: ["st-access-token": "access", "st-refresh-token": "refresh", "front-token": self.front("user")])
+            }
+        }
+        session.dataTask(with: URL(string: "https://api.example.com/login")!) { _, _, _ in completed.fulfill() }.resume()
+        wait(for: [delivered, completed], timeout: 3)
+        XCTAssertEqual(createdGeneration, initialGeneration + 1)
+        XCTAssertEqual(refreshGeneration, createdGeneration)
+        XCTAssertEqual(SuperTokens.getSessionSnapshot().accessToken, "rotated-access")
+        SuperTokens.removeLifecycleListener(id)
+    }
+
     func testConcurrentInstallAndClearHaveExactlyOneCASWinner() {
         install("old")
         let generation = SuperTokens.getSessionSnapshot().generation
