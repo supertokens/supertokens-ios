@@ -408,7 +408,10 @@ final class SessionGenerationTests: XCTestCase {
 
     func testValidPublicGettersDoNotRefresh() throws {
         install("old")
-        GatedBackend.receive = { _ in XCTFail("Valid getters should not make a request") }
+        GatedBackend.receive = { transport in
+            XCTFail("Valid getters should not make a request")
+            transport.fail()
+        }
         XCTAssertTrue(SuperTokens.doesSessionExist())
         XCTAssertEqual(try SuperTokens.getUserId(), "old")
         XCTAssertEqual(try SuperTokens.getAccessTokenPayloadSecurely()["user"] as? String, "old")
