@@ -484,7 +484,8 @@ final class InstallSessionTests: XCTestCase {
         let failure = SessionStateCoordinator.applyResponse(expectedGeneration: failingRequest.generation, requestSequence: failingRequest.sequence) {
             Utils.saveTokenFromHeadersWithoutFiringEvent(httpResponse: failingResponse)
         }
-        guard case .failed = failure else { return XCTFail("Expected response failure") }
+        guard case .failed(let failedGeneration) = failure else { return XCTFail("Expected response failure") }
+        XCTAssertEqual(failedGeneration, failingRequest.generation + 1)
         storage.failSetKeys.removeAll()
 
         let siblingResponse = HTTPURLResponse(url: URL(string: "https://api.example.com")!, statusCode: 200, httpVersion: nil, headerFields: [

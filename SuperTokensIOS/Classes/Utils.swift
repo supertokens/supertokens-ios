@@ -54,7 +54,7 @@ internal struct SessionTokenUpdateResult {
 internal enum SessionResponseUpdateResult {
     case staleGeneration
     case outOfOrder
-    case failed
+    case failed(generation: UInt64)
     case applied(shouldFirePayloadUpdated: Bool, generation: UInt64)
 }
 
@@ -203,10 +203,11 @@ internal class SessionStateCoordinator {
             generation &+= 1
             lastAppliedRequestSequence = 0
             let callbacks = Array(listeners.values)
+            let committedGeneration = generation
             let state = callbacks.isEmpty ? nil : readSessionSnapshot()
             lock.unlock()
             if let state { callbacks.forEach { $0(state) } }
-            return .failed
+            return .failed(generation: committedGeneration)
         }
 
         if result.didMutateSession {

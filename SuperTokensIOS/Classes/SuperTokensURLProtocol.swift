@@ -184,7 +184,8 @@ public class SuperTokensURLProtocol: URLProtocol {
                     Utils.saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse, isRefreshResponse: isRefreshRequest)
                 }
 
-                if case .failed = tokenUpdate {
+                if case .failed(let committedGeneration) = tokenUpdate {
+                    (URLProtocol.property(forKey: Self.signOutOwnershipKey, in: self.request) as? SignOutOwnership)?.admit(committedGeneration)
                     self.resolveToUser(data: nil, response: nil, error: SuperTokensError.generalError(message: "Could not update session storage"))
                     return
                 }

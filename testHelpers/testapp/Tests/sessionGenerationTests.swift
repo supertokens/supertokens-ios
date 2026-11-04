@@ -3,9 +3,13 @@ import XCTest
 
 private final class GenerationTokenStorage: TokenStorage {
     private var values: [String: String] = [:]
+    var failRemove = false
     func get(_ name: String) -> String? { values[name] }
     func set(_ name: String, value: String) -> Bool { values[name] = value; return true }
-    func remove(_ name: String) -> Bool { values.removeValue(forKey: name); return true }
+    func remove(_ name: String) -> Bool {
+        if failRemove { return false }
+        values.removeValue(forKey: name); return true
+    }
 }
 
 /// A real URLSession transport with responses released explicitly by each test.
@@ -295,6 +299,78 @@ final class SessionGenerationTests: XCTestCase {
         XCTAssertEqual(postHooks, 1)
         XCTAssertFalse(SuperTokens.getSessionSnapshot().sessionExists)
         XCTAssertEqual(recordedEvents().filter { $0 == .SIGN_OUT }.count, 1)
+    }
+
+    func testSignOutReportsFailedStorageClear() {
+        let storage = GenerationTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        install("old")
+        let before = SuperTokens.getSessionSnapshot()
+        storage.failRemove = true
+        let finished = expectation(description: "signout completes once")
+        finished.assertForOverFulfill = true
+        var postHooks = 0
+        SuperTokens.config!.postAPIHook = { _, _, _ in postHooks += 1 }
+        GatedBackend.receive = { transport in
+            XCTAssertEqual(transport.request.url?.path, "/auth/signout")
+            transport.respond(headers: ["front-token": "remove"])
+        }
+        SuperTokens.signOut { error in
+            let expected = SuperTokensError.generalError(message: "Could not update session storage") as NSError
+            XCTAssertEqual((error as NSError?)?.domain, expected.domain)
+            XCTAssertEqual((error as NSError?)?.code, expected.code)
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 3)
+        let after = SuperTokens.getSessionSnapshot()
+        XCTAssertEqual(after.generation, before.generation + 1)
+        XCTAssertEqual(after.accessToken, before.accessToken)
+        XCTAssertEqual(after.frontToken, before.frontToken)
+        XCTAssertEqual(postHooks, 0)
+    }
+
+    func testSignOutStorageFailureDoesNotClaimReentrantReplacement() {
+        assertSignOutStorageFailureWithReentrantMutation(installReplacement: true)
+    }
+
+    func testSignOutStorageFailureDoesNotClaimReentrantClear() {
+        assertSignOutStorageFailureWithReentrantMutation(installReplacement: false)
+    }
+
+    private func assertSignOutStorageFailureWithReentrantMutation(installReplacement: Bool) {
+        let storage = GenerationTokenStorage()
+        SDKStorage.setTokenStorageForTests(storage)
+        install("old")
+        let before = SuperTokens.getSessionSnapshot()
+        storage.failRemove = true
+        var listenerID: UUID!
+        listenerID = SuperTokens.addSessionListener { snapshot in
+            SuperTokens.removeSessionListener(listenerID)
+            XCTAssertEqual(snapshot.generation, before.generation + 1)
+            storage.failRemove = false
+            if installReplacement {
+                self.install("new")
+            } else {
+                XCTAssertTrue(SuperTokens.clearSessionLocally())
+            }
+        }
+        let finished = expectation(description: "obsolete signout completes once")
+        finished.assertForOverFulfill = true
+        var postHooks = 0
+        SuperTokens.config!.postAPIHook = { _, _, _ in postHooks += 1 }
+        GatedBackend.receive = { transport in
+            XCTAssertEqual(transport.request.url?.path, "/auth/signout")
+            transport.respond(headers: ["front-token": "remove"])
+        }
+        SuperTokens.signOut { error in
+            XCTAssertNil(error)
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 3)
+        let after = SuperTokens.getSessionSnapshot()
+        XCTAssertEqual(after.generation, before.generation + 2)
+        XCTAssertEqual(after.accessToken, installReplacement ? "new-access" : nil)
+        XCTAssertEqual(postHooks, 0)
     }
 
     func testCurrentSignOutAPIErrorPreservesSession() {
