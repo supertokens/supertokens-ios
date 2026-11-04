@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-08-11
+
+### Fixes
+
+- Intercepted requests once again include the stored access token when both access and refresh tokens exist, even if local session metadata is incomplete. Existing authorization headers are preserved, while session existence, anti-CSRF, and refresh handling remain strict.
+
+## [0.5.3] - 2026-08-07
+
+### Fixes
+
+- `signOut` now resolves its completion handler on a terminal session-expired response instead of leaving callers waiting indefinitely.
+- Valid front tokens can replace malformed values already in storage without crashing.
+- Malformed incoming front tokens are rejected before any session values are written, and corrupt stored front tokens no longer crash session reads.
+- Stale responses, retries, and refresh cohorts can no longer mutate or reuse replacement-session credentials, including same-user session replacements.
+- Documented that `getRefreshToken()` exposes a long-lived, ungated credential and clarified the best-effort cleanup contract for failed `installSession` calls.
+
+## [0.5.2] - 2026-08-07
+
+### Added
+
+- `SuperTokens.installSession(accessToken:refreshToken:frontToken:antiCSRFToken:)` — install a session from tokens obtained out of band (e.g. a WKWebView/Hub flow) through the SDK's validated write path.
+- `SuperTokens.clearSessionLocally()` — clear local session state (including in-memory caches) without a network sign-out.
+- `SuperTokens.getRefreshToken()`, `SuperTokens.getFrontToken()`, `SuperTokens.getAntiCSRF()` — read-only getters for the current session's stored tokens, symmetric with `getAccessToken()`. No network.
+
+### Fixes
+
+- `installSession` now validates `frontToken` before writing anything, rejecting malformed values (including the `"remove"` sentinel) instead of storing them and crashing later.
+- `installSession` now rejects empty `accessToken`/`refreshToken`/`frontToken` instead of silently deleting the corresponding stored token.
+- `installSession` now clears any anti-CSRF token left over from a previous session when installing a new session without one.
+- `installSession` and `clearSessionLocally` now invalidate older in-flight responses, preventing stale response headers from overwriting or recreating an out-of-band session.
+- Session response updates are ordered and rollback clears the front-token session marker before access and refresh tokens.
+
+
+## [0.5.1] - 2026-08-06
+
 ### Fixes
 
 - Fixed a session teardown race that could trigger an unnecessary refresh request and 401 during sign-out.

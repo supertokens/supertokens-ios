@@ -35,6 +35,215 @@ internal class LocalSessionState {
     }
 }
 
+internal struct SessionTokenUpdateResult {
+    let success: Bool
+    let shouldFirePayloadUpdated: Bool
+    let didMutateSession: Bool
+    let clearsSession: Bool
+    let startsNewSession: Bool
+
+    init(success: Bool, shouldFirePayloadUpdated: Bool, didMutateSession: Bool, clearsSession: Bool, startsNewSession: Bool = false) {
+        self.success = success
+        self.shouldFirePayloadUpdated = shouldFirePayloadUpdated
+        self.didMutateSession = didMutateSession
+        self.clearsSession = clearsSession
+        self.startsNewSession = startsNewSession
+    }
+}
+
+internal enum SessionResponseUpdateResult {
+    case staleGeneration
+    case outOfOrder
+    case failed(generation: UInt64)
+    case applied(shouldFirePayloadUpdated: Bool, generation: UInt64)
+}
+
+internal class SessionStateCoordinator {
+    // Storage helpers nest synchronously inside a session transaction, on this thread.
+    private static let lock = NSRecursiveLock()
+    private static var mutationDepth = 0
+    private static var listeners: [UUID: (SessionSnapshot) -> Void] = [:]
+    private static var lifecycleListeners: [UUID: (SessionLifecycleEvent) -> Void] = [:]
+    internal static var beforeLifecycleDeliveryForTests: (() -> Void)?
+    private static var generation: UInt64 = 0
+    private static var nextRequestSequence: UInt64 = 0
+    private static var lastAppliedRequestSequence: UInt64 = 0
+
+    internal static func snapshot<T>(_ body: () -> T) -> (value: T, generation: UInt64) {
+        lock.lock()
+        defer { lock.unlock() }
+        return (body(), generation)
+    }
+
+    internal static func requestSnapshot<T>(_ body: () -> T) -> (value: T, generation: UInt64, sequence: UInt64) {
+        lock.lock()
+        defer { lock.unlock() }
+        nextRequestSequence &+= 1
+        return (body(), generation, nextRequestSequence)
+    }
+
+    internal static func sessionSnapshot() -> SessionSnapshot {
+        return snapshot { readSessionSnapshot() }.value
+    }
+
+    private static func readSessionSnapshot() -> SessionSnapshot {
+        SessionSnapshot(generation: generation,
+                        accessToken: SDKStorage.get(SDKStorage.genericKey(SuperTokensConstants.ACCESS_TOKEN_NAME)),
+                        refreshToken: SDKStorage.get(SDKStorage.genericKey(SuperTokensConstants.REFRESH_TOKEN_NAME)),
+                        frontToken: SDKStorage.get(SDKStorage.frontTokenKey),
+                        antiCSRFToken: SDKStorage.get(SDKStorage.antiCSRFKey),
+                        lastAccessTokenUpdate: SDKStorage.get(SDKStorage.genericKey(SuperTokensConstants.LAST_ACCESS_TOKEN_UPDATE)))
+    }
+
+    internal static func addListener(_ listener: @escaping (SessionSnapshot) -> Void) -> UUID {
+        lock.lock()
+        defer { lock.unlock() }
+        let id = UUID()
+        listeners[id] = listener
+        return id
+    }
+
+    internal static func removeListener(_ id: UUID) {
+        lock.lock()
+        defer { lock.unlock() }
+        listeners.removeValue(forKey: id)
+    }
+
+    internal static func addLifecycleListener(_ listener: @escaping (SessionLifecycleEvent) -> Void) -> UUID {
+        lock.lock()
+        defer { lock.unlock() }
+        let id = UUID()
+        lifecycleListeners[id] = listener
+        return id
+    }
+
+    internal static func removeLifecycleListener(_ id: UUID) {
+        lock.lock()
+        defer { lock.unlock() }
+        lifecycleListeners.removeValue(forKey: id)
+    }
+
+    internal static func emitLifecycle(_ type: EventType, expectedGeneration: UInt64) {
+        lock.lock()
+        guard generation == expectedGeneration else { lock.unlock(); return }
+        let callbacks = Array(lifecycleListeners.values)
+        let legacy = SuperTokens.config?.eventHandler
+        let hook = beforeLifecycleDeliveryForTests
+        let event = SessionLifecycleEvent(type: type, generation: generation)
+        lock.unlock()
+
+        hook?()
+        // Both forms belong to this admitted transition, even if either callback
+        // is delayed or reenters session APIs. Later listeners are rechecked.
+        legacy?(type)
+        for (index, callback) in callbacks.enumerated() {
+            if index > 0 && !isCurrent(event.generation) { break }
+            callback(event)
+        }
+    }
+
+    internal static func legacyMutation(_ body: () -> Bool) -> Bool {
+        lock.lock()
+        if mutationDepth > 0 {
+            defer { lock.unlock() }
+            return body()
+        }
+        // Keep the check and outer transaction atomic; release before callbacks.
+        mutationDepth += 1
+        generation &+= 1
+        lastAppliedRequestSequence = 0
+        let success = body()
+        mutationDepth -= 1
+        let callbacks = Array(listeners.values)
+        let state = callbacks.isEmpty ? nil : readSessionSnapshot()
+        lock.unlock()
+        if let state { callbacks.forEach { $0(state) } }
+        return success
+    }
+
+    internal static func performAuthoritativeMutation(expectedGeneration: UInt64? = nil, _ body: () -> SessionTokenUpdateResult) -> SessionTokenUpdateResult {
+        lock.lock()
+        if let expectedGeneration, generation != expectedGeneration {
+            lock.unlock()
+            return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: false, clearsSession: false)
+        }
+        generation &+= 1
+        lastAppliedRequestSequence = 0
+        mutationDepth += 1
+        let result = body()
+        mutationDepth -= 1
+        let callbacks = Array(listeners.values)
+        let committedGeneration = generation
+        let state = callbacks.isEmpty ? nil : readSessionSnapshot()
+        lock.unlock()
+        if let state { callbacks.forEach { $0(state) } }
+        if result.success && result.shouldFirePayloadUpdated {
+            emitLifecycle(.ACCESS_TOKEN_PAYLOAD_UPDATED, expectedGeneration: committedGeneration)
+        }
+        return result
+    }
+
+    internal static func applyResponse(expectedGeneration: UInt64, requestSequence: UInt64, allowOutOfOrder: (() -> Bool)? = nil, _ body: () -> SessionTokenUpdateResult) -> SessionResponseUpdateResult {
+        lock.lock()
+
+        guard generation == expectedGeneration else {
+            lock.unlock()
+            return .staleGeneration
+        }
+
+        guard requestSequence >= lastAppliedRequestSequence || allowOutOfOrder?() == true else {
+            lock.unlock()
+            return .outOfOrder
+        }
+
+        mutationDepth += 1
+        let result = body()
+        mutationDepth -= 1
+        guard result.success else {
+            generation &+= 1
+            lastAppliedRequestSequence = 0
+            let callbacks = Array(listeners.values)
+            let committedGeneration = generation
+            let state = callbacks.isEmpty ? nil : readSessionSnapshot()
+            lock.unlock()
+            if let state { callbacks.forEach { $0(state) } }
+            return .failed(generation: committedGeneration)
+        }
+
+        if result.didMutateSession {
+            if result.clearsSession || result.startsNewSession {
+                generation &+= 1
+                lastAppliedRequestSequence = 0
+            } else {
+                lastAppliedRequestSequence = requestSequence
+            }
+        }
+
+        let callbacks = result.didMutateSession ? Array(listeners.values) : []
+        let committedGeneration = generation
+        let state = callbacks.isEmpty ? nil : readSessionSnapshot()
+        lock.unlock()
+        if let state { callbacks.forEach { $0(state) } }
+        return .applied(shouldFirePayloadUpdated: result.shouldFirePayloadUpdated, generation: committedGeneration)
+    }
+
+    internal static func isCurrent(_ expectedGeneration: UInt64) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return generation == expectedGeneration
+    }
+
+    internal static func resetForTests() {
+        lock.lock()
+        generation &+= 1
+        lastAppliedRequestSequence = 0
+        listeners.removeAll()
+        lifecycleListeners.removeAll()
+        beforeLifecycleDeliveryForTests = nil
+        lock.unlock()
+    }
+}
+
 public enum SuperTokensTokenTransferMethod: String {
     case cookie, header
 }
@@ -266,52 +475,115 @@ internal class Utils {
     
     @discardableResult
     internal static func saveTokenFromHeaders(httpResponse: HTTPURLResponse) -> Bool {
+        return SessionStateCoordinator.performAuthoritativeMutation {
+            saveTokenFromHeadersWithoutFiringEvent(httpResponse: httpResponse)
+        }.success
+    }
+
+    internal static func saveTokenFromHeadersWithoutFiringEvent(httpResponse: HTTPURLResponse, isRefreshResponse: Bool = false) -> SessionTokenUpdateResult {
         guard var headerFields: [String: String] = httpResponse.allHeaderFields as? [String: String] else {
-            return true
+            return SessionTokenUpdateResult(success: true, shouldFirePayloadUpdated: false, didMutateSession: false, clearsSession: false)
         }
 
         headerFields.lowerCaseKeys()
 
+        let startsNewSession = responseStartsNewSession(headerFields: headerFields, isRefreshResponse: isRefreshResponse)
+
+        if let frontToken = headerFields[SuperTokensConstants.frontTokenHeaderKey],
+           frontToken != "remove",
+           !FrontToken.isWellFormed(frontToken) {
+            return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: false, clearsSession: false)
+        }
+
         if headerFields[SuperTokensConstants.frontTokenHeaderKey] == "remove" {
             guard FrontToken.removeToken() else {
                 SDKStorage.clearSessionStorage()
-                return false
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: true)
             }
 
-            return true
+            return SessionTokenUpdateResult(success: true, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: true)
         }
+
+        var shouldFirePayloadUpdated = false
+        var didMutateSession = false
         
         if let refreshToken: String = headerFields[SuperTokensConstants.refreshTokenHeaderKey] {
+            didMutateSession = true
             guard Utils.setToken(tokenType: .refresh, value: refreshToken) else {
                 SDKStorage.clearSessionStorage()
-                return false
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
             }
         }
         
         if let accessToken: String = headerFields[SuperTokensConstants.accessTokenHeaderKey] {
+            didMutateSession = true
             guard Utils.setToken(tokenType: .access, value: accessToken) else {
                 SDKStorage.clearSessionStorage()
-                return false
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
             }
         }
         
         if let frontToken: String = headerFields[SuperTokensConstants.frontTokenHeaderKey] {
-            guard FrontToken.setItem(frontToken: frontToken) else {
+            didMutateSession = true
+            let result = FrontToken.setItemWithoutFiringEvent(frontToken: frontToken)
+            guard result.success else {
                 SDKStorage.clearSessionStorage()
-                return false
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
             }
+            shouldFirePayloadUpdated = result.shouldFirePayloadUpdated
         }
         
         if let antiCSRF: String = headerFields[SuperTokensConstants.antiCSRFHeaderKey] {
+            didMutateSession = true
             let localSessionState = Utils.getLocalSessionState()
             
             guard AntiCSRF.setToken(antiCSRFToken: antiCSRF, associatedAccessTokenUpdate: localSessionState.lastAccessTokenUpdate) else {
                 SDKStorage.clearSessionStorage()
-                return false
+                return SessionTokenUpdateResult(success: false, shouldFirePayloadUpdated: false, didMutateSession: true, clearsSession: false)
             }
         }
 
-        return true
+        return SessionTokenUpdateResult(success: true, shouldFirePayloadUpdated: shouldFirePayloadUpdated, didMutateSession: didMutateSession, clearsSession: false, startsNewSession: startsNewSession)
+    }
+
+    internal static func responseStartsNewSession(httpResponse: HTTPURLResponse, isRefreshResponse: Bool = false) -> Bool {
+        guard var headerFields = httpResponse.allHeaderFields as? [String: String] else { return false }
+        headerFields.lowerCaseKeys()
+        return responseStartsNewSession(headerFields: headerFields, isRefreshResponse: isRefreshResponse)
+    }
+
+    private static func responseStartsNewSession(headerFields: [String: String], isRefreshResponse: Bool) -> Bool {
+        guard let incomingFrontToken = headerFields[SuperTokensConstants.frontTokenHeaderKey],
+              incomingFrontToken != "remove",
+              let incomingUserId = FrontToken.parseFrontToken(frontTokenDecoded: incomingFrontToken)?["uid"] as? String else {
+            return false
+        }
+
+        if !isRefreshResponse && headerFields[SuperTokensConstants.refreshTokenHeaderKey] != nil {
+            if let current = sessionHandle(getTokenForHeaderAuth(tokenType: .access)),
+               let incoming = sessionHandle(headerFields[SuperTokensConstants.accessTokenHeaderKey]) {
+                return current != incoming
+            }
+            return true
+        }
+
+        guard let currentUserId = FrontToken.getToken()?["uid"] as? String else {
+            return true
+        }
+
+        return currentUserId != incomingUserId
+    }
+
+    private static func sessionHandle(_ token: String?) -> String? {
+        guard let token = token else { return nil }
+        let parts = token.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3 else { return nil }
+        var payload = String(parts[1]).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        payload += String(repeating: "=", count: (4 - payload.count % 4) % 4)
+        guard let data = Data(base64Encoded: payload),
+              let claims = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let handle = claims["sessionHandle"] as? String, !handle.isEmpty else { return nil }
+        return handle
     }
     
     internal static func getTokenForHeaderAuth(tokenType: TokenType) -> String? {
@@ -344,7 +616,8 @@ internal class Utils {
     internal static func fireSessionUpdateEventsIfNecessary(
         wasLoggedIn: Bool,
         status: Int,
-        frontTokenheaderFromResponse: String?
+        frontTokenheaderFromResponse: String?,
+        generation: UInt64
     ) {
         // In case we've received a 401 that didn't clear the session (e.g.: we've sent no session token, or we should try refreshing)
         // then onUnauthorised will handle firing the UNAUTHORISED event if necessary
@@ -364,13 +637,13 @@ internal class Utils {
             // to query an API that returned 401 while the user was not logged in...
             if !frontTokenExistsAfter {
                 if status == SuperTokens.config!.sessionExpiredStatusCode {
-                    SuperTokens.config!.eventHandler(.UNAUTHORISED)
+                    SessionStateCoordinator.emitLifecycle(.UNAUTHORISED, expectedGeneration: generation)
                 } else {
-                    SuperTokens.config!.eventHandler(.SIGN_OUT)
+                    SessionStateCoordinator.emitLifecycle(.SIGN_OUT, expectedGeneration: generation)
                 }
             }
         } else if frontTokenExistsAfter {
-            SuperTokens.config!.eventHandler(.SESSION_CREATED)
+            SessionStateCoordinator.emitLifecycle(.SESSION_CREATED, expectedGeneration: generation)
         }
     }
 }
